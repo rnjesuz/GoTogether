@@ -1,4 +1,4 @@
-package gotogether.storage;
+package storage.gotogether;
 
 protected class Storage{
 

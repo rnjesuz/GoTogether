@@ -1,4 +1,4 @@
-package gotogether.server;
+package server.gotogether;
 
 public class Server{
 
