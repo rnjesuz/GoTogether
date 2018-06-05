@@ -5,13 +5,19 @@ import android.content.pm.PackageManager;
 import android.location.Address;
 import android.location.Geocoder;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
+import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 
+import com.google.android.gms.common.api.Status;
+import com.google.android.gms.location.places.Place;
+import com.google.android.gms.location.places.ui.PlaceAutocompleteFragment;
+import com.google.android.gms.location.places.ui.PlaceSelectionListener;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -22,7 +28,11 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import java.io.IOException;
 import java.util.List;
 
-public class CreateEventActivity extends FragmentActivity {
+
+import static android.support.constraint.Constraints.TAG;
+
+public class CreateEventActivity //extends FragmentActivity implements OnMapReadyCallback
+extends FragmentActivity{
 
     private GoogleMap mMap;
 
@@ -30,11 +40,28 @@ public class CreateEventActivity extends FragmentActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_create_event);
+
+        PlaceAutocompleteFragment autocompleteFragment = (PlaceAutocompleteFragment)getFragmentManager().findFragmentById(R.id.destination_autocomplete_fragment);
+
+        autocompleteFragment.setOnPlaceSelectedListener(new PlaceSelectionListener() {
+            @Override
+            public void onPlaceSelected(Place place) {
+                // TODO: Get info about the selected place.
+                Log.i(TAG, "Place: " + place.getName());
+            }
+
+            @Override
+            public void onError(Status status) {
+                // TODO: Handle the error.
+                Log.i(TAG, "An error occurred: " + status);
+            }
+        });
+
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
-        SupportMapFragment mapFragmentDestination = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.mapDestination);
+        /*SupportMapFragment mapFragmentDestination = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.mapDestination);
         SupportMapFragment mapFragmentStart = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.mapDestination);
         mapFragmentDestination.getMapAsync(onMapReadyDestination());
-        mapFragmentStart.getMapAsync(onMapReadyStart());
+        mapFragmentStart.getMapAsync(onMapReadyStart());*/
     }
 
 
@@ -61,7 +88,7 @@ public class CreateEventActivity extends FragmentActivity {
         mMap.setMyLocationEnabled(true);
     }*/
 
-    public OnMapReadyCallback onMapReadyDestination(){
+    /*public OnMapReadyCallback onMapReadyDestination(){
         return new OnMapReadyCallback() {
 @           Override
             public void onMapReady(GoogleMap googleMap) {
@@ -72,12 +99,12 @@ public class CreateEventActivity extends FragmentActivity {
                 /*if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                     return;
                 }
-                mMap.setMyLocationEnabled(true);*/
+                mMap.setMyLocationEnabled(true);*//*
             }
         };
-    }
+    }*/
 
-    public OnMapReadyCallback onMapReadyStart(){
+    /*public OnMapReadyCallback onMapReadyStart(){
         return new OnMapReadyCallback() {
             @           Override
             public void onMapReady(GoogleMap googleMap) {
@@ -88,12 +115,12 @@ public class CreateEventActivity extends FragmentActivity {
                 /*if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                     return;
                 }
-                mMap.setMyLocationEnabled(true);*/
+                mMap.setMyLocationEnabled(true);*//*
             }
         };
-    }
+    }*/
 
-    public void setDestination(View view) {
+    /*public void setDestination(View view) {
         EditText locationSearch = (EditText) findViewById(R.id.destinationSearchText);
         String location = locationSearch.getText().toString();
         List<Address> addressList = null;
@@ -131,5 +158,5 @@ public class CreateEventActivity extends FragmentActivity {
             mMap.addMarker(new MarkerOptions().position(latLng).title("Marker"));
             mMap.animateCamera(CameraUpdateFactory.newLatLng(latLng));
         }
-    }
+    }*/
 }

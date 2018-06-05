@@ -25,7 +25,7 @@
         app:layout_constraintTop_toTopOf="parent"
 
         android:onClick="setDestination"/>
-     -->
+
     <LinearLayout
         android:id="@+id/destinationLinearLayout"
         android:layout_width="match_parent"
@@ -83,6 +83,34 @@
         map:cameraZoom="15"
 
         />
+        -->
+
+    <fragment
+        android:id="@+id/destination_autocomplete_fragment"
+        android:name="com.google.android.gms.location.places.ui.PlaceAutocompleteFragment"
+        android:layout_width="match_parent"
+        android:layout_height="30dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="24dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+
+    <fragment
+        android:id="@+id/start_autocomplete_fragment"
+        android:name="com.google.android.gms.location.places.ui.PlaceAutocompleteFragment"
+        android:layout_width="match_parent"
+        android:layout_height="33dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="16dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/destination_autocomplete_fragment"
+        />
 
     <CheckBox
         android:id="@+id/vehicleCheckBox"
@@ -96,7 +124,7 @@
     <TextView
         android:id="@+id/vehicleQuestionText"
         android:layout_width="0dp"
-        android:layout_height="35dp"
+        android:layout_height="31dp"
         android:layout_marginStart="8dp"
         android:layout_marginTop="16dp"
         android:text="@string/do_you_volunteer_as_a_driver"
@@ -104,7 +132,7 @@
         android:textSize="18sp"
         app:layout_constraintEnd_toStartOf="@+id/vehicleCheckBox"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/mapStart" />
+        app:layout_constraintTop_toBottomOf="@+id/start_autocomplete_fragment" />
 
    <!--
     <EditText
@@ -126,6 +154,7 @@
         android:onClick="setStart"/>
      -->
 
+    <!--
     <LinearLayout
         android:id="@+id/startLinearLayout"
         android:layout_width="match_parent"
@@ -159,7 +188,6 @@
             android:text="@string/set" />
 
     </LinearLayout>
-
     <fragment xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:map="http://schemas.android.com/apk/res-auto"
         xmlns:tools="http://schemas.android.com/tools"
@@ -181,6 +209,8 @@
         map:uiScrollGestures="true"
         map:cameraZoom="15"
         />
+
+        -->
 
     <Button
         android:layout_width="wrap_content"
