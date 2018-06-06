@@ -28,6 +28,7 @@
     <string name="question_starting_position">What is your starting position?</string>
     <string name="title_activity_create_event">Create Event</string>
     <string name="set">Set</string>
+    <string name="seats_in_car">How many seats in the car?</string>
 
     <!-- Strings related to Settings -->
 

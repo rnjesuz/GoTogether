@@ -1,18 +1,23 @@
 package app.gotogether;
 
 import android.Manifest;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Address;
 import android.location.Geocoder;
+import android.os.Build;
+import android.support.annotation.RequiresApi;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.TextView;
 
 import com.google.android.gms.common.api.Status;
 import com.google.android.gms.location.places.Place;
@@ -29,33 +34,31 @@ import java.io.IOException;
 import java.util.List;
 
 
+import expandablelib.gotogether.ExpandCollapseListener;
+import expandablelib.gotogether.ExpandableLayout;
+import expandablelib.gotogether.Section;
+
 import static android.support.constraint.Constraints.TAG;
 
 public class CreateEventActivity //extends FragmentActivity implements OnMapReadyCallback
 extends FragmentActivity{
 
     private GoogleMap mMap;
+    String parents = "Do you volunteer as a Driver?";
+    String destination = null;
+    String start = null;
+    boolean driver = false;
+    int seats = -1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_create_event);
 
-        PlaceAutocompleteFragment autocompleteFragment = (PlaceAutocompleteFragment)getFragmentManager().findFragmentById(R.id.destination_autocomplete_fragment);
-
-        autocompleteFragment.setOnPlaceSelectedListener(new PlaceSelectionListener() {
-            @Override
-            public void onPlaceSelected(Place place) {
-                // TODO: Get info about the selected place.
-                Log.i(TAG, "Place: " + place.getName());
-            }
-
-            @Override
-            public void onError(Status status) {
-                // TODO: Handle the error.
-                Log.i(TAG, "An error occurred: " + status);
-            }
-        });
+        // initialize both fragment (Start and Destination queries) for Google's Places API
+        initializePlaceAutoCompleteFragments();
+        // initialize an ExpandableLayout that opens if user wants to volunteer as driver
+        initializeExpandableLayout();
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         /*SupportMapFragment mapFragmentDestination = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.mapDestination);
@@ -65,98 +68,117 @@ extends FragmentActivity{
     }
 
 
-    /**
-     * Manipulates the map once available.
-     * This callback is triggered when the map is ready to be used.
-     * This is where we can add markers or lines, add listeners or move the camera. In this case,
-     * we just add a marker near Sydney, Australia.
-     * If Google Play services is not installed on the device, the user will be prompted to install
-     * it inside the SupportMapFragment. This method will only be triggered once the user has
-     * installed Google Play services and returned to the app.
-     */
-    /*@Override
-    public void onMapReady(GoogleMap googleMap) {
-        mMap = googleMap;
 
-        // Add a marker in Sydney and move the camera
-        /*LatLng sydney = new LatLng(-34, 151);
-        mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));*//*
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            return;
-        }
-        mMap.setMyLocationEnabled(true);
-    }*/
+    private void initializePlaceAutoCompleteFragments() {
 
-    /*public OnMapReadyCallback onMapReadyDestination(){
-        return new OnMapReadyCallback() {
-@           Override
-            public void onMapReady(GoogleMap googleMap) {
-                mMap = googleMap;
-                LatLng sydney = new LatLng(-34, 151);
-                mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
-                mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
-                /*if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                    return;
-                }
-                mMap.setMyLocationEnabled(true);*//*
+        //the fragment for the destination
+        PlaceAutocompleteFragment destinationAutocompleteFragment = (PlaceAutocompleteFragment)getFragmentManager().findFragmentById(R.id.destination_autocomplete_fragment);
+        destinationAutocompleteFragment.setOnPlaceSelectedListener(new PlaceSelectionListener() {
+            @Override
+            public void onPlaceSelected(Place place) {
+                // TODO: Get info about the selected place.
+                destination = place.getAddress().toString();
+                Log.i(TAG, "Place - destination: " + place.getAddress().toString());
             }
-        };
-    }*/
 
-    /*public OnMapReadyCallback onMapReadyStart(){
-        return new OnMapReadyCallback() {
-            @           Override
-            public void onMapReady(GoogleMap googleMap) {
-                mMap = googleMap;
-                LatLng vannes = new LatLng(47.66, -2.75);
-                mMap.addMarker(new MarkerOptions().position(vannes).title("Vannes"));
-                mMap.moveCamera(CameraUpdateFactory.newLatLng(vannes));
-                /*if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                    return;
-                }
-                mMap.setMyLocationEnabled(true);*//*
+            @Override
+            public void onError(Status status) {
+                // TODO: Handle the error.
+                Log.i(TAG, "An error occurred: " + status);
             }
-        };
-    }*/
+        });
 
-    /*public void setDestination(View view) {
-        EditText locationSearch = (EditText) findViewById(R.id.destinationSearchText);
-        String location = locationSearch.getText().toString();
-        List<Address> addressList = null;
-
-        if (location != null || !location.equals("")) {
-            Geocoder geocoder = new Geocoder(this);
-            try {
-                addressList = geocoder.getFromLocationName(location, 1);
-
-            } catch (IOException e) {
-                e.printStackTrace();
+        //the fragment for the starting location
+        PlaceAutocompleteFragment startAutocompleteFragment = (PlaceAutocompleteFragment)getFragmentManager().findFragmentById(R.id.start_autocomplete_fragment);
+        startAutocompleteFragment.setOnPlaceSelectedListener(new PlaceSelectionListener() {
+            @Override
+            public void onPlaceSelected(Place place) {
+                // TODO: Get info about the selected place.
+                start = place.getAddress().toString();
+                Log.i(TAG, "Place - start: " + place.getAddress().toString());
             }
-            Address address = addressList.get(0);
-            LatLng latLng = new LatLng(address.getLatitude(), address.getLongitude());
-            mMap.addMarker(new MarkerOptions().position(latLng).title("Marker"));
-            mMap.animateCamera(CameraUpdateFactory.newLatLng(latLng));
-        }
+
+            @Override
+            public void onError(Status status) {
+                // TODO: Handle the error.
+                Log.i(TAG, "An error occurred: " + status);
+            }
+        });
     }
 
-    public void setStart(View view) {
-        EditText locationSearch = (EditText) findViewById(R.id.startSearchText);
-        String location = locationSearch.getText().toString();
-        List<Address> addressList = null;
-
-        if (location != null || !location.equals("")) {
-            Geocoder geocoder = new Geocoder(this);
-            try {
-                addressList = geocoder.getFromLocationName(location, 1);
-
-            } catch (IOException e) {
-                e.printStackTrace();
+    private void initializeExpandableLayout() {
+        // get the layout
+        ExpandableLayout sectionLinearLayout = (ExpandableLayout) findViewById(R.id.el);
+        // set renderers for parent and child views
+        sectionLinearLayout.setRenderer(new ExpandableLayout.Renderer<Driver, SeatNumber>() {
+            @Override
+            public void renderParent(View view, Driver model, boolean isExpanded, int parentPosition) {
+                ((TextView) view.findViewById(R.id.tvParent)).setText(model.name);
+                view.findViewById(R.id.arrow).setBackgroundResource(isExpanded ? R.drawable.checkbox_fill: R.drawable.checkbox_outlined);
             }
-            Address address = addressList.get(0);
-            LatLng latLng = new LatLng(address.getLatitude(), address.getLongitude());
-            mMap.addMarker(new MarkerOptions().position(latLng).title("Marker"));
-            mMap.animateCamera(CameraUpdateFactory.newLatLng(latLng));
+
+            @Override
+            public void renderChild(View view, SeatNumber model, int parentPosition, int childPosition) {
+                ((TextView) view.findViewById(R.id.tvChild)).setText(model.name);
+            }
+        });
+
+        // create wanted sections - one, to ask for dricving possibility
+        sectionLinearLayout.addSection(getSection());
+
+        //create listeners for expansion or collapse of the layout
+        sectionLinearLayout.setExpandListener((ExpandCollapseListener.ExpandListener<Driver>) (parentIndex, parent, view) -> {
+            // layour expanded = volunteering for driving
+            driver = true;
+        });
+        sectionLinearLayout.setCollapseListener((ExpandCollapseListener.CollapseListener<Driver>) (parentIndex, parent, view) -> {
+            // layout collapsed = don't want to be driver
+            driver = false;
+            seats = -1;
+        });
+    }
+
+    // create a section to be displayed in the ExpandableLayout
+    public Section<Driver, SeatNumber> getSection() {
+        Section<Driver, SeatNumber> Section = new Section<>();
+        Driver Driver = new Driver(parents);
+        SeatNumber seat = new SeatNumber();
+
+        Section.parent = Driver;
+        Section.children.add(seat);
+        Section.expanded = false;
+        return Section;
+    }
+
+    /*
+    Finalize event creation.
+    Gather inputed data from activity fields
+    Communicate with server - send data, receive event identifier
+    Launch new Activity for the event
+    */
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    public void ConcludeCreation(View view){
+        //Gather data
+        String _destination = destination;
+        String _start = start;
+        boolean _driver = driver;
+        int _seats = seats;
+        EditText seatsText = findViewById(R.id.tvChild);
+        boolean emptySeats = TextUtils.isEmpty(seatsText.getText());
+        if(driver) {
+            if (emptySeats) {
+                _seats = 5;
+            } else {
+                _seats = Integer.parseInt(seatsText.getText().toString());
+            }
         }
-    }*/
+
+        //Talk with server
+        //TODO
+
+        //Launch new activity
+        /*Intent intent = new Intent(CreateEventActivity.this, EventActivity.class);
+        startActivity(intent);*/
+    }
+
 }
