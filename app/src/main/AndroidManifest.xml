@@ -54,7 +54,14 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="app.gotogether.MainMenuActivity" />
         </activity>
-        <activity android:name=".EventActivity"></activity>
+        <activity
+            android:name=".EventActivity"
+            android:label="@string/title_activity_event"
+            android:theme="@style/AppTheme">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="app.gotogether.MainMenuActivity" />
+        </activity>
     </application>
 
 </manifest>

@@ -29,6 +29,7 @@
     <string name="seats_in_car">How many available seats in the car?</string>
     <string name="empty_destination">The event\'s destination cannot be empty.</string>
     <string name="empty_start">Your pick-up location cannot be empty.</string>
+    <string name="title_activity_event">Event</string>
 
     <!-- Strings related to Settings -->
 
