@@ -9,6 +9,7 @@ import android.support.annotation.RequiresApi;
 import android.support.constraint.ConstraintLayout;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.text.Html;
 import android.text.Spannable;
 import android.text.SpannableString;
@@ -41,8 +42,8 @@ import expandablelib.gotogether.Section;
 
 import static android.support.constraint.Constraints.TAG;
 
-public class CreateEventActivity //extends FragmentActivity implements OnMapReadyCallback
-extends FragmentActivity{
+public class CreateEventActivity //extends FragmentActivity implements OnMapReadyCallback{
+    extends AppCompatActivity{
 
     private GoogleMap mMap;
     private String parents = "Do you volunteer as a Driver?";
