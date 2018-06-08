@@ -10,9 +10,7 @@
     <string name="error_invalid_password">This password is too short</string>
     <string name="error_incorrect_password">This password is incorrect</string>
     <string name="error_field_required">This field is required</string>
-    <string name="permission_rationale">"Contacts permissions are needed for providing email
-        completions."
-    </string>
+    <string name="permission_rationale">"Contacts permissions are needed for providing email completions."</string>
     <string name="title_activity_main_menu">MainMenuActivity</string>
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
@@ -24,11 +22,13 @@
     <string name="create_event">Create Event</string>
     <string name="manage_events">Manage Events</string>
     <string name="do_you_volunteer_as_a_driver">Do you volunteer as a driver?</string>
-    <string name="question_destination">What is the destination?</string>
-    <string name="question_starting_position">What is your starting position?</string>
+    <string name="question_destination">What is the event\'s destination?</string>
+    <string name="question_starting_position">What is your pick-up location?</string>
     <string name="title_activity_create_event">Create Event</string>
     <string name="set">Set</string>
-    <string name="seats_in_car">How many seats in the car?</string>
+    <string name="seats_in_car">How many available seats in the car?</string>
+    <string name="empty_destination">The event\'s destination cannot be empty.</string>
+    <string name="empty_start">Your pick-up location cannot be empty.</string>
 
     <!-- Strings related to Settings -->
 
