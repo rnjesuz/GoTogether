@@ -6,4 +6,9 @@
         <attr name="childLayout" format="integer" />
     </declare-styleable>
 
+    <!--<declare-styleable name="ExpandableParticipantLayout">
+        <attr name="parentParticipantLayout" format="integer" />
+        <attr name="childParticipantLayout" format="integer" />
+    </declare-styleable>-->
+
 </resources>

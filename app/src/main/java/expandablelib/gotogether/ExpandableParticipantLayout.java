@@ -18,13 +18,14 @@ import android.widget.TextView;
 import java.util.ArrayList;
 import java.util.List;
 
+import app.gotogether.LoginActivity;
 import app.gotogether.R;
 
 /**
  * Created by mertsimsek on 28/07/2017.
  */
 
-public class ExpandableLayout extends LinearLayout {
+public class ExpandableParticipantLayout extends LinearLayout {
 
     public interface Renderer<P, C> {
         void renderParent(View view, P model, boolean isExpanded, int parentPosition);
@@ -64,23 +65,23 @@ public class ExpandableLayout extends LinearLayout {
     //I need this to save current view between layout functions
     View masterView;
 
-    public ExpandableLayout(Context context) {
+    public ExpandableParticipantLayout(Context context) {
         super(context);
         init(context, null);
     }
 
-    public ExpandableLayout(Context context, @Nullable AttributeSet attrs) {
+    public ExpandableParticipantLayout(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
         init(context, attrs);
     }
 
-    public ExpandableLayout(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
+    public ExpandableParticipantLayout(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         init(context, attrs);
     }
 
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
-    public ExpandableLayout(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
+    public ExpandableParticipantLayout(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
         init(context, attrs);
     }
@@ -91,7 +92,6 @@ public class ExpandableLayout extends LinearLayout {
         TypedArray typedArray = null;
         try {
             typedArray = context.obtainStyledAttributes(attributeSet, R.styleable.ExpandableLayout);
-            Log.i("Resource:Parent", String.valueOf(typedArray.getResourceId(R.styleable.ExpandableLayout_parentLayout, NO_RES)));
             parentLayout = typedArray.getResourceId(R.styleable.ExpandableLayout_parentLayout, NO_RES);
             childLayout = typedArray.getResourceId(R.styleable.ExpandableLayout_childLayout, NO_RES);
             layoutInflater = LayoutInflater.from(context);
@@ -123,7 +123,7 @@ public class ExpandableLayout extends LinearLayout {
         return sections;
     }
 
-    /*public <P, C> void addChild(P parent, C child) {
+    public <P, C> void addChild(P parent, C child) {
         int parentIndex = NO_INDEX;
         for (int i = 0; i < sections.size(); i++) {
             if (sections.get(i).parent.equals(parent)) {
@@ -157,7 +157,7 @@ public class ExpandableLayout extends LinearLayout {
                 expand(parent);
             }
         }
-    }*/
+    }
 
     public void filterParent(@NonNull Operation op) {
         for (Section section : getSections()) {
@@ -238,7 +238,7 @@ public class ExpandableLayout extends LinearLayout {
             View childView = layoutInflater.inflate(childLayout, null);
             renderer.renderChild(childView, child, sections.size() - 1, i);
             sectionLayout.addView(childView);
-            childView.setVisibility(View.GONE);
+            childView.setVisibility(section.expanded? View.VISIBLE : View.GONE);
         }
 
         addView(sectionLayout);
@@ -268,7 +268,8 @@ public class ExpandableLayout extends LinearLayout {
                 if (expandListener != null)
                     expandListener.onExpanded(i, sections.get(i).parent, sectionView.getChildAt(0));
 
-                findViewById(R.id.checkbox).setBackgroundResource(R.drawable.checkbox_fill);
+                Log.i("Expand","expanded");
+                findViewById(R.id.arrow).setBackgroundResource(R.drawable.arrow_up);
                 break;
             }
         }
@@ -287,7 +288,8 @@ public class ExpandableLayout extends LinearLayout {
                 if (collapseListener != null)
                     collapseListener.onCollapsed(i, sections.get(i).parent, sectionView.getChildAt(0));
 
-                findViewById(R.id.checkbox).setBackgroundResource(R.drawable.checkbox_outlined);
+                Log.i("Collapse","collapsed");
+                findViewById(R.id.arrow).setBackgroundResource(R.drawable.arrow_down);
                 break;
             }
         }

@@ -1,6 +1,9 @@
 package app.gotogether;
 
+import android.content.Context;
 import android.content.Intent;
+import android.location.Address;
+import android.location.Geocoder;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -13,6 +16,12 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
+
+import com.google.android.gms.maps.model.LatLng;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MainMenuActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
@@ -109,8 +118,72 @@ public class MainMenuActivity extends AppCompatActivity
     }
 
     public void JoinEvent(View view){
+        // Get data from server
+        // TODO
+        // Generate Intent with destination and participants
+        // TODO
+
+
+        Intent intent = new Intent(MainMenuActivity.this, JoinEventActivity.class);
+        // For testing purposes only. TODO Remove!!!
+        intent.putExtra("Destination", createJoinActivityDestinationBundle());
+        intent.putExtra("Participants", createJoinActivityParticipantsBundle());
+
+        startActivity(intent);
     }
 
     public void ManageEvents(View view){
+    }
+
+    /** Get latitude and longitude from the address*/
+    public LatLng getLocationFromAddress(Context context, String strAddress) {
+
+        Geocoder coder = new Geocoder(context);
+        List<Address> address;
+        LatLng p1 = null;
+
+        try {
+            // May throw an IOException
+            address = coder.getFromLocationName(strAddress, 5);
+            if (address == null) {
+                return null;
+            }
+
+            Address location = address.get(0);
+            p1 = new LatLng(location.getLatitude(), location.getLongitude() );
+
+        } catch (IOException ex) {
+
+            ex.printStackTrace();
+        }
+
+        return p1;
+    }
+
+    public Bundle createJoinActivityDestinationBundle(){
+        /*Bundle args = new Bundle();
+        LatLng destinationLatLng = getLocationFromAddress(getApplicationContext(), "R. Cap. Salgueiro Maia, 2725-079 Algueirão- Mem Martins, Portugal");
+        args.putParcelable("destinationLatLng", destinationLatLng);*/
+        /*intent.putExtra("destination", args);
+        intent.putExtra("destinationAddress", "R. Cap. Salgueiro Maia, 2725-079 Algueirão- Mem Martins, Portugal");
+        startActivity(intent);*/
+        Bundle destinationBundle = new Bundle();
+        LatLng destinationLatLng = getLocationFromAddress(getApplicationContext(), "R. Cap. Salgueiro Maia, 2725-079 Algueirão- Mem Martins, Portugal");
+        destinationBundle.putParcelable("destinationLatLng", destinationLatLng);
+        destinationBundle.putString("destinationAddress", "R. Cap. Salgueiro Maia, 2725-079 Algueirão- Mem Martins, Portugal");
+        return destinationBundle;
+    }
+
+    public Bundle createJoinActivityParticipantsBundle(){
+        Bundle participantsBundle = new Bundle();
+        ArrayList<User> participants = new ArrayList<User>();
+        // Dummy user 1
+        User participant1 = new User("Participant1", "Avenida da Républica, Lisboa, Portugal", getLocationFromAddress(getApplicationContext(), "Avenida da Républica, Lisboa, Portugal"), true, 6);
+        // Dummy user 2
+        User participant2 = new User("Participant2", "Instituto Supewrior Técnico", getLocationFromAddress(getApplicationContext(), "Instituto Superior Técnico"), true, 1);
+        participants.add(participant1);
+        participants.add(participant2);
+        participantsBundle.putParcelableArrayList("Participants", participants);
+        return participantsBundle;
     }
 }
