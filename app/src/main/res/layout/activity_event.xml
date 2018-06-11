@@ -52,8 +52,7 @@
             app:layout_constraintStart_toStartOf="parent"
             app:parentLayout="@layout/participant_parent"
             tools:layout_editor_absoluteX="8dp"
-            tools:layout_editor_absoluteY="172dp"
-            />
+            tools:layout_editor_absoluteY="172dp"/>
 
     </ScrollView>
 

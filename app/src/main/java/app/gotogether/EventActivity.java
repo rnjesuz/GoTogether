@@ -1,6 +1,5 @@
 package app.gotogether;
 
-import android.os.Parcelable;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.Html;
@@ -20,7 +19,6 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import java.util.ArrayList;
 
 import expandablelib.gotogether.ExpandCollapseListener;
-import expandablelib.gotogether.ExpandableLayout;
 import expandablelib.gotogether.ExpandableParticipantLayout;
 import expandablelib.gotogether.Section;
 
@@ -46,11 +44,6 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_event);
 
-        // Set up the map fragment
-        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
-                .findFragmentById(R.id.map_event);
-        mapFragment.getMapAsync(this);
-
         // Get destination from Intent
         Bundle destinationBundle = getIntent().getParcelableExtra("Destination");
         destination = destinationBundle.getString("destinationAddress");
@@ -66,6 +59,11 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
 
         // Initialize an ExpandableLayout that opens if user wants to volunteer as driver
         initializeExpandableLayout();
+
+        // Set up the map fragment
+        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.map_event);
+        mapFragment.getMapAsync(this);
     }
 
     @Override
@@ -80,7 +78,6 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
         mDestination.showInfoWindow();
         // User pick-up location marker
         mStart = mMap.addMarker(new MarkerOptions().position(startLatLng).title("Pick-Up").snippet(start).icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
-        mStart.showInfoWindow();
         // Participants markers
         if(participants != null) {
             for (User u : participants) {
@@ -95,12 +92,13 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
 
         // Set a listener for marker click.
         mMap.setOnMarkerClickListener(this);
+        googleMap.getUiSettings().setMapToolbarEnabled(false);
     }
 
     @Override
     public boolean onMarkerClick(Marker marker) {
         // Show Toast with marker location
-        Toast.makeText(this, marker.getTitle() + "\n" + marker.getSnippet(), Toast.LENGTH_SHORT).show();
+        Toast.makeText(this,Html.fromHtml("<b>"+marker.getTitle() + ":</b><br />" + marker.getSnippet()), Toast.LENGTH_SHORT).show();
 
         // Return false to indicate that we have not consumed the event and that we wish
         // for the default behavior to occur (which is for the camera to move such that the
@@ -122,24 +120,37 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
             @Override
             public void renderChild(View view, Constraint model, int parentPosition, int childPosition) {
                 ((TextView) view.findViewById(R.id.constraintTV)).setText(Html.fromHtml(model.constraint));
+                if (model.isFinalChild) // check if it is final child of the layout
+                    view.setBackgroundResource(R.drawable.expandable_bottom_border);
             }
         });
 
         // Create section for each participant. First section is the user
-        sectionLinearLayout.addSection(getUserSection(user)); //starts expanded
+        Section userSection = getSection(user);
+        userSection.expanded = true; // User section starts expanded
+        sectionLinearLayout.addSection(userSection);
         if(participants != null) {
+            Section participantSection;
             for (User participant : participants) {
-                sectionLinearLayout.addSection(getParticipantSection(participant)); // starts collapsed
+                participantSection = getSection(participant);
+                participantSection.expanded = false; // starts collapsed
+                sectionLinearLayout.addSection(participantSection);
             }
         }
 
         //create listeners for expansion or collapse of the layout
-        sectionLinearLayout.setExpandListener((ExpandCollapseListener.ExpandListener<Participant>) (parentIndex, parent, view) -> {        });
-        sectionLinearLayout.setCollapseListener((ExpandCollapseListener.CollapseListener<Participant>) (parentIndex, parent, view) -> {        });
+        sectionLinearLayout.setExpandListener((ExpandCollapseListener.ExpandListener<Participant>) (parentIndex, parent, view) -> {
+            // change arrow drawable
+            view.findViewById(R.id.arrow).setBackgroundResource(R.drawable.arrow_up);
+        });
+        sectionLinearLayout.setCollapseListener((ExpandCollapseListener.CollapseListener<Participant>) (parentIndex, parent, view) -> {
+            // change arrow drawable
+            view.findViewById(R.id.arrow).setBackgroundResource(R.drawable.arrow_down);
+        });
     }
 
-    /** Create a section for the User, to be displayed in the ExpandableLayout */
-    public Section<Participant, Constraint> getUserSection(User u) {
+    /** Create a section, to be displayed in the ExpandableLayout */
+    public Section<Participant, Constraint> getSection(User u) {
         Section<Participant, Constraint> Section = new Section<>();
         Participant user = new Participant(u.getUsername());
         Section.parent = user;
@@ -148,31 +159,15 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
         if (u.isDriver()) {
             Constraint userDriver = new Constraint("<b>Driver:</b> Yes");
             Constraint userSeats = new Constraint("<b>Empty Seats:</b> "+Integer.toString(u.getSeats()));
+            // userSeats.isFinalChild = true; // is the final child of the layout
             Section.children.add(userDriver);
             Section.children.add(userSeats);
         } else{
             Constraint userDriver = new Constraint("<b>Driver:</b> No");
-        }
-        Section.expanded = true;
-        return Section;
-    }
-
-    /** Create a section for the Participant to be displayed in the ExpandableLayout */
-    public Section<Participant, Constraint> getParticipantSection(User p) {
-        Section<Participant, Constraint> Section = new Section<>();
-        Participant user = new Participant(p.getUsername());
-        Section.parent = user;
-        Constraint userPickUp = new Constraint("<b>Pick-up: </b>"+p.getStartAddress());
-        Section.children.add(userPickUp);
-        if (p.isDriver()) {
-            Constraint userDriver = new Constraint("<b>Driver:</b> Yes");
-            Constraint userSeats = new Constraint("<b>Empty Seats:</b> "+Integer.toString(p.getSeats()));
+            // userDriver.isFinalChild = true; // is the final child of the layout
             Section.children.add(userDriver);
-            Section.children.add(userSeats);
-        } else{
-            Constraint userDriver = new Constraint("<b>Driver:</b> No");
         }
-        Section.expanded = false;
+        Section.children.get(Section.children.size()-1).isFinalChild = true; // is the final child of the layout
         return Section;
     }
 }

@@ -8,17 +8,14 @@ import android.support.annotation.LayoutRes;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
-import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import app.gotogether.LoginActivity;
 import app.gotogether.R;
 
 /**
@@ -64,6 +61,8 @@ public class ExpandableParticipantLayout extends LinearLayout {
 
     //I need this to save current view between layout functions
     View masterView;
+
+    //check if im the final child
 
     public ExpandableParticipantLayout(Context context) {
         super(context);
@@ -268,8 +267,6 @@ public class ExpandableParticipantLayout extends LinearLayout {
                 if (expandListener != null)
                     expandListener.onExpanded(i, sections.get(i).parent, sectionView.getChildAt(0));
 
-                Log.i("Expand","expanded");
-                findViewById(R.id.arrow).setBackgroundResource(R.drawable.arrow_up);
                 break;
             }
         }
@@ -288,8 +285,6 @@ public class ExpandableParticipantLayout extends LinearLayout {
                 if (collapseListener != null)
                     collapseListener.onCollapsed(i, sections.get(i).parent, sectionView.getChildAt(0));
 
-                Log.i("Collapse","collapsed");
-                findViewById(R.id.arrow).setBackgroundResource(R.drawable.arrow_down);
                 break;
             }
         }
