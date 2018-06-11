@@ -1,18 +1,23 @@
 package app.gotogether;
 
+import android.annotation.SuppressLint;
+import android.os.Build;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.Html;
 import android.view.View;
+import android.view.ViewTreeObserver;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
@@ -64,6 +69,27 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map_event);
         mapFragment.getMapAsync(this);
+
+
+        final View mapView = getSupportFragmentManager().findFragmentById(R.id.map_event).getView();
+        if (mapView.getViewTreeObserver().isAlive()) {
+            mapView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                @SuppressLint("NewApi") // We check which build version we are using.
+                @Override
+                public void onGlobalLayout() {
+                    LatLngBounds bounds = new LatLngBounds.Builder()
+                            .include(user.getStartLatLng())
+                            .include(destinationLatLng)
+                            .build();
+
+                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN) {
+                        mapView.getViewTreeObserver().removeGlobalOnLayoutListener(this);
+                    } else {
+                        mapView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                    }
+                    mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, 200));
+                }});
+        }
     }
 
     @Override
@@ -71,11 +97,11 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
         mMap = googleMap;
 
         // Move the camera
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(destinationLatLng, 12));
+        //mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(destinationLatLng, 12));
         // Add some markers to the map, and add a data object to each marker.
         // Destination marker
         mDestination = mMap.addMarker(new MarkerOptions().position(destinationLatLng).title("Destination").snippet(destination));
-        mDestination.showInfoWindow();
+        //mDestination.showInfoWindow();
         // User pick-up location marker
         mStart = mMap.addMarker(new MarkerOptions().position(startLatLng).title("Pick-Up").snippet(start).icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
         // Participants markers
@@ -121,7 +147,16 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
             public void renderChild(View view, Constraint model, int parentPosition, int childPosition) {
                 ((TextView) view.findViewById(R.id.constraintTV)).setText(Html.fromHtml(model.constraint));
                 if (model.isFinalChild) // check if it is final child of the layout
+                {
                     view.setBackgroundResource(R.drawable.expandable_bottom_border);
+                }
+                if (model.isSeats)
+                    ((TextView) view.findViewById(R.id.constraintTV)).setCompoundDrawablesWithIntrinsicBounds(R.drawable.baseline_event_seat_24, 0, 0, 0);
+                if (model.isDriver)
+                    ((TextView) view.findViewById(R.id.constraintTV)).setCompoundDrawablesWithIntrinsicBounds(R.drawable.baseline_directions_car_24, 0, 0, 0);
+                if (model.isPickUp)
+                    ((TextView) view.findViewById(R.id.constraintTV)).setCompoundDrawablesWithIntrinsicBounds(R.drawable.baseline_place_24, 0, 0, 0);
+
             }
         });
 
@@ -155,16 +190,18 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
         Participant user = new Participant(u.getUsername());
         Section.parent = user;
         Constraint userPickUp = new Constraint("<b>Pick-up: </b>"+u.getStartAddress());
+        userPickUp.isPickUp = true; // is a pick-up constraint
         Section.children.add(userPickUp);
         if (u.isDriver()) {
             Constraint userDriver = new Constraint("<b>Driver:</b> Yes");
+            userDriver.isDriver = true; // is a driver constraint
             Constraint userSeats = new Constraint("<b>Empty Seats:</b> "+Integer.toString(u.getSeats()));
-            // userSeats.isFinalChild = true; // is the final child of the layout
+            userSeats.isSeats = true; // is a seta number constraint
             Section.children.add(userDriver);
             Section.children.add(userSeats);
         } else{
             Constraint userDriver = new Constraint("<b>Driver:</b> No");
-            // userDriver.isFinalChild = true; // is the final child of the layout
+            userDriver.isDriver = true; // is a driver constraint
             Section.children.add(userDriver);
         }
         Section.children.get(Section.children.size()-1).isFinalChild = true; // is the final child of the layout
