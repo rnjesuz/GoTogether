@@ -69,8 +69,50 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map_event);
         mapFragment.getMapAsync(this);
+    }
 
+    @Override
+    public void onMapReady(GoogleMap googleMap) {
+        mMap = googleMap;
 
+        // Move the camera
+        //mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(destinationLatLng, 12));
+        // Add some markers to the map, and add a data object to each marker.
+        // Participants markers
+        if(participants != null) {
+            for (User u : participants) {
+                mMap.addMarker(new MarkerOptions()
+                        .position(u.getStartLatLng())
+                        .title(u.getUsername())
+                        .snippet(u.getStartAddress())
+                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE))
+                        // Lowest z-index to force marker to bee at bottom when overlapping
+                        .zIndex(0));
+            }
+
+        }
+        // User pick-up location marker
+        mStart = mMap.addMarker(new MarkerOptions()
+                    .position(startLatLng)
+                    .title("Pick-Up")
+                    .snippet(start)
+                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN))
+                    // Second highest z-index. Only lowest to destination marker
+                    .zIndex(1));
+        // Destination marker
+        mDestination = mMap.addMarker(new MarkerOptions()
+                    .position(destinationLatLng)
+                    .title("Destination")
+                    .snippet(destination)
+                    // Highest z-index. Destination is the most important marker
+                    .zIndex(2));
+        //mDestination.showInfoWindow();
+
+        // Set a listener for marker click.
+        mMap.setOnMarkerClickListener(this);
+        googleMap.getUiSettings().setMapToolbarEnabled(false);
+
+        // Center map between pick-up and destination
         final View mapView = getSupportFragmentManager().findFragmentById(R.id.map_event).getView();
         if (mapView.getViewTreeObserver().isAlive()) {
             mapView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
@@ -90,35 +132,6 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
                     mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, 200));
                 }});
         }
-    }
-
-    @Override
-    public void onMapReady(GoogleMap googleMap) {
-        mMap = googleMap;
-
-        // Move the camera
-        //mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(destinationLatLng, 12));
-        // Add some markers to the map, and add a data object to each marker.
-        // Destination marker
-        mDestination = mMap.addMarker(new MarkerOptions().position(destinationLatLng).title("Destination").snippet(destination));
-        //mDestination.showInfoWindow();
-        // User pick-up location marker
-        mStart = mMap.addMarker(new MarkerOptions().position(startLatLng).title("Pick-Up").snippet(start).icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
-        // Participants markers
-        if(participants != null) {
-            for (User u : participants) {
-                mMap.addMarker(new MarkerOptions()
-                        .position(u.getStartLatLng())
-                        .title(u.getUsername())
-                        .snippet(u.getStartAddress())
-                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE)));
-            }
-
-        }
-
-        // Set a listener for marker click.
-        mMap.setOnMarkerClickListener(this);
-        googleMap.getUiSettings().setMapToolbarEnabled(false);
     }
 
     @Override

@@ -24,12 +24,11 @@
     <fragment
         android:id="@+id/destination_autocomplete_fragment_create"
         android:name="com.google.android.gms.location.places.ui.PlaceAutocompleteFragment"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="30dp"
-        android:layout_marginEnd="8dp"
         android:layout_marginStart="8dp"
         android:layout_marginTop="8dp"
-        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/imageButton2"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/destinationTextView" />
 
@@ -50,12 +49,11 @@
     <fragment
         android:id="@+id/start_autocomplete_fragment_create"
         android:name="com.google.android.gms.location.places.ui.PlaceAutocompleteFragment"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="33dp"
-        android:layout_marginEnd="8dp"
         android:layout_marginStart="8dp"
         android:layout_marginTop="8dp"
-        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/imageButton"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/startTextView" />
@@ -99,5 +97,31 @@
     app:layout_constraintEnd_toEndOf="parent"
     app:rippleColor="@android:color/black"
     app:srcCompat="?android:attr/textCheckMarkInverse" />
+
+    <ImageButton
+        android:id="@+id/imageButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="16dp"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/rectangle_roundcorners_border"
+        android:onClick="setMyLocationStart"
+        android:padding="5dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/startTextView"
+        app:srcCompat="@drawable/baseline_my_location_24" />
+
+    <ImageButton
+        android:id="@+id/imageButton2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="16dp"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/rectangle_roundcorners_border"
+        android:onClick="setMyLocationDestination"
+        android:padding="5dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/destinationTextView"
+        app:srcCompat="@drawable/baseline_my_location_24" />
 
 </android.support.constraint.ConstraintLayout>

@@ -31,6 +31,10 @@
     <string name="empty_start">Your pick-up location cannot be empty.</string>
     <string name="title_activity_join_event">Join Event</string>
     <string name="title_activity_event">Event</string>
+    <string name="permission_location_rationale">Location permission is needed to use your last know location in the Events.</string>
+    <string name="ok">OK</string>
+    <string name="permission_available_location">Location Permissions have been granted. Device Location can now be used.</string>
+    <string name="permissions_not_granted">Permissions were not granted.</string>
 
     <!-- Strings related to Settings -->
 
