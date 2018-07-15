@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:fab="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity"
+    android:id="@+id/MainActivityCL">
+
+    <com.github.clans.fab.FloatingActionMenu
+        android:id="@+id/menu_event"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true"
+        android:paddingRight="10dp"
+        android:paddingBottom="10dp"
+        android:paddingLeft="10dp"
+        fab:menu_labels_ellipsize="end"
+        fab:menu_labels_singleLine="true"
+        fab:menu_backgroundColor="#ccffffff"
+        fab:menu_colorNormal="@color/green_normal"
+        fab:menu_colorPressed="@color/green_pressed"
+        fab:menu_colorRipple="@color/green_rippled" >
+
+        <com.github.clans.fab.FloatingActionButton
+            android:id="@+id/event_join"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/baseline_how_to_reg_white_24"
+            fab:fab_size="mini"
+            fab:fab_label="Join"
+            style="@style/MenuButton_Green"
+            />
+
+        <com.github.clans.fab.FloatingActionButton
+            android:id="@+id/event_create"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_edit"
+            fab:fab_size="mini"
+            fab:fab_label="Create"
+            style="@style/MenuButton_Green" />
+
+    </com.github.clans.fab.FloatingActionMenu>
+
+</android.support.constraint.ConstraintLayout>

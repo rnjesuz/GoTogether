@@ -35,6 +35,7 @@
     <string name="ok">OK</string>
     <string name="permission_available_location">Location Permissions have been granted. Device Location can now be used.</string>
     <string name="permissions_not_granted">Permissions were not granted.</string>
+    <string name="title_activity_main">MainActivity</string>
 
     <!-- Strings related to Settings -->
 

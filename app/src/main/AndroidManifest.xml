@@ -52,7 +52,7 @@
             android:theme="@style/AppTheme">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
-                android:value="app.gotogether.MainMenuActivity" />
+                android:value="app.gotogether.MainActivity" />
         </activity>
         <activity
             android:name=".JoinEventActivity"
@@ -60,14 +60,16 @@
             android:theme="@style/AppTheme">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
-                android:value="app.gotogether.MainMenuActivity" />
+                android:value="app.gotogether.MainActivity" />
         </activity>
-        <activity android:name=".EventActivity"
+        <activity
+            android:name=".EventActivity"
             android:label="@string/title_activity_event">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
-                android:value="app.gotogether.MainMenuActivity" />
+                android:value="app.gotogether.MainActivity" />
         </activity>
+        <activity android:name=".MainActivity"></activity>
     </application>
 
 </manifest>
