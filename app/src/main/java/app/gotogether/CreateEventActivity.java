@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.graphics.PorterDuff;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.location.Address;
@@ -21,6 +22,7 @@ import android.support.constraint.ConstraintLayout;
 import android.os.Bundle;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.text.Html;
 import android.text.SpannableString;
@@ -29,12 +31,14 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewGroupOverlay;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.PopupWindow;
 import android.widget.TextView;
 import android.view.ViewGroup.LayoutParams;
@@ -95,6 +99,7 @@ public class CreateEventActivity extends AppCompatActivity implements
     private int emptySeats = -1; // -1 = no car. >0 = how many empty seats
     private boolean mRequestingLocationUpdates = false;
 
+    @SuppressLint("ClickableViewAccessibility")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -104,6 +109,21 @@ public class CreateEventActivity extends AppCompatActivity implements
         initializePlaceAutoCompleteFragments();
         // Initialize an ExpandableLayout that opens if user wants to volunteer as driver
         initializeExpandableLayout();
+        // Detect when completion button is being pressed to change it's tint
+        ImageButton createDone = (ImageButton) findViewById(R.id.create_done);
+        createDone.setOnTouchListener(new View.OnTouchListener(){
+            @SuppressLint("NewApi")
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if(event.getAction() == MotionEvent.ACTION_DOWN) {
+                    createDone.setBackgroundResource(R.drawable.shadow_circle_pressed);
+                } else if (event.getAction() == MotionEvent.ACTION_UP) {
+                    createDone.setBackgroundResource(R.drawable.shadow_circle);
+                    concludeCreation(v);
+                }
+                return true;
+            }
+        });
         // Set location service provider
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
         // Build location request parameters
@@ -287,7 +307,8 @@ public class CreateEventActivity extends AppCompatActivity implements
         cPopupWindow = new PopupWindow(
                 customView,
                 LayoutParams.WRAP_CONTENT,
-                LayoutParams.WRAP_CONTENT
+                LayoutParams.WRAP_CONTENT,
+                true
         );
 
         // Set an elevation value for popup window

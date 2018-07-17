@@ -31,7 +31,7 @@
         android:background="@null"
         android:text="Cancel"
         android:textAllCaps="false"
-        android:textColor="#FF0000"
+        android:textColor="@color/green_complementary"
         app:layout_constraintEnd_toStartOf="@+id/ib_confirm"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/tv" />
@@ -45,7 +45,7 @@
         android:background="@null"
         android:text="Confirm"
         android:textAllCaps="false"
-        android:textColor="#00FF00"
+        android:textColor="@color/green_normal"
         app:layout_constraintBaseline_toBaselineOf="@+id/ib_cancel"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/ib_cancel" />

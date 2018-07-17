@@ -13,34 +13,34 @@
         android:layout_height="match_parent"
         android:layout_alignParentBottom="true"
         android:layout_alignParentRight="true"
-        android:paddingRight="10dp"
-        android:paddingBottom="10dp"
+        android:paddingBottom="24dp"
         android:paddingLeft="10dp"
-        fab:menu_labels_ellipsize="end"
-        fab:menu_labels_singleLine="true"
+        android:paddingRight="8dp"
+        fab:layout_constraintBottom_toBottomOf="parent"
         fab:menu_backgroundColor="#ccffffff"
         fab:menu_colorNormal="@color/green_normal"
         fab:menu_colorPressed="@color/green_pressed"
-        fab:menu_colorRipple="@color/green_rippled" >
+        fab:menu_colorRipple="@color/green_rippled"
+        fab:menu_labels_ellipsize="end"
+        fab:menu_labels_singleLine="true">
 
         <com.github.clans.fab.FloatingActionButton
             android:id="@+id/event_join"
+            style="@style/MenuButton_Green"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:src="@drawable/baseline_how_to_reg_white_24"
-            fab:fab_size="mini"
             fab:fab_label="Join"
-            style="@style/MenuButton_Green"
-            />
+            fab:fab_size="mini" />
 
         <com.github.clans.fab.FloatingActionButton
             android:id="@+id/event_create"
+            style="@style/MenuButton_Green"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:src="@drawable/ic_edit"
-            fab:fab_size="mini"
             fab:fab_label="Create"
-            style="@style/MenuButton_Green" />
+            fab:fab_size="mini" />
 
     </com.github.clans.fab.FloatingActionMenu>
 

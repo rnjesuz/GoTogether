@@ -19,6 +19,7 @@ import android.support.annotation.RequiresApi;
 import android.support.constraint.ConstraintLayout;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.Html;
@@ -26,6 +27,7 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewGroupOverlay;
@@ -92,6 +94,7 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
     private boolean isDriver = false;
     private int emptySeats = -1; // -1 = no car. >0 = how many empty seats
 
+    @SuppressLint("ClickableViewAccessibility")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -100,6 +103,22 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.destinationMap_join);
         mapFragment.getMapAsync(this);
+
+        // Detect when completion button is being pressed to change it's tint
+        ImageButton joinDone = (ImageButton) findViewById(R.id.join_done);
+        joinDone.setOnTouchListener(new View.OnTouchListener(){
+            @SuppressLint("NewApi")
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if(event.getAction() == MotionEvent.ACTION_DOWN) {
+                    joinDone.setBackgroundResource(R.drawable.shadow_circle_pressed);
+                } else if (event.getAction() == MotionEvent.ACTION_UP) {
+                    joinDone.setBackgroundResource(R.drawable.shadow_circle);
+                    concludeCreation(v);
+                }
+                return true;
+            }
+        });
 
         Bundle bundle = getIntent().getParcelableExtra("Destination");
         // Get destination

@@ -33,7 +33,7 @@
         android:background="@null"
         android:text="Cancel"
         android:textAllCaps="false"
-        android:textColor="#FF0000"
+        android:textColor="@color/green_complementary"
         app:layout_constraintEnd_toStartOf="@+id/activity_identifier_confirm"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/activity_identifier_et" />
@@ -47,7 +47,7 @@
         android:background="@null"
         android:text="Join"
         android:textAllCaps="false"
-        android:textColor="#00FF00"
+        android:textColor="@color/green_normal"
         app:layout_constraintBaseline_toBaselineOf="@+id/activity_identifier_cancel"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/activity_identifier_cancel" />
