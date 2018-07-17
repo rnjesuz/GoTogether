@@ -14,12 +14,12 @@ import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Build;
+import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.annotation.RequiresApi;
 import android.support.constraint.ConstraintLayout;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.Html;
@@ -27,10 +27,10 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewGroupOverlay;
+import android.view.animation.AnimationUtils;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -38,6 +38,7 @@ import android.widget.PopupWindow;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.github.clans.fab.FloatingActionButton;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.PendingResult;
@@ -104,22 +105,6 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
                 .findFragmentById(R.id.destinationMap_join);
         mapFragment.getMapAsync(this);
 
-        // Detect when completion button is being pressed to change it's tint
-        ImageButton joinDone = (ImageButton) findViewById(R.id.join_done);
-        joinDone.setOnTouchListener(new View.OnTouchListener(){
-            @SuppressLint("NewApi")
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                if(event.getAction() == MotionEvent.ACTION_DOWN) {
-                    joinDone.setBackgroundResource(R.drawable.shadow_circle_pressed);
-                } else if (event.getAction() == MotionEvent.ACTION_UP) {
-                    joinDone.setBackgroundResource(R.drawable.shadow_circle);
-                    concludeCreation(v);
-                }
-                return true;
-            }
-        });
-
         Bundle bundle = getIntent().getParcelableExtra("Destination");
         // Get destination
         destination = bundle.getString("destinationAddress");
@@ -146,6 +131,7 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
                 }
 
                 Location currentLocation = null;
+                // TODO is this really only 1 location?
                 for (Location location: locationResult.getLocations()) {
                     currentLocation = location;
                 }
@@ -158,6 +144,18 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
 
                 mFusedLocationClient.removeLocationUpdates(mLocationCallback);
             }};
+
+        FloatingActionButton completeEvent = (FloatingActionButton) findViewById(R.id.join_done);
+        completeEvent.setShowAnimation(AnimationUtils.loadAnimation(this, R.anim.fab_scale_up));
+        completeEvent.setHideAnimation(AnimationUtils.loadAnimation(this, R.anim.fab_scale_down));
+        int delay = 1000;
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                completeEvent.show(true);
+            }
+        }, delay);
+
     }
 
 

@@ -11,17 +11,16 @@
         android:id="@+id/menu_event"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true"
+        android:paddingStart="10dp"
+        android:paddingEnd="8dp"
         android:paddingBottom="24dp"
-        android:paddingLeft="10dp"
-        android:paddingRight="8dp"
-        fab:layout_constraintBottom_toBottomOf="parent"
-        fab:menu_backgroundColor="#ccffffff"
+        android:layout_alignParentBottom="true"
         fab:menu_colorNormal="@color/green_normal"
         fab:menu_colorPressed="@color/green_pressed"
         fab:menu_colorRipple="@color/green_rippled"
         fab:menu_labels_ellipsize="end"
+        fab:layout_constraintBottom_toBottomOf="parent"
         fab:menu_labels_singleLine="true">
 
         <com.github.clans.fab.FloatingActionButton

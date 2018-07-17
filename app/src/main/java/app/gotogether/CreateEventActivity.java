@@ -15,6 +15,7 @@ import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Build;
+import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.annotation.RequiresApi;
@@ -35,6 +36,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewGroupOverlay;
+import android.view.animation.AnimationUtils;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -44,6 +46,7 @@ import android.widget.TextView;
 import android.view.ViewGroup.LayoutParams;
 import android.widget.Toast;
 
+import com.github.clans.fab.FloatingActionButton;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.PendingResult;
@@ -109,21 +112,6 @@ public class CreateEventActivity extends AppCompatActivity implements
         initializePlaceAutoCompleteFragments();
         // Initialize an ExpandableLayout that opens if user wants to volunteer as driver
         initializeExpandableLayout();
-        // Detect when completion button is being pressed to change it's tint
-        ImageButton createDone = (ImageButton) findViewById(R.id.create_done);
-        createDone.setOnTouchListener(new View.OnTouchListener(){
-            @SuppressLint("NewApi")
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                if(event.getAction() == MotionEvent.ACTION_DOWN) {
-                    createDone.setBackgroundResource(R.drawable.shadow_circle_pressed);
-                } else if (event.getAction() == MotionEvent.ACTION_UP) {
-                    createDone.setBackgroundResource(R.drawable.shadow_circle);
-                    concludeCreation(v);
-                }
-                return true;
-            }
-        });
         // Set location service provider
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
         // Build location request parameters
@@ -131,6 +119,17 @@ public class CreateEventActivity extends AppCompatActivity implements
                 .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
                 .setInterval(5 * 1000)        // 10 seconds, in milliseconds
                 .setFastestInterval(1 * 1000); // 1 second, in milliseconds
+
+        FloatingActionButton completeEvent = (FloatingActionButton) findViewById(R.id.create_done);
+        completeEvent.setShowAnimation(AnimationUtils.loadAnimation(this, R.anim.fab_scale_up));
+        completeEvent.setHideAnimation(AnimationUtils.loadAnimation(this, R.anim.fab_scale_down));
+        int delay = 1000;
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                completeEvent.show(true);
+            }
+        }, delay);
     }
 
     /** Build callback for new location request
@@ -638,7 +637,7 @@ public class CreateEventActivity extends AppCompatActivity implements
             String locationAddress = getCompleteAddressString(location.getLatitude(), location.getLongitude());
             destination = locationAddress;
             PlaceAutocompleteFragment destinationAutocompleteFragment = (PlaceAutocompleteFragment) getFragmentManager().findFragmentById(R.id.destination_autocomplete_fragment_create);
-            destinationAutocompleteFragment.setText(start);
+            destinationAutocompleteFragment.setText(destination);
         }
     }
 

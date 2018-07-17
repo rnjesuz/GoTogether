@@ -33,7 +33,7 @@ import java.util.List;
 
 public class MainActivity extends  AppCompatActivity {
 
-    private FloatingActionMenu menuRed;
+    private FloatingActionMenu menuEvent;
 
     private List<FloatingActionMenu> menus = new ArrayList<>();
     private Handler mUiHandler = new Handler();
@@ -43,7 +43,7 @@ public class MainActivity extends  AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        menuRed = (FloatingActionMenu) findViewById(R.id.menu_event);
+        menuEvent = (FloatingActionMenu) findViewById(R.id.menu_event);
 
         final FloatingActionButton actionCreate = (FloatingActionButton) findViewById(R.id.event_create);
         actionCreate.setOnClickListener(new View.OnClickListener() {
@@ -61,16 +61,16 @@ public class MainActivity extends  AppCompatActivity {
             }
         });
 
-        menuRed.setClosedOnTouchOutside(true);
-        menuRed.hideMenuButton(false);
+        menuEvent.setClosedOnTouchOutside(true);
+        menuEvent.hideMenuButton(false);
 
-        menus.add(menuRed);
+        menus.add(menuEvent);
 
         int delay = 750;
             mUiHandler.postDelayed(new Runnable() {
                 @Override
                 public void run() {
-                    menuRed.showMenuButton(true);
+                    menuEvent.showMenuButton(true);
                 }
             }, delay);
     }
