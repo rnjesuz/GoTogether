@@ -569,7 +569,11 @@ public class CreateEventActivity extends AppCompatActivity implements
             Log.i(TAG, "LOCATION permission has already been granted.");
             // Check for GPS service
             if (checkGPS()) {
-                Log.i(TAG, "GPS is turned on. Getting last known location");
+                Log.i("Set My Location", "Destination - Getting new location");
+                buildLocationCallBack("destination");
+                mFusedLocationClient.requestLocationUpdates(mLocationRequest, mLocationCallback, null );
+
+                /*Log.i(TAG, "GPS is turned on. Getting last known location");
                 mFusedLocationClient.getLastLocation()
                         .addOnSuccessListener(this, new OnSuccessListener<Location>() {
                             @SuppressLint("MissingPermission")
@@ -583,10 +587,10 @@ public class CreateEventActivity extends AppCompatActivity implements
                                 } else {
                                     Log.i("Set My Location", "Destination - Getting new location");
                                     buildLocationCallBack("destination");
-                                    mFusedLocationClient.requestLocationUpdates(mLocationRequest, mLocationCallback, null /*Looper.myLooper()*/);
+                                    mFusedLocationClient.requestLocationUpdates(mLocationRequest, mLocationCallback, null);
                                 }
                             }
-                        });
+                        });*/
             }
         }
 
@@ -603,7 +607,11 @@ public class CreateEventActivity extends AppCompatActivity implements
             // Location permissions is already available, use last known location.
             Log.i(TAG, "LOCATION permission has already been granted. Using last know location.");
             if (checkGPS()) {
-                Log.i(TAG, "GPS is turned on. Getting last known location");
+                Log.i("Set My Location", "Start - Getting new location");
+                buildLocationCallBack("start");
+                mFusedLocationClient.requestLocationUpdates(mLocationRequest, mLocationCallback, null);
+
+                /*Log.i(TAG, "GPS is turned on. Getting last known location");
                 mFusedLocationClient.getLastLocation()
                         .addOnSuccessListener(this, new OnSuccessListener<Location>() {
                             @SuppressLint("MissingPermission")
@@ -617,10 +625,10 @@ public class CreateEventActivity extends AppCompatActivity implements
                                 } else {
                                     Log.i("Set My Location", "Start - Getting new location");
                                     buildLocationCallBack("start");
-                                    mFusedLocationClient.requestLocationUpdates(mLocationRequest, mLocationCallback, null /*Looper.myLooper()*/);
+                                    mFusedLocationClient.requestLocationUpdates(mLocationRequest, mLocationCallback, null);
                                 }
                             }
-                        });
+                        });*/
             }
         }
 

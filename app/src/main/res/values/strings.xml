@@ -36,6 +36,11 @@
     <string name="permission_available_location">Location Permissions have been granted. Device Location can now be used.</string>
     <string name="permissions_not_granted">Permissions were not granted.</string>
     <string name="title_activity_main">MainActivity</string>
+    <string name="event_image">Event Image</string>
+    <string name="title">Title</string>
+    <string name="destination">Destination</string>
+    <string name="participants">Participants</string>
+    <string name="edit">Edit</string>
 
     <!-- Strings related to Settings -->
 

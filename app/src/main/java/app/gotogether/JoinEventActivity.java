@@ -118,11 +118,31 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
         // Set location service provider
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
         // Build location request parameters
+        buildLocationRequest();
+
+        FloatingActionButton completeEvent = (FloatingActionButton) findViewById(R.id.join_done);
+        completeEvent.setShowAnimation(AnimationUtils.loadAnimation(this, R.anim.fab_scale_up));
+        completeEvent.setHideAnimation(AnimationUtils.loadAnimation(this, R.anim.fab_scale_down));
+        int delay = 1000;
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                completeEvent.show(true);
+            }
+        }, delay);
+
+    }
+
+    private void buildLocationRequest() {
         mLocationRequest = LocationRequest.create()
                 .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
                 .setInterval(5 * 1000)        // 10 seconds, in milliseconds
                 .setFastestInterval(1 * 1000); // 1 second, in milliseconds
         // Build callback for new location request
+        buildLocationCalback();
+    }
+
+    private void buildLocationCalback() {
         mLocationCallback = new LocationCallback(){
             @Override
             public void onLocationResult(LocationResult locationResult) {
@@ -137,25 +157,13 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
                 }
 
                 // Get an address for the location and write it in the AutoComplete fragment
-                String locationAddress = getCompleteAddressString(currentLocation.getLatitude(), currentLocation.getLongitude());
-                start = locationAddress;
+                start = getCompleteAddressString(currentLocation.getLatitude(), currentLocation.getLongitude());
                 PlaceAutocompleteFragment startAutocompleteFragment = (PlaceAutocompleteFragment) getFragmentManager().findFragmentById(R.id.start_autocomplete_fragment_join);
                 startAutocompleteFragment.setText(start);
 
+                // Remove continuous location updates after we get current location
                 mFusedLocationClient.removeLocationUpdates(mLocationCallback);
             }};
-
-        FloatingActionButton completeEvent = (FloatingActionButton) findViewById(R.id.join_done);
-        completeEvent.setShowAnimation(AnimationUtils.loadAnimation(this, R.anim.fab_scale_up));
-        completeEvent.setHideAnimation(AnimationUtils.loadAnimation(this, R.anim.fab_scale_down));
-        int delay = 1000;
-        new Handler().postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                completeEvent.show(true);
-            }
-        }, delay);
-
     }
 
 
@@ -212,12 +220,12 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
             }
         });
 
-        // create wanted sections - one, to ask for dricving possibility
+        // create wanted sections - one, to ask for driving possibility
         sectionLinearLayout.addSection(getSection());
 
         //create listeners for expansion or collapse of the layout
         sectionLinearLayout.setExpandListener((ExpandCollapseListener.ExpandListener<Driver>) (parentIndex, parent, view) -> {
-            // layour expanded = volunteering for driving
+            // layout expanded = volunteering for driving
             isDriver = true;
         });
         sectionLinearLayout.setCollapseListener((ExpandCollapseListener.CollapseListener<Driver>) (parentIndex, parent, view) -> {
@@ -562,7 +570,10 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
             Log.i(TAG, "LOCATION permission has already been granted.");
             // Check for GPS service
             if(checkGPS()) {
-                Log.i(TAG, "GPS is turned on. Getting last known location");
+                Log.i("Set My Location", "Getting new location");
+                mFusedLocationClient.requestLocationUpdates(mLocationRequest, mLocationCallback, null );
+
+                /*Log.i(TAG, "GPS is turned on. Getting last known location");
                 mFusedLocationClient.getLastLocation()
                         .addOnSuccessListener(this, new OnSuccessListener<Location>() {
                             @SuppressLint("MissingPermission")
@@ -577,10 +588,12 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
                                     startAutocompleteFragment.setText(start);
                                 } else {
                                     Log.i("Set My Location", "Getting new location");
-                                    mFusedLocationClient.requestLocationUpdates(mLocationRequest, mLocationCallback, null /*Looper.myLooper()*/);
+                                    mFusedLocationClient.requestLocationUpdates(mLocationRequest, mLocationCallback, null );
                                 }
                             }
-                        });
+                        });*/
+
+
             }
         }
 

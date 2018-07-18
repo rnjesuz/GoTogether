@@ -19,7 +19,6 @@
             android:name="com.google.android.gms.maps.SupportMapFragment"
             android:layout_width="match_parent"
             android:layout_height="233dp"
-            android:layout_marginTop="24dp"
             android:layout_weight="1"
             map:layout_constraintTop_toTopOf="parent"
             map:uiRotateGestures="true"
@@ -33,16 +32,16 @@
             android:layout_height="wrap_content"
             app:childLayout="@layout/participant_child"
             app:parentLayout="@layout/participant_parent"
-        android:layout_marginTop="8dp"
-        android:layout_marginBottom="24dp"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
-        app:layout_constraintTop_toBottomOf="@+id/map_event"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintVertical_bias="0.0"
-        app:layout_constraintHorizontal_bias="0.0" />
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="24dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            app:layout_constraintTop_toBottomOf="@+id/map_event"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintVertical_bias="0.0"
+            app:layout_constraintHorizontal_bias="0.0" />
 
     </android.support.constraint.ConstraintLayout>
 </ScrollView>

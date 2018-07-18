@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/white"
+    android:elevation="2dp">
+
+    <ImageView
+        android:id="@+id/eventImg"
+        android:layout_width="55dp"
+        android:layout_height="55dp"
+        android:layout_alignParentStart="true"
+        android:contentDescription="@string/event_image"
+        android:layout_marginTop="10dp"
+        android:layout_marginStart="15dp"
+        />
+
+    <LinearLayout
+        android:id="@+id/infoSection"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_toEndOf="@id/eventImg"
+        android:orientation="vertical"
+        android:layout_marginTop="10dp"
+        android:layout_marginStart="10dp">
+
+        <TextView
+            android:id="@+id/titleView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginBottom="10dp"
+            android:layout_marginEnd="10dp"
+            android:drawablePadding="5dp"
+            android:drawableStart="@drawable/baseline_title_24"
+            android:singleLine="true"
+            android:text="@string/title"
+            android:gravity="center_vertical"/>
+
+        <TextView
+            android:id="@+id/destinationView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginBottom="10dp"
+            android:layout_marginEnd="10dp"
+            android:drawablePadding="5dp"
+            android:drawableStart="@drawable/baseline_location_on_24"
+            android:singleLine="true"
+            android:text="@string/destination"
+            android:gravity="center_vertical"/>
+    </LinearLayout>
+
+    <View
+        android:id="@+id/dividerView"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_below="@id/infoSection"
+        android:background="@android:color/darker_gray"
+        android:layout_marginStart="15dp"
+        android:layout_marginEnd="15dp"/>
+
+    <LinearLayout
+        android:id="@+id/participantSection"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/dividerView"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginTop="5dp"
+        android:layout_marginBottom="5dp">
+
+        <TextView
+            android:id="@+id/participantsView"
+            android:layout_width="wrap_content"
+            android:layout_weight=".70"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="15dp"
+            android:layout_marginEnd="15dp"
+            android:text="@string/participants"
+            android:drawableStart="@drawable/baseline_group_24"
+            android:layout_gravity="center"
+            android:singleLine="true"
+            android:drawablePadding="5dp"
+            android:gravity="center_vertical"/>
+
+        <!-- <TextView
+            android:id="@+id/editView"
+            android:layout_width="0dp"
+            android:layout_weight=".30"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="15dp"
+            android:layout_marginStart="15dp"
+            android:text="@string/edit"
+            android:drawableStart="@drawable/baseline_edit_24"
+            android:layout_gravity="center"
+            android:singleLine="true"
+            android:drawablePadding="5dp"
+            android:gravity="center_vertical"/> -->
+        
+        <Button
+            android:id="@+id/editButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="15dp"
+            android:layout_marginStart="15dp"
+            android:text="@string/edit"
+            android:drawableStart="@drawable/baseline_edit_24"
+            android:singleLine="true"
+            android:textAllCaps="false"
+            android:backgroundTint="@color/white"
+            android:stateListAnimator="@null"
+            android:textAppearance="@style/Base.TextAppearance.AppCompat.Small"/>
+    </LinearLayout>
+
+    <!--<View
+        android:id="@+id/topDividerView"
+        android:layout_width="match_parent"
+        android:layout_height="10dp"
+        android:layout_below="@id/participantSection"
+        android:background="#ebebeb" />-->
+
+</RelativeLayout>

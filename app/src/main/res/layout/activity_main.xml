@@ -1,26 +1,51 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:fab="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".MainActivity"
-    android:id="@+id/MainActivityCL">
+    android:id="@+id/MainActivityCL"
+    android:background="#E8E8E8"
+    android:orientation="vertical">
+
+    <!--<android.support.constraint.ConstraintLayout
+            android:id="@+id/EventList"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp">
+    </android.support.constraint.ConstraintLayout>
+
+    android:background="#ebebeb" "#faf7f5"-->
+
+    <ListView
+        android:id="@+id/EventList"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:divider="@android:color/transparent"
+        android:dividerHeight="20dp"
+        android:paddingBottom="100dp"
+        android:paddingTop="10dp"
+        android:clipToPadding="false"
+        android:scrollbars="none"
+        />
 
     <com.github.clans.fab.FloatingActionMenu
         android:id="@+id/menu_event"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:layout_alignParentEnd="true"
-        android:paddingStart="10dp"
-        android:paddingEnd="8dp"
-        android:paddingBottom="24dp"
         android:layout_alignParentBottom="true"
+        android:paddingBottom="16dp"
+        android:paddingEnd="16dp"
+        android:paddingStart="16dp"
+        fab:layout_constraintBottom_toBottomOf="parent"
         fab:menu_colorNormal="@color/green_normal"
         fab:menu_colorPressed="@color/green_pressed"
         fab:menu_colorRipple="@color/green_rippled"
         fab:menu_labels_ellipsize="end"
-        fab:layout_constraintBottom_toBottomOf="parent"
         fab:menu_labels_singleLine="true">
 
         <com.github.clans.fab.FloatingActionButton
@@ -43,4 +68,5 @@
 
     </com.github.clans.fab.FloatingActionMenu>
 
-</android.support.constraint.ConstraintLayout>
+
+</RelativeLayout>

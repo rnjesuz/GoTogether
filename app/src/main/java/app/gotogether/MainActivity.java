@@ -10,7 +10,7 @@ import android.location.Geocoder;
 import android.os.Build;
 import android.os.Handler;
 import android.support.annotation.NonNull;
-import android.support.constraint.ConstraintLayout;
+import android.support.annotation.RequiresApi;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.Gravity;
@@ -18,9 +18,15 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewGroupOverlay;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.ListView;
 import android.widget.PopupWindow;
+import android.widget.RelativeLayout;
+import android.widget.ScrollView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.github.clans.fab.FloatingActionButton;
@@ -31,9 +37,12 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import static android.content.Context.LAYOUT_INFLATER_SERVICE;
+
 public class MainActivity extends  AppCompatActivity {
 
     private FloatingActionMenu menuEvent;
+    private ArrayList<Event> eventList = new ArrayList<>();
 
     private List<FloatingActionMenu> menus = new ArrayList<>();
     private Handler mUiHandler = new Handler();
@@ -73,6 +82,41 @@ public class MainActivity extends  AppCompatActivity {
                     menuEvent.showMenuButton(true);
                 }
             }, delay);
+
+            testPopulate();
+    }
+
+    private void testPopulate() {
+
+        // Create our events
+        eventList.add(new Event("yoooo", "wassuppp", 10, "ic_launcher_round"));
+        eventList.add(new Event("ooooy", "bleeeee", 5, "ic_launcher_round"));
+        eventList.add(new Event("rsrsrsrs", "mekieeee", 100, "ic_launcher_round"));
+        eventList.add(new Event("yoooo", "wassuppp", 10, "ic_launcher_round"));
+        eventList.add(new Event("ooooy", "bleeeee", 5, "ic_launcher_round"));
+        eventList.add(new Event("rsrsrsrs", "mekieeee", 100, "ic_launcher_round"));
+        // Create our new array adapter
+        ArrayAdapter<Event> adapter = new EventArrayAdapter(this, 0, eventList);
+        // Find list view and bind it with the custom adapter
+        ListView listView = (ListView) findViewById(R.id.EventList);
+        listView.setAdapter(adapter);
+
+
+        /*eventList.add(new Event("yoooo", "wassuppp", 10, "ic_launcher_round"));
+        eventList.add(new Event("ooooy", "bleeeee", 5, "ic_launcher_round"));
+        eventList.add(new Event("rsrsrsrs", "mekieeee", 100, "ic_launcher_round"));
+
+        ScrollView cl = (ScrollView) findViewById(R.id.MainActivityCL);
+
+        LinearLayout ll =  new LinearLayout(this);
+        TextView title = ll.findViewById(R.id.titleView);
+        title.setText("yooooo");
+        TextView destination = ll.findViewById(R.id.destinationView);
+        destination.setText("wasssup");
+        TextView participants = ll.findViewById(R.id.participantsView);
+        participants.setText(Integer.toString(30)+" participants");
+        cl.addView(ll);*/
+
     }
 
     // Onclick() of Create Event button
@@ -82,7 +126,7 @@ public class MainActivity extends  AppCompatActivity {
     }
 
     private void createJoinPopUpWindow() {
-        ConstraintLayout mConstraintLayout = (ConstraintLayout) findViewById(R.id.MainActivityCL);
+        RelativeLayout mConstraintLayout = (RelativeLayout) findViewById(R.id.MainActivityCL);
         PopupWindow cPopupWindow;
         // Initialize a new instance of LayoutInflater service
         LayoutInflater inflater = (LayoutInflater) getApplicationContext().getSystemService(LAYOUT_INFLATER_SERVICE);
@@ -294,4 +338,59 @@ public class MainActivity extends  AppCompatActivity {
         ViewGroupOverlay overlay = parent.getOverlay();
         overlay.clear();
     }
+
 }
+
+class EventArrayAdapter extends ArrayAdapter<Event> {
+
+    private Context context;
+    private List<Event> eventList;
+
+    // Constructor
+    public EventArrayAdapter(@NonNull Context context, int resource, @NonNull ArrayList<Event> objects) {
+        super(context, resource, objects);
+
+        this.context = context;
+        this.eventList = objects;
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.M)
+    public View getView(int position, View convertView, ViewGroup parent) {
+
+        //get the property we are displaying
+        Event event = eventList.get(position);
+
+        //get the inflater and inflate the XML layout for each item
+        LayoutInflater inflater = (LayoutInflater) context.getSystemService(LAYOUT_INFLATER_SERVICE);
+        View view = inflater.inflate(R.layout.event_layout, null);
+
+        TextView title = (TextView) view.findViewById(R.id.titleView);
+        TextView destination = (TextView) view.findViewById(R.id.destinationView);
+        TextView participants = (TextView) view.findViewById(R.id.participantsView);
+        ImageView image = (ImageView) view.findViewById(R.id.eventImg);
+
+        //TODO
+        title.setText(event.getTitle());
+
+        //TODO
+        destination.setText(event.getDestination());
+
+        //TODO
+        participants.setText(Integer.toString(event.getParticipants()) + " participants");
+
+        //display trimmed excerpt for description
+        /*int descriptionLength = property.getDescription().length();
+        if(descriptionLength >= 100){
+            String descriptionTrim = property.getDescription().substring(0, 100) + "...";
+            description.setText(descriptionTrim);
+        }else{
+            description.setText(property.getDescription());
+        }*/
+
+
+        //get the image associated with this property
+        int imageID = context.getResources().getIdentifier(event.getImage(), "mipmap", context.getPackageName());
+        image.setImageResource(imageID);
+
+        return view;
+    }}
