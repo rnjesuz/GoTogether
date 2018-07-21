@@ -25,7 +25,7 @@ import app.gotogether.R;
 public class ExpandableParticipantLayout extends LinearLayout {
 
     public interface Renderer<P, C> {
-        void renderParent(View view, P model, boolean isExpanded, int parentPosition);
+        void renderParent(View view, P model, boolean isExpanded, boolean isUser, int parentPosition);
 
         void renderChild(View view, C model, int parentPosition, int childPosition);
     }
@@ -228,7 +228,7 @@ public class ExpandableParticipantLayout extends LinearLayout {
             }
         });
         masterView = parentView;
-        renderer.renderParent(parentView, section.parent, section.expanded, sections.size() - 1);
+        renderer.renderParent(parentView, section.parent, section.expanded, section.user, sections.size() - 1);
         sectionLayout.addView(parentView);
 
 
@@ -250,7 +250,7 @@ public class ExpandableParticipantLayout extends LinearLayout {
         ViewGroup viewGroup = (ViewGroup) getChildAt(position);
         if (viewGroup != null && viewGroup.getChildCount() > 0) {
             View parentView = viewGroup.getChildAt(0);
-            renderer.renderParent(parentView, sections.get(position).parent, sections.get(position).expanded, position);
+            renderer.renderParent(parentView, sections.get(position).parent, sections.get(position).expanded, sections.get(position).user, position);
         }
     }
 

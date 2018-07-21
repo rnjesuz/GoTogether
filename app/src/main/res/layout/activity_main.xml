@@ -20,22 +20,29 @@
 
     android:background="#ebebeb" "#faf7f5"-->
 
-    <ListView
-        android:id="@+id/EventList"
+    <android.support.v4.widget.SwipeRefreshLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:id="@+id/swipe_refresh"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:divider="@android:color/transparent"
-        android:dividerHeight="20dp"
-        android:paddingBottom="100dp"
-        android:paddingTop="10dp"
-        android:clipToPadding="false"
-        android:scrollbars="none"
-        />
+        android:layout_height="match_parent">
+
+        <ListView
+            android:id="@+id/EventList"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:divider="@android:color/transparent"
+            android:dividerHeight="20dp"
+            android:paddingBottom="100dp"
+            android:paddingTop="10dp"
+            android:clipToPadding="false"
+            android:scrollbars="none"
+            />
+    </android.support.v4.widget.SwipeRefreshLayout>
 
     <com.github.clans.fab.FloatingActionMenu
         android:id="@+id/menu_event"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
         android:layout_alignParentEnd="true"
         android:layout_alignParentBottom="true"
         android:paddingBottom="16dp"
@@ -46,7 +53,8 @@
         fab:menu_colorPressed="@color/green_pressed"
         fab:menu_colorRipple="@color/green_rippled"
         fab:menu_labels_ellipsize="end"
-        fab:menu_labels_singleLine="true">
+        fab:menu_labels_singleLine="true"
+        fab:menu_backgroundColor="#88FFFFFF">
 
         <com.github.clans.fab.FloatingActionButton
             android:id="@+id/event_join"
@@ -64,6 +72,15 @@
             android:layout_height="wrap_content"
             android:src="@drawable/ic_edit"
             fab:fab_label="Create"
+            fab:fab_size="mini" />
+
+        <com.github.clans.fab.FloatingActionButton
+            android:id="@+id/event_test"
+            style="@style/MenuButton_Green"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_edit"
+            fab:fab_label=""
             fab:fab_size="mini" />
 
     </com.github.clans.fab.FloatingActionMenu>

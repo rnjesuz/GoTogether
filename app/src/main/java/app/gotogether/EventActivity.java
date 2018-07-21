@@ -1,12 +1,15 @@
 package app.gotogether;
 
 import android.annotation.SuppressLint;
+import android.graphics.Typeface;
 import android.os.Build;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.Html;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -150,37 +153,59 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
         ExpandableParticipantLayout sectionLinearLayout = (ExpandableParticipantLayout) findViewById(R.id.el_event);
         // set renderers for parent and child views
         sectionLinearLayout.setRenderer(new ExpandableParticipantLayout.Renderer<Participant, Constraint>() {
+            @SuppressLint("ResourceAsColor")
             @Override
-            public void renderParent(View view, Participant model, boolean isExpanded, int parentPosition) {
-                ((TextView) view.findViewById(R.id.tvParentParticipant)).setText(model.username);
-                view.findViewById(R.id.arrow).setBackgroundResource(isExpanded ? R.drawable.arrow_up: R.drawable.arrow_down);
+            public void renderParent(View view, Participant model, boolean isExpanded, boolean isUser, int parentPosition) {
+                TextView User = ((TextView) view.findViewById(R.id.tvParentParticipant));
+                User.setText(model.username);
+                view.findViewById(R.id.arrow).setBackgroundResource(isExpanded ? R.drawable.arrow_up : R.drawable.arrow_down);
+                // For the Logged in User of the app change the layout colors
+                if (isUser) {
+                    view.findViewById(R.id.participantLayout).setBackgroundResource(R.drawable.expandable_participant_parent_border_green);
+                    User.setTextColor(getResources().getColor(R.color.white));
+                    User.setTypeface(null, Typeface.BOLD);
+                    view.findViewById(R.id.arrow).setBackgroundResource(R.drawable.arrow_up_white);
+                }
             }
 
             @Override
             public void renderChild(View view, Constraint model, int parentPosition, int childPosition) {
-                ((TextView) view.findViewById(R.id.constraintTV)).setText(Html.fromHtml(model.constraint));
+                TextView tv = (TextView) view.findViewById(R.id.constraintTV);
+                tv.setText(Html.fromHtml(model.constraint));
                 if (model.isFinalChild) // check if it is final child of the layout
                 {
                     view.setBackgroundResource(R.drawable.expandable_bottom_border);
                 }
-                if (model.isSeats)
-                    ((TextView) view.findViewById(R.id.constraintTV)).setCompoundDrawablesWithIntrinsicBounds(R.drawable.baseline_event_seat_24, 0, 0, 0);
-                if (model.isDriver)
-                    ((TextView) view.findViewById(R.id.constraintTV)).setCompoundDrawablesWithIntrinsicBounds(R.drawable.baseline_directions_car_24, 0, 0, 0);
-                if (model.isPickUp)
-                    ((TextView) view.findViewById(R.id.constraintTV)).setCompoundDrawablesWithIntrinsicBounds(R.drawable.baseline_place_24, 0, 0, 0);
-
+                if (model.isSeats){
+                    tv.setCompoundDrawablesWithIntrinsicBounds(R.drawable.baseline_event_seat_24, 0, 0, 0);
+                    RelativeLayout.LayoutParams params = (RelativeLayout.LayoutParams)tv.getLayoutParams();
+                    params.setMargins(25,0,25,25);
+                    tv.setLayoutParams(params);
+                }
+                if (model.isDriver) {
+                    tv.setCompoundDrawablesWithIntrinsicBounds(R.drawable.baseline_directions_car_24, 0, 0, 0);
+                    RelativeLayout.LayoutParams params = (RelativeLayout.LayoutParams)tv.getLayoutParams();
+                    params.setMargins(25,0,25,25);
+                    tv.setLayoutParams(params);
+                }
+                if (model.isPickUp) {
+                    tv.setCompoundDrawablesWithIntrinsicBounds(R.drawable.baseline_place_24, 0, 0, 0);
+                    RelativeLayout.LayoutParams params = (RelativeLayout.LayoutParams)tv.getLayoutParams();
+                    params.setMargins(25,25,25,25);
+                    tv.setLayoutParams(params);
+                }
             }
         });
 
         // Create section for each participant. First section is the user
-        Section userSection = getSection(user);
+        Section userSection = getSection(user, true);
         userSection.expanded = true; // User section starts expanded
+        userSection.user = true; // Indication that this is the section corresponding to the User
         sectionLinearLayout.addSection(userSection);
         if(participants != null) {
             Section participantSection;
             for (User participant : participants) {
-                participantSection = getSection(participant);
+                participantSection = getSection(participant, false);
                 participantSection.expanded = false; // starts collapsed
                 sectionLinearLayout.addSection(participantSection);
             }
@@ -189,18 +214,24 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
         //create listeners for expansion or collapse of the layout
         sectionLinearLayout.setExpandListener((ExpandCollapseListener.ExpandListener<Participant>) (parentIndex, parent, view) -> {
             // change arrow drawable
-            view.findViewById(R.id.arrow).setBackgroundResource(R.drawable.arrow_up);
+            if (parent.isUser)
+                view.findViewById(R.id.arrow).setBackgroundResource(R.drawable.arrow_up_white);
+            else
+                view.findViewById(R.id.arrow).setBackgroundResource(R.drawable.arrow_up);
         });
         sectionLinearLayout.setCollapseListener((ExpandCollapseListener.CollapseListener<Participant>) (parentIndex, parent, view) -> {
             // change arrow drawable
-            view.findViewById(R.id.arrow).setBackgroundResource(R.drawable.arrow_down);
+            if (parent.isUser)
+                view.findViewById(R.id.arrow).setBackgroundResource(R.drawable.arrow_down_white);
+            else
+                view.findViewById(R.id.arrow).setBackgroundResource(R.drawable.arrow_down);
         });
     }
 
     /** Create a section, to be displayed in the ExpandableLayout */
-    public Section<Participant, Constraint> getSection(User u) {
+    public Section<Participant, Constraint> getSection(User u, boolean isUser) {
         Section<Participant, Constraint> Section = new Section<>();
-        Participant user = new Participant(u.getUsername());
+        Participant user = new Participant(u.getUsername(), isUser);
         Section.parent = user;
         Constraint userPickUp = new Constraint("<b>Pick-up: </b>"+u.getStartAddress());
         userPickUp.isPickUp = true; // is a pick-up constraint

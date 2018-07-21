@@ -13,6 +13,8 @@ import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationManager;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Build;
 import android.os.Handler;
 import android.support.annotation.NonNull;
@@ -55,6 +57,7 @@ import com.google.android.gms.location.LocationSettingsStatusCodes;
 import com.google.android.gms.location.places.Place;
 import com.google.android.gms.location.places.ui.PlaceAutocompleteFragment;
 import com.google.android.gms.location.places.ui.PlaceSelectionListener;
+import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -100,6 +103,7 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_join_event);
+        getSupportActionBar().setHomeAsUpIndicator(R.drawable.ic_close); // change the return to parent button
 
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.destinationMap_join);
@@ -180,7 +184,8 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
         mMap = googleMap;
 
         // Move the camera
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(destinationLatLng, 12));
+        CameraUpdate cu = CameraUpdateFactory.newLatLngZoom(destinationLatLng, 12);
+        mMap.moveCamera(cu);
         // Add some markers to the map, and add a data object to each marker.
         //Bitmap img = BitmapFactory.decodeResource(getResources(),R.drawable.destination_png); // new icon
         //BitmapDescriptor bitmapDescriptor = BitmapDescriptorFactory.fromBitmap(img);
@@ -570,8 +575,9 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
             Log.i(TAG, "LOCATION permission has already been granted.");
             // Check for GPS service
             if(checkGPS()) {
-                Log.i("Set My Location", "Getting new location");
-                mFusedLocationClient.requestLocationUpdates(mLocationRequest, mLocationCallback, null );
+                if (checkConnectivity()) {
+                    Log.i("Set My Location", "Getting new location");
+                    mFusedLocationClient.requestLocationUpdates(mLocationRequest, mLocationCallback, null);
 
                 /*Log.i(TAG, "GPS is turned on. Getting last known location");
                 mFusedLocationClient.getLastLocation()
@@ -593,10 +599,24 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
                             }
                         });*/
 
-
+                }
+                else {
+                    Toast.makeText(JoinEventActivity.this,"No Internet connection detected.",Toast.LENGTH_SHORT).show();
+                }
             }
         }
 
+    }
+
+    private boolean checkConnectivity(){
+        ConnectivityManager cm =
+                (ConnectivityManager)getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
+
+        NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+        boolean isConnected = activeNetwork != null &&
+                activeNetwork.isConnectedOrConnecting();
+
+        return isConnected;
     }
 
     private boolean checkGPS() {
