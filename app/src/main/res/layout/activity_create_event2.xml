@@ -26,60 +26,75 @@
         android:paddingBottom="8dp"
         android:paddingTop="8dp"
         android:background="@color/green_normal"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:gravity="center">
 
-    <Button
-        android:id="@+id/start_autocomplete"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginEnd="8dp"
-        android:layout_marginStart="8dp"
-        android:text="@string/question_starting_position"
-        android:background="@color/white"/>
+        <TextView
+            android:id="@+id/destination_autocomplete"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/question_destination"
+            android:layout_marginEnd="8dp"
+            android:layout_marginStart="8dp"
+            android:clickable="true"
+            android:onClick="DestinationAutoComplete"
+            android:focusable="true"
+            android:background="@color/white"
+            android:foreground="?android:attr/selectableItemBackground"
+            android:drawableStart="@drawable/create_locations_drawable"
+            />
 
         <View
             android:id="@+id/dividerView"
             android:layout_width="match_parent"
             android:layout_height="1dp"
-            android:layout_below="@id/infoSection"
             android:background="@android:color/darker_gray"
             android:layout_marginStart="8dp"
             android:layout_marginEnd="8dp" />
 
-    <Button
-        android:id="@+id/destination_autocomplete"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/question_destination"
-        android:layout_marginEnd="8dp"
-        android:layout_marginStart="8dp"
-        android:background="@color/white"/>
+        <TextView
+            android:id="@+id/start_autocomplete"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:layout_marginStart="8dp"
+            android:text="@string/question_starting_position"
+            android:clickable="true"
+            android:onClick="StartAutoComplete"
+            android:focusable="true"
+            android:background="@color/white"
+            android:foreground="?android:attr/selectableItemBackground" />
 
         <View
             android:id="@+id/dividerView2"
             android:layout_width="match_parent"
             android:layout_height="1dp"
-            android:layout_below="@id/infoSection"
             android:background="@android:color/darker_gray"
             android:layout_marginStart="8dp"
             android:layout_marginEnd="8dp" />
 
-        <Button
+        <TextView
+            android:id="@+id/driver_question"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:id="@+id/button_question"
+            android:text="Do you volunteer as a driver?"
             android:layout_marginEnd="8dp"
             android:layout_marginStart="8dp"
-            android:background="@color/white"/>
+            android:clickable="true"
+            android:onClick="DriverVolunteer"
+            android:focusable="true"
+            android:background="@color/white"
+            android:foreground="?android:attr/selectableItemBackground"/>
 
         <LinearLayout
+            android:id="@+id/driverInfo"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:visibility="gone">
 
             <TextView
-                android:id="@+id/SeatNumberText"
+                android:id="@+id/seatNumberText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="16dp"
@@ -88,7 +103,7 @@
                 android:textSize="16sp" />
 
             <EditText
-                android:id="@+id/tvChild"
+                android:id="@+id/seatNumberEdit"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="16dp"
