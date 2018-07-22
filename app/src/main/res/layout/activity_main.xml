@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity"
     android:id="@+id/MainActivityCL"
-    android:background="#E8E8E8"
+    android:background="@color/white_background"
     android:orientation="vertical">
 
     <!--<android.support.constraint.ConstraintLayout

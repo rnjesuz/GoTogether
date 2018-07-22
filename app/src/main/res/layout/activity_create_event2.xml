@@ -3,18 +3,18 @@
     xmlns:map="http://schemas.android.com/apk/res-auto"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:fab="http://schemas.android.com/apk/res-auto"
+    tools:context=".CreateEvent2Activity"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_height="match_parent"
-    android:layout_width="match_parent">
+    android:layout_width="match_parent"
+    android:id="@+id/createEventLayout">
     
     <fragment
         android:id="@+id/map"
         android:name="com.google.android.gms.maps.SupportMapFragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        tools:context=".CreateEvent2Activity"
         map:uiRotateGestures="true"
-        map:uiZoomControls="true"
         map:uiZoomGestures="true"/>
 
     <LinearLayout
@@ -23,97 +23,221 @@
         android:layout_marginStart="16dp"
         android:layout_marginEnd="16dp"
         android:layout_marginTop="24dp"
-        android:paddingBottom="8dp"
-        android:paddingTop="8dp"
-        android:background="@color/green_normal"
         android:orientation="vertical"
-        android:gravity="center">
+        android:gravity="center_vertical">
 
-        <TextView
-            android:id="@+id/destination_autocomplete"
+        <android.support.constraint.ConstraintLayout
+            android:id="@+id/rl"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/question_destination"
-            android:layout_marginEnd="8dp"
-            android:layout_marginStart="8dp"
-            android:clickable="true"
-            android:onClick="DestinationAutoComplete"
-            android:focusable="true"
-            android:background="@color/white"
-            android:foreground="?android:attr/selectableItemBackground"
-            android:drawableStart="@drawable/create_locations_drawable"
-            />
+            android:background="@color/white_background_dark">
 
-        <View
-            android:id="@+id/dividerView"
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="@android:color/darker_gray"
-            android:layout_marginStart="8dp"
-            android:layout_marginEnd="8dp" />
+            <android.support.constraint.ConstraintLayout
+                android:id="@+id/rl2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@+id/rl">
 
-        <TextView
-            android:id="@+id/start_autocomplete"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="8dp"
-            android:layout_marginStart="8dp"
-            android:text="@string/question_starting_position"
-            android:clickable="true"
-            android:onClick="StartAutoComplete"
-            android:focusable="true"
-            android:background="@color/white"
-            android:foreground="?android:attr/selectableItemBackground" />
+                <ImageView
+                    android:id="@+id/square_drawable"
+                    android:layout_width="5dp"
+                    android:layout_height="5dp"
+                    android:layout_marginStart="10dp"
+                    android:layout_marginTop="16dp"
+                    android:src="@drawable/small_square"
+                    map:layout_constraintStart_toStartOf="parent"
+                    map:layout_constraintTop_toTopOf="parent" />
 
-        <View
-            android:id="@+id/dividerView2"
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="@android:color/darker_gray"
-            android:layout_marginStart="8dp"
-            android:layout_marginEnd="8dp" />
+                <View
+                    android:id="@+id/line_drawable"
+                    android:layout_width="1dp"
+                    android:layout_height="29sp"
+                    android:layout_alignParentStart="true"
+                    android:layout_marginStart="12dp"
+                    android:background="#000000"
+                    map:layout_constraintStart_toStartOf="parent"
+                    map:layout_constraintTop_toBottomOf="@id/square_drawable" />
 
-        <TextView
-            android:id="@+id/driver_question"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Do you volunteer as a driver?"
-            android:layout_marginEnd="8dp"
-            android:layout_marginStart="8dp"
-            android:clickable="true"
-            android:onClick="DriverVolunteer"
-            android:focusable="true"
-            android:background="@color/white"
-            android:foreground="?android:attr/selectableItemBackground"/>
-
-        <LinearLayout
-            android:id="@+id/driverInfo"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:visibility="gone">
+                <ImageView
+                    android:id="@+id/circle_drawable"
+                    android:layout_width="5dp"
+                    android:layout_height="5dp"
+                    android:layout_marginStart="10dp"
+                    android:src="@drawable/small_circle"
+                    map:layout_constraintStart_toStartOf="parent"
+                    map:layout_constraintTop_toBottomOf="@id/line_drawable" />
+            </android.support.constraint.ConstraintLayout>
 
             <TextView
-                android:id="@+id/seatNumberText"
-                android:layout_width="wrap_content"
+                android:id="@+id/destination_autocomplete"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:text="@string/seats_in_car"
-                android:textAlignment="textStart"
-                android:textSize="16sp" />
-
-            <EditText
-                android:id="@+id/seatNumberEdit"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_alignParentTop="true"
                 android:layout_marginEnd="16dp"
-                android:hint="4"
-                android:inputType="number"
-                android:paddingEnd="16dp"
-                android:paddingStart="16dp"
-                android:textAlignment="center"
-                android:textSize="16sp" />
-        </LinearLayout>
+                android:layout_marginStart="8dp"
+                android:layout_marginTop="8dp"
+                android:paddingStart="8dp"
+                android:background="@color/white"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?android:attr/selectableItemBackground"
+                android:gravity="center_vertical"
+                android:onClick="DestinationAutoComplete"
+                android:text="@string/question_destination"
+                android:textSize="18sp"
+                map:layout_constraintEnd_toEndOf="parent"
+                map:layout_constraintStart_toEndOf="@+id/rl2"
+                map:layout_constraintTop_toTopOf="parent" />
+
+            <TextView
+                android:id="@+id/start_autocomplete"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:layout_marginEnd="16dp"
+                android:layout_marginStart="8dp"
+                android:layout_marginTop="8dp"
+                android:paddingStart="8dp"
+                android:background="@color/white"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?android:attr/selectableItemBackground"
+                android:gravity="center_vertical"
+                android:onClick="StartAutoComplete"
+                android:text="@string/question_starting_position"
+                android:textSize="18sp"
+                map:layout_constraintBottom_toBottomOf="parent"
+                map:layout_constraintEnd_toEndOf="parent"
+                map:layout_constraintStart_toEndOf="@+id/rl2"
+                map:layout_constraintTop_toBottomOf="@id/destination_autocomplete" />
+        </android.support.constraint.ConstraintLayout>
+
+        <android.support.constraint.ConstraintLayout
+            android:id="@+id/rl3"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp">
+
+            <android.support.constraint.ConstraintLayout
+                android:id="@+id/rl4"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_below="@+id/rl3"
+                android:layout_marginTop="20dp"
+                android:background="@color/white_background_dark"
+                android:visibility="visible"
+                map:layout_constraintEnd_toEndOf="parent"
+                map:layout_constraintTop_toTopOf="parent">
+
+                <ImageView
+                    android:id="@+id/circle_vehicle_drawable"
+                    android:layout_width="5dp"
+                    android:layout_height="5dp"
+                    android:layout_marginStart="10dp"
+                    android:layout_marginTop="28dp"
+                    android:src="@drawable/small_circle"
+                    android:visibility="visible"
+                    map:layout_constraintStart_toStartOf="parent"
+                    map:layout_constraintTop_toTopOf="parent" />
+
+
+                <LinearLayout
+                    android:id="@+id/driverInfo"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginTop="10dp"
+                    android:orientation="horizontal"
+                    android:visibility="visible"
+                    map:layout_constraintEnd_toEndOf="parent"
+                    map:layout_constraintStart_toEndOf="@id/circle_vehicle_drawable"
+                    map:layout_constraintTop_toTopOf="parent">
+
+                    <TextView
+                        android:id="@+id/seatNumberText"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="0.70"
+                        android:gravity="center_vertical"
+                        android:text="@string/seats_in_car"
+                        android:textSize="14sp"
+                        android:visibility="visible" />
+
+                    <EditText
+                        android:id="@+id/seatNumberEdit"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="16dp"
+                        android:layout_weight="0.10"
+                        android:hint="4"
+                        android:inputType="number"
+                        android:paddingEnd="8dp"
+                        android:paddingStart="8dp"
+                        android:textAlignment="center"
+                        android:textSize="16sp"
+                        android:visibility="visible" />
+                </LinearLayout>
+
+            </android.support.constraint.ConstraintLayout>
+
+            <android.support.constraint.ConstraintLayout
+                android:id="@+id/driver_question"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@color/white_background_dark">
+
+
+                <TextView
+                    android:id="@+id/driver_question_tv"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentTop="true"
+                    android:layout_marginBottom="8dp"
+                    android:layout_marginEnd="16dp"
+                    android:layout_marginStart="2dp"
+                    android:layout_marginTop="8dp"
+                    android:paddingStart="8dp"
+                    android:background="@color/white"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?android:attr/selectableItemBackground"
+                    android:gravity="center_vertical"
+                    android:onClick="DriverVolunteer"
+                    android:text="Do you volunteer as a driver?"
+                    android:textSize="18sp"
+                    android:drawableEnd="@drawable/checkbox_fill"
+                    map:layout_constraintBottom_toBottomOf="parent"
+                    map:layout_constraintEnd_toEndOf="parent"
+                    map:layout_constraintStart_toEndOf="@+id/vehicle_drawable"
+                    map:layout_constraintTop_toTopOf="parent" />
+
+                <ImageView
+                    android:id="@+id/vehicle_drawable"
+                    android:layout_width="wrap_content"
+                    android:layout_height="18dp"
+                    android:layout_marginStart="3dp"
+                    android:layout_marginTop="11dp"
+                    android:src="@drawable/baseline_directions_car_black_18"
+                    map:layout_constraintStart_toStartOf="parent"
+                    map:layout_constraintTop_toTopOf="parent" />
+            </android.support.constraint.ConstraintLayout>
+        </android.support.constraint.ConstraintLayout>
     </LinearLayout>
 
+    <com.github.clans.fab.FloatingActionButton
+        android:id="@+id/create_done"
+        style="@style/MenuButton_Green"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginBottom="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginTop="16dp"
+        android:onClick="concludeCreation"
+        android:src="@drawable/baseline_done_white_24"
+        android:visibility="visible"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        fab:fab_size="normal" />
 </RelativeLayout>
