@@ -51,16 +51,29 @@
         -->
 
         <activity
-            android:name=".CreateEvent2Activity"
+            android:name=".CreateEventActivity"
             android:configChanges="orientation|keyboardHidden"
             android:label="@string/title_activity_create_event"
-            android:screenOrientation="portrait">
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="stateAlwaysHidden"
+            android:theme="@style/GoTogether_Theme.DenseBar">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="app.gotogether.MainActivity" />
         </activity>
         <activity
-            android:name=".CreateEventActivity"
+            android:name=".CreateEvent2Activity"
+            android:configChanges="orientation|keyboardHidden"
+            android:label="@string/title_activity_create_event"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="stateAlwaysHidden"
+            android:theme="@style/GoTogether_Theme.NoActionBar">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="app.gotogether.MainActivity" />
+        </activity>
+        <activity
+            android:name=".CreateEventOldActivity"
             android:configChanges="orientation|keyboardHidden"
             android:label="@string/title_activity_create_event"
             android:screenOrientation="portrait">

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<EditText xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/titleField"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:inputType="textCapSentences"
+    android:imeOptions="actionDone"
+    android:hint="Event Title"
+    android:textAllCaps="false"
+    android:textColor="@color/white"
+    android:textColorHint="@color/white_background_dark"
+    android:backgroundTint="@color/white"
+    >
+
+</EditText>

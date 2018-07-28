@@ -127,7 +127,7 @@ public class MainMenuActivity extends AppCompatActivity
 
     // Onclick() of Create Event button
     public void CreateEvent(View view){
-        Intent intent = new Intent(MainMenuActivity.this, CreateEventActivity.class);
+        Intent intent = new Intent(MainMenuActivity.this, CreateEventOldActivity.class);
         startActivity(intent);
     }
 

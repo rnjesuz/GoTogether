@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/placeSuggestion"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:textAllCaps="false"
+    android:textSize="18sp"
+    android:padding="8dp"
+    android:drawablePadding="8dp"
+    android:drawableStart="@drawable/baseline_location_on_black_18"
+    >
+</TextView>
+

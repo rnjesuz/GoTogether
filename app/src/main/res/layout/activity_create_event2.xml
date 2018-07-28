@@ -8,42 +8,52 @@
     android:layout_height="match_parent"
     android:layout_width="match_parent"
     android:id="@+id/createEventLayout">
-    
+
+    <android.support.v7.widget.Toolbar
+        android:id="@+id/create_toolbar"
+        android:layout_height="?android:attr/actionBarSize"
+        android:layout_width="match_parent"
+        android:background="@color/green_normal" />
+
     <fragment
         android:id="@+id/map"
         android:name="com.google.android.gms.maps.SupportMapFragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         map:uiRotateGestures="true"
-        map:uiZoomGestures="true"/>
+        map:uiZoomGestures="true"
+        map:uiZoomControls="false"
+        android:layout_below="@id/create_toolbar"/>
 
     <LinearLayout
+        android:id="@+id/event_inputs"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
         android:layout_marginEnd="16dp"
+        android:layout_marginStart="16dp"
         android:layout_marginTop="24dp"
+        android:gravity="center_vertical"
         android:orientation="vertical"
-        android:gravity="center_vertical">
+        android:layout_below="@id/create_toolbar">
 
         <android.support.constraint.ConstraintLayout
-            android:id="@+id/rl"
+            android:id="@+id/coordinates_inputs"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@color/white_background_dark">
 
             <android.support.constraint.ConstraintLayout
-                android:id="@+id/rl2"
+                android:id="@+id/start_to_destination_drawables"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_below="@+id/rl">
+                android:layout_below="@+id/coordinates_inputs">
 
                 <ImageView
                     android:id="@+id/square_drawable"
                     android:layout_width="5dp"
                     android:layout_height="5dp"
                     android:layout_marginStart="10dp"
-                    android:layout_marginTop="16dp"
+                    android:layout_marginTop="24dp"
                     android:src="@drawable/small_square"
                     map:layout_constraintStart_toStartOf="parent"
                     map:layout_constraintTop_toTopOf="parent" />
@@ -51,7 +61,7 @@
                 <View
                     android:id="@+id/line_drawable"
                     android:layout_width="1dp"
-                    android:layout_height="29sp"
+                    android:layout_height="32dp"
                     android:layout_alignParentStart="true"
                     android:layout_marginStart="12dp"
                     android:background="#000000"
@@ -68,7 +78,39 @@
                     map:layout_constraintTop_toBottomOf="@id/line_drawable" />
             </android.support.constraint.ConstraintLayout>
 
-            <TextView
+            <!-- this is a dummy layout to agro focu from the edittext -->
+            <LinearLayout
+                android:id="@+id/dummy_focusable"
+                android:layout_width="0px"
+                android:layout_height="0px"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                tools:ignore="Orientation" />
+
+            <EditText
+                android:id="@+id/destination_autocomplete"
+                android:layout_width="0dp"
+                android:layout_height="32dp"
+                android:layout_alignParentTop="true"
+                android:layout_marginEnd="16dp"
+                android:layout_marginStart="8dp"
+                android:layout_marginTop="8dp"
+                android:background="@color/white"
+                android:gravity="center_vertical"
+                android:hint="@string/question_destination"
+                android:nextFocusLeft="@id/destination_autocomplete"
+                android:nextFocusUp="@id/destination_autocomplete"
+                android:paddingStart="8dp"
+                android:scrollHorizontally="true"
+                android:singleLine="true"
+                android:textCursorDrawable="@drawable/cursor_red"
+                android:textSize="18sp"
+                android:inputType="textCapSentences"
+                android:imeOptions="actionDone"
+                map:layout_constraintEnd_toEndOf="parent"
+                map:layout_constraintStart_toEndOf="@+id/start_to_destination_drawables"
+                map:layout_constraintTop_toTopOf="parent" />
+            <!--<TextView
                 android:id="@+id/destination_autocomplete"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -79,7 +121,6 @@
                 android:paddingStart="8dp"
                 android:background="@color/white"
                 android:clickable="true"
-                android:focusable="true"
                 android:foreground="?android:attr/selectableItemBackground"
                 android:gravity="center_vertical"
                 android:onClick="DestinationAutoComplete"
@@ -87,9 +128,49 @@
                 android:textSize="18sp"
                 map:layout_constraintEnd_toEndOf="parent"
                 map:layout_constraintStart_toEndOf="@+id/rl2"
-                map:layout_constraintTop_toTopOf="parent" />
+                map:layout_constraintTop_toTopOf="parent"
+                android:singleLine="true"
+                android:scrollHorizontally="true"/>-->
+            <!--<fragment
+                android:id="@+id/destination_autocomplete"
+                android:name="com.google.android.gms.location.places.ui.PlaceAutocompleteFragment"
+                android:layout_width="0dp"
+                android:layout_height="25dp"
+                android:layout_alignParentTop="true"
+                android:layout_marginEnd="16dp"
+                android:layout_marginStart="8dp"
+                android:layout_marginTop="8dp"
+                android:paddingStart="8dp"
+                android:background="@color/white"
+                android:text="@string/question_destination"
+                android:textSize="18sp"
+                map:layout_constraintEnd_toEndOf="parent"
+                map:layout_constraintStart_toEndOf="@+id/rl2"
+                map:layout_constraintTop_toTopOf="parent" />-->
 
-            <TextView
+            <EditText
+                android:id="@+id/start_autocomplete"
+                android:layout_width="0dp"
+                android:layout_height="32dp"
+                android:layout_marginBottom="8dp"
+                android:layout_marginEnd="16dp"
+                android:layout_marginStart="8dp"
+                android:layout_marginTop="8dp"
+                android:background="@color/white"
+                android:gravity="center_vertical"
+                android:hint="@string/question_starting_position"
+                android:paddingStart="8dp"
+                android:scrollHorizontally="true"
+                android:singleLine="true"
+                android:textCursorDrawable="@drawable/cursor_red"
+                android:textSize="18sp"
+                android:inputType="textCapSentences"
+                android:imeOptions="actionDone"
+                map:layout_constraintBottom_toBottomOf="parent"
+                map:layout_constraintEnd_toEndOf="parent"
+                map:layout_constraintStart_toEndOf="@+id/start_to_destination_drawables"
+                map:layout_constraintTop_toBottomOf="@id/destination_autocomplete" />
+            <!--<TextView
                 android:id="@+id/start_autocomplete"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -109,20 +190,20 @@
                 map:layout_constraintBottom_toBottomOf="parent"
                 map:layout_constraintEnd_toEndOf="parent"
                 map:layout_constraintStart_toEndOf="@+id/rl2"
-                map:layout_constraintTop_toBottomOf="@id/destination_autocomplete" />
+                map:layout_constraintTop_toBottomOf="@id/destination_autocomplete" />-->
         </android.support.constraint.ConstraintLayout>
 
         <android.support.constraint.ConstraintLayout
-            android:id="@+id/rl3"
+            android:id="@+id/driver_inputs"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp">
 
             <android.support.constraint.ConstraintLayout
-                android:id="@+id/rl4"
+                android:id="@+id/seat_question"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_below="@+id/rl3"
+                android:layout_below="@+id/driver_inputs"
                 android:layout_marginTop="20dp"
                 android:background="@color/white_background_dark"
                 android:visibility="visible"
@@ -134,7 +215,7 @@
                     android:layout_width="5dp"
                     android:layout_height="5dp"
                     android:layout_marginStart="10dp"
-                    android:layout_marginTop="28dp"
+                    android:layout_marginTop="38dp"
                     android:src="@drawable/small_circle"
                     android:visibility="visible"
                     map:layout_constraintStart_toStartOf="parent"
@@ -146,7 +227,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="16dp"
-                    android:layout_marginTop="10dp"
+                    android:layout_marginTop="18dp"
                     android:orientation="horizontal"
                     android:visibility="visible"
                     map:layout_constraintEnd_toEndOf="parent"
@@ -190,22 +271,24 @@
                 <TextView
                     android:id="@+id/driver_question_tv"
                     android:layout_width="0dp"
-                    android:layout_height="wrap_content"
+                    android:layout_height="32dp"
                     android:layout_alignParentTop="true"
                     android:layout_marginBottom="8dp"
                     android:layout_marginEnd="16dp"
                     android:layout_marginStart="2dp"
                     android:layout_marginTop="8dp"
-                    android:paddingStart="8dp"
                     android:background="@color/white"
                     android:clickable="true"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="8dp"
+                    android:drawableEnd="@drawable/checkbox_fill"
+                    android:drawablePadding="8dp"
                     android:focusable="true"
                     android:foreground="?android:attr/selectableItemBackground"
                     android:gravity="center_vertical"
                     android:onClick="DriverVolunteer"
                     android:text="Do you volunteer as a driver?"
                     android:textSize="18sp"
-                    android:drawableEnd="@drawable/checkbox_fill"
                     map:layout_constraintBottom_toBottomOf="parent"
                     map:layout_constraintEnd_toEndOf="parent"
                     map:layout_constraintStart_toEndOf="@+id/vehicle_drawable"
@@ -216,7 +299,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="18dp"
                     android:layout_marginStart="3dp"
-                    android:layout_marginTop="11dp"
+                    android:layout_marginTop="16dp"
                     android:src="@drawable/baseline_directions_car_black_18"
                     map:layout_constraintStart_toStartOf="parent"
                     map:layout_constraintTop_toTopOf="parent" />
@@ -224,11 +307,51 @@
         </android.support.constraint.ConstraintLayout>
     </LinearLayout>
 
+    <LinearLayout
+        android:id="@+id/suggestions_slider"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/event_inputs"
+        android:background="@color/white_background_dark"
+        android:visibility="visible"
+        android:orientation="vertical">
+
+        <Button
+            android:id="@+id/my_location"
+            android:layout_width="match_parent"
+            android:layout_height="32dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="8dp"
+            android:background="@color/white"
+            android:drawablePadding="8dp"
+            android:drawableStart="@drawable/baseline_my_location_black_18"
+            android:paddingEnd="8dp"
+            android:paddingStart="8dp"
+            android:text="Use my current location"
+            android:textAlignment="viewStart"
+            android:textAllCaps="false"
+            android:textSize="18sp"/>
+
+        <ListView
+            android:id="@+id/places_suggestions"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_below="@id/my_location"
+            android:layout_marginEnd="16dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="8dp"
+            android:background="@color/white"
+            android:divider="@android:color/transparent"
+            android:scrollbars="none"/>
+    </LinearLayout>
+
     <com.github.clans.fab.FloatingActionButton
         android:id="@+id/create_done"
         style="@style/MenuButton_Green"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
         android:layout_alignParentBottom="true"
         android:layout_alignParentEnd="true"
         android:layout_marginBottom="16dp"
@@ -239,5 +362,6 @@
         android:visibility="visible"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        fab:fab_size="normal" />
+        fab:fab_size="normal"
+        />
 </RelativeLayout>

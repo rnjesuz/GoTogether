@@ -10,7 +10,6 @@ import android.location.Geocoder;
 import android.os.Build;
 import android.os.Handler;
 import android.support.annotation.NonNull;
-import android.support.annotation.RequiresApi;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -22,11 +21,9 @@ import android.view.ViewGroupOverlay;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.PopupWindow;
 import android.widget.RelativeLayout;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.github.clans.fab.FloatingActionButton;
@@ -36,9 +33,6 @@ import com.google.android.gms.maps.model.LatLng;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
-import static android.content.Context.LAYOUT_INFLATER_SERVICE;
-import static app.gotogether.R.layout.event_layout;
 
 public class MainActivity extends  AppCompatActivity {
 
@@ -73,13 +67,15 @@ public class MainActivity extends  AppCompatActivity {
             }
         });
 
-        final FloatingActionButton actionTest = (FloatingActionButton) findViewById(R.id.event_test);
+        //TODO
+        // used for testing
+        /*final FloatingActionButton actionTest = (FloatingActionButton) findViewById(R.id.event_test);
         actionTest.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 createTest();
             }
-        });
+        });*/
 
         menuEvent.setClosedOnTouchOutside(true);
         menuEvent.hideMenuButton(false);
@@ -346,57 +342,3 @@ public class MainActivity extends  AppCompatActivity {
     }
 
 }
-
-class EventArrayAdapter extends ArrayAdapter<Event> {
-
-    private Context context;
-    private List<Event> eventList;
-
-    // Constructor
-    public EventArrayAdapter(@NonNull Context context, int resource, @NonNull ArrayList<Event> objects) {
-        super(context, resource, objects);
-
-        this.context = context;
-        this.eventList = objects;
-    }
-
-    @RequiresApi(api = Build.VERSION_CODES.M)
-    public View getView(int position, View convertView, ViewGroup parent) {
-
-        //get the property we are displaying
-        Event event = eventList.get(position);
-
-        //get the inflater and inflate the XML layout for each item
-        LayoutInflater inflater = (LayoutInflater) context.getSystemService(LAYOUT_INFLATER_SERVICE);
-        assert inflater != null;
-        View view = inflater.inflate(event_layout, null);
-
-        TextView title = (TextView) view.findViewById(R.id.titleView);
-        TextView destination = (TextView) view.findViewById(R.id.destinationView);
-        TextView participants = (TextView) view.findViewById(R.id.participantsView);
-        ImageView image = (ImageView) view.findViewById(R.id.eventImg);
-
-        //TODO
-        title.setText(event.getTitle());
-
-        //TODO
-        destination.setText(event.getDestination());
-
-        //TODO
-        participants.setText(String.format("%s participants", Integer.toString(event.getParticipants())));
-
-        //display trimmed excerpt for description
-        /*int descriptionLength = property.getDescription().length();
-        if(descriptionLength >= 100){
-            String descriptionTrim = property.getDescription().substring(0, 100) + "...";
-            description.setText(descriptionTrim);
-        }else{
-            description.setText(property.getDescription());
-        }*/
-
-        //get the image associated with this property
-        int imageID = context.getResources().getIdentifier(event.getImage(), "mipmap", context.getPackageName());
-        image.setImageResource(imageID);
-
-        return view;
-    }}
