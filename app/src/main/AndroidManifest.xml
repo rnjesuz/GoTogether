@@ -91,6 +91,15 @@
                 android:value="app.gotogether.MainActivity" />
         </activity>
         <activity
+            android:name=".JoinEventOldActivity"
+            android:configChanges="orientation|keyboardHidden"
+            android:label="@string/title_activity_join_event"
+            android:screenOrientation="portrait">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="app.gotogether.MainActivity" />
+        </activity>
+        <activity
             android:name=".EventActivity"
             android:configChanges="orientation|keyboardHidden"
             android:label="@string/title_activity_event"

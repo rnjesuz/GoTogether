@@ -949,7 +949,7 @@ public class CreateEvent2Activity extends AppCompatActivity implements OnMapRead
         LatLng startLatLng = getLocationFromAddress(getApplicationContext(), start);
         User user;
         if (isDriver) {
-            user = new User("Ricardo", start, startLatLng, isDriver, emptySeats);
+            user = new User("Ricardo", start, startLatLng, emptySeats);
         } else {
             user = new User("Ricardo", start, startLatLng);
         }

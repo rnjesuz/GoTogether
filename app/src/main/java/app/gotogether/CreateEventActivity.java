@@ -97,15 +97,19 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
     private int emptySeats = -1; // -1 = no car. >0 = how many empty seats
     int PLACE_AUTOCOMPLETE_REQUEST_CODE_DESTINATION = 1;
     int PLACE_AUTOCOMPLETE_REQUEST_CODE_START = 2;
+    private LatLng destinationLatLng = null;
+    private LatLng startLatLng = null;
     private String destination = null;
     private String start = null;
     private String title = "";
     private int searching = -1; // >0 means searching. 1 is for destinations; 2 is for pick-up
+    private boolean locationClick = false; // is location input being set through button?
     private ActionBar actionBar;
     private EditText eventTitle;
     private EditText destinationET;
     private EditText startET;
     private EditText titleET;
+    private LinearLayout suggestions;
     private GooglePlacesAutocompleteAdapter dataAdapter;
     private ListView placeSuggestions;
     /** Id to identify a location permission request. */
@@ -209,12 +213,12 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
         // change the up button icon
         actionBar.setHomeAsUpIndicator(R.drawable.ic_close);
         // set slider as invisible
-        LinearLayout suggestions = findViewById(R.id.suggestions_slider);
+        suggestions = findViewById(R.id.suggestions_slider);
         suggestions.setVisibility(View.INVISIBLE);
 
-        findViewById(R.id.destination_autocomplete).setBackgroundColor(getResources().getColor(R.color.white));
+        //findViewById(R.id.destination_autocomplete).setBackgroundColor(getResources().getColor(R.color.white));
 
-        titleET.setOnEditorActionListener(new EditText.OnEditorActionListener() {
+        /*titleET.setOnEditorActionListener(new EditText.OnEditorActionListener() {
             /**
              * Called when an action is being performed.
              *
@@ -227,6 +231,7 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
              *                 otherwise, this is null.
              * @return Return true if you have consumed the action, else false.
              */
+            /*
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
                 if (actionId == EditorInfo.IME_ACTION_DONE) {
@@ -237,13 +242,15 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
                 }
                 return false;
             }
-        });
-        titleET.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+        });*/
+        titleET.addTextChangedListener(new TextWatcher() {
             @Override
-            public void onFocusChange(View v, boolean hasFocus) {
-                if (!hasFocus){
-                    title = titleET.getText().toString();
-                }
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) { }
+            @Override
+            public void afterTextChanged(Editable s) {
+                title = s.toString();
             }
         });
 
@@ -273,13 +280,13 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
                         }
                         // clicked outside drawable
                         else {
-                            DestinationAutoComplete(v);
+                            DestinationAutoComplete();
                             return false;
                         }
                     }
                     // no drawable
                     else {
-                        DestinationAutoComplete(v);
+                        DestinationAutoComplete();
                         return false;
                     }
                 }
@@ -300,7 +307,8 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
                 } else {
                     destinationET.setCompoundDrawablesWithIntrinsicBounds(0,0, R.drawable.ic_close_red,0);
                 }
-                dataAdapter.getFilter().filter(s.toString());
+                if (!locationClick)
+                    dataAdapter.getFilter().filter(s.toString());
             }
 
             @Override
@@ -343,13 +351,13 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
                         }
                         // clicked outside drawable
                         else {
-                            StartAutoComplete(v);
+                            StartAutoComplete();
                             return false;
                         }
                     }
                     // no drawable
                     else {
-                        StartAutoComplete(v);
+                        StartAutoComplete();
                         return false;
                     }
                 }
@@ -370,7 +378,8 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
                 } else {
                     startET.setCompoundDrawablesWithIntrinsicBounds(0,0, R.drawable.ic_close_red,0);
                 }
-                dataAdapter.getFilter().filter(s.toString());
+                if (!locationClick)
+                    dataAdapter.getFilter().filter(s.toString());
             }
 
             @Override
@@ -439,7 +448,7 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
         DisplayMetrics displayMetrics = new DisplayMetrics();
         getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
         int screenHeight = displayMetrics.heightPixels;
-        mMap.setPadding(0, screenHeight / 2, 0, (int)(20 * (getResources().getDisplayMetrics().densityDpi / 160)));
+        mMap.setPadding(0, screenHeight / 2, 0, 0);
     }
 
     /** Called when the user clicks a marker. */
@@ -464,25 +473,32 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
         if (label.equals("Destination")){
             mDestination = mMap.addMarker(new MarkerOptions().position(markerLatLng).title(label).snippet(address));
             mDestination.showInfoWindow();
+            destinationLatLng = markerLatLng;
+
         }
         if (label.equals("Start")){
             mStart = mMap.addMarker(new MarkerOptions().position(markerLatLng).title(label).snippet(address).icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
             mStart.showInfoWindow();
+            startLatLng = markerLatLng;
         }
         // Move the camera
-        moveCamera(markerLatLng);
+        moveCamera();
     }
 
     private void removeMapMarker(Marker marker){
         marker.remove();
     }
 
-    private void moveCamera(LatLng markerLatLng) {
-        final LatLng[] mapCenter = {markerLatLng};
+    private void moveCamera() {
         // Test how many markers already on map
-        if(mDestination==null || mStart==null){
-            //at least one is null so we center on the new one
-            CameraUpdate cu = CameraUpdateFactory.newLatLngZoom(markerLatLng, 12);
+        if(mDestination==null){
+            //no pickup so we center on destination
+            CameraUpdate cu = CameraUpdateFactory.newLatLngZoom(startLatLng, 12);
+            mMap.moveCamera(cu);
+        }
+        else if(mStart==null){
+            //no destination so we center on pickup
+            CameraUpdate cu = CameraUpdateFactory.newLatLngZoom(destinationLatLng, 12);
             mMap.moveCamera(cu);
         }
         else {
@@ -495,8 +511,8 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
                     @Override
                     public void onGlobalLayout() {
                         LatLngBounds bounds = new LatLngBounds.Builder()
-                                .include(getLocationFromAddress(CreateEventActivity.this, destination))
-                                .include(getLocationFromAddress(CreateEventActivity.this, start))
+                                .include(destinationLatLng)
+                                .include(startLatLng)
                                 .build();
 
                         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN) {
@@ -504,7 +520,6 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
                         } else {
                             mapView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
                         }
-                        mapCenter[0] =  bounds.getCenter();
                         mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, 200));
                     }});
             }
@@ -526,6 +541,7 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
                 return true;
 
             case R.id.action_create:
+                hideKeyboard(CreateEventActivity.this);
                 concludeCreation();
                 return false;
 
@@ -547,23 +563,23 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
             super.onBackPressed();
     }
 
-    private void StartAutoComplete(View view) {
+    private void StartAutoComplete() {
         // expand the Layout
-        ExpandForInput(view);
+        ExpandForInput();
         // indicate searching for pickup location
         searching = 2;
         // TODO handle the places predictions
     }
 
-    public void DestinationAutoComplete(View view){
+    public void DestinationAutoComplete(){
         //expand the layout
-        ExpandForInput(view);
+        ExpandForInput();
         // indicate searching for destination location
         searching = 1;
         // TODO handle place suggestions
     }
 
-    private void ExpandForInput(View view) {
+    private void ExpandForInput() {
         // move the layout up by removing margins
         LinearLayout grandparent = findViewById(R.id.event_inputs);
         ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) grandparent.getLayoutParams();
@@ -601,8 +617,10 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
         driverInputs.setVisibility(View.GONE);
         // change up button icon
         actionBar.setHomeAsUpIndicator(R.drawable.ic_arrow_black); // the default arrow
+        // change create option color
+        TextView create = findViewById(R.id.action_create);
+        create.setTextColor(getResources().getColor(R.color.black));
         // slide up the suggestions layout
-        LinearLayout suggestions = findViewById(R.id.suggestions_slider);
         suggestions.setVisibility(View.VISIBLE);
         suggestions.animate().translationY(0);
     }
@@ -642,8 +660,10 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
         driverInputs.setVisibility(View.VISIBLE);
         // change up button icon
         actionBar.setHomeAsUpIndicator(R.drawable.ic_close); // the default arrow
+        // change create option color
+        TextView create = findViewById(R.id.action_create);
+        create.setTextColor(getResources().getColor(R.color.white));
         // slide down the suggestions layout
-        LinearLayout suggestions = findViewById(R.id.suggestions_slider);
         DisplayMetrics displayMetrics = new DisplayMetrics();
         getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
         int screenHeight = displayMetrics.heightPixels;
@@ -799,6 +819,13 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
             cPopupWindow.setElevation(5.0f);
         }
 
+        // Get a reference for the custom view title
+        TextView titleText = (TextView) customView.findViewById(R.id.titleTV);
+        String htmlTitle = "<b>"+title+"</b>";
+        Spanned s = Html.fromHtml(htmlTitle);
+        SpannableString sString = new SpannableString(s);
+        titleText.setText(sString);
+
         // Get a reference for the custom view text
         TextView messageText = (TextView) customView.findViewById(R.id.tv);
         // Set text
@@ -943,8 +970,9 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
         //TODO make pop-up to confirm input
 
         //Launch new activity
-        // TODO do split? if finalized : if not finalized - different activities based on each
         Intent intent = new Intent(CreateEventActivity.this, EventActivity.class);
+        // Title
+        intent.putExtra("Title", title);
         // Destination Bundle
         Bundle destinationBundle = new Bundle();
         LatLng destinationLatLng = getLocationFromAddress(getApplicationContext(), destination);
@@ -956,7 +984,7 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
         LatLng startLatLng = getLocationFromAddress(getApplicationContext(), start);
         User user;
         if (isDriver) {
-            user = new User("Ricardo", start, startLatLng, isDriver, emptySeats);
+            user = new User("Ricardo", start, startLatLng, emptySeats);
         } else {
             user = new User("Ricardo", start, startLatLng);
         }
@@ -1189,6 +1217,7 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
     }
 
     private void handleNewLocation(Location location, String splitter) {
+        locationClick = true; // setting location via button - prevents AP*I calling from the Places Adapter
         if (splitter.equals("start")) {
             String locationAddress = getCompleteAddressString(location.getLatitude(), location.getLongitude());
             start = locationAddress;
@@ -1201,6 +1230,7 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
             destinationET.setText(destination);
             addMapMarker("Destination", destination);
         }
+        locationClick = false; // reset
     }
 
     /** Get address from coordinates */

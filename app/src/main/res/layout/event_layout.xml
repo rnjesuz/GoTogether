@@ -7,7 +7,12 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="@color/white"
-    android:elevation="2dp">
+    android:elevation="2dp"
+
+    android:clickable="false"
+    android:descendantFocusability="blocksDescendants"
+    android:focusable="false"
+    android:focusableInTouchMode="false">
 
     <ImageView
         android:id="@+id/eventImg"
@@ -17,6 +22,10 @@
         android:contentDescription="@string/event_image"
         android:layout_marginTop="10dp"
         android:layout_marginStart="15dp"
+
+        android:clickable="false"
+        android:focusable="false"
+        android:focusableInTouchMode="false"
         />
 
     <LinearLayout
@@ -26,7 +35,12 @@
         android:layout_toEndOf="@id/eventImg"
         android:orientation="vertical"
         android:layout_marginTop="10dp"
-        android:layout_marginStart="10dp">
+        android:layout_marginStart="10dp"
+
+        android:clickable="false"
+        android:descendantFocusability="blocksDescendants"
+        android:focusable="false"
+        android:focusableInTouchMode="false">
 
         <TextView
             android:id="@+id/titleView"
@@ -39,7 +53,11 @@
             android:drawableStart="@drawable/baseline_title_24"
             android:singleLine="true"
             android:text="@string/title"
-            android:gravity="center_vertical"/>
+            android:gravity="center_vertical"
+
+            android:clickable="false"
+            android:focusable="false"
+            android:focusableInTouchMode="false"/>
 
         <TextView
             android:id="@+id/destinationView"
@@ -52,7 +70,11 @@
             android:drawableStart="@drawable/baseline_location_on_24"
             android:singleLine="true"
             android:text="@string/destination"
-            android:gravity="center_vertical"/>
+            android:gravity="center_vertical"
+
+            android:clickable="false"
+            android:focusable="false"
+            android:focusableInTouchMode="false"/>
     </LinearLayout>
 
     <View
@@ -62,7 +84,11 @@
         android:layout_below="@id/infoSection"
         android:background="@android:color/darker_gray"
         android:layout_marginStart="15dp"
-        android:layout_marginEnd="15dp"/>
+        android:layout_marginEnd="15dp"
+
+        android:clickable="false"
+        android:focusable="false"
+        android:focusableInTouchMode="false"/>
 
     <LinearLayout
         android:id="@+id/participantSection"
@@ -72,7 +98,12 @@
         android:orientation="horizontal"
         android:gravity="center_vertical"
         android:layout_marginTop="5dp"
-        android:layout_marginBottom="5dp">
+        android:layout_marginBottom="5dp"
+
+        android:clickable="false"
+        android:descendantFocusability="blocksDescendants"
+        android:focusable="false"
+        android:focusableInTouchMode="false">
 
         <TextView
             android:id="@+id/participantsView"
@@ -86,7 +117,11 @@
             android:layout_gravity="center"
             android:singleLine="true"
             android:drawablePadding="5dp"
-            android:gravity="center_vertical"/>
+            android:gravity="center_vertical"
+
+            android:clickable="false"
+            android:focusable="false"
+            android:focusableInTouchMode="false"/>
 
         <!-- <TextView
             android:id="@+id/editView"
@@ -110,6 +145,7 @@
             android:layout_marginStart="15dp"
             android:text="@string/edit"
             android:drawableStart="@drawable/baseline_edit_24"
+            android:onClick="editEvent"
             android:singleLine="true"
             android:textAllCaps="false"
             android:backgroundTint="@color/white"

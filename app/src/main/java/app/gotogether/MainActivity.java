@@ -13,11 +13,13 @@ import android.support.annotation.NonNull;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewGroupOverlay;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
@@ -32,14 +34,29 @@ import com.google.android.gms.maps.model.LatLng;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class MainActivity extends  AppCompatActivity {
 
     private FloatingActionMenu menuEvent;
     private ArrayList<Event> eventList = new ArrayList<>();
-
+    private ArrayList<User> participants;
+    private static HashMap<Event,ArrayList<User>> eventParticipants = new HashMap<Event, ArrayList<User>>();
     private Handler mUiHandler = new Handler();
+    private ArrayAdapter<Event> adapter;
+    private ListView eventListView;
+
+    /* Testing variables */
+    String[] titles = {"Tour de France", "ComicCon", "Sombra da bananeira", "Mundial 2022", "Fuga dos Paraliticos po Deserto", "Rumo ao tetra", "VDL", "Á procura da piada", "feira do tremoço", "po tras do sol posto", "ver os animais", "coçar macacos no zoo"};
+    String[] locations =    {"Cascais", "Oeiras", "Setúbal", "Sintra", "Ericeira", "Óbidos", "Entroncamento", "Amadora", "Belém", "Caparica", "Lisboa", "Algarve", "Porto", "Moscovo", "Vaticano", "Nova Deli", "Washington DC", "Faro", "Copenhaga", "Berlim", "Londres", "Paris", "Madrid", "Sevilla", "Beja", "Funchal", "Pico, Açores", "Braga", "Guarda, Portugal", "Guimarães", "Santarém", "Seia, Portugal"};
+    static String[] pickup =       {"Cascais", "Oeiras", "Setúbal", "Sintra", "Ericeira", "Óbidos", "Entroncamento", "Amadora", "Belém", "Caparica", "Lisboa", "Algarve", "Porto", "Moscovo", "Vaticano", "Nova Deli", "Washington DC", "Faro", "Copenhaga", "Berlim", "Londres", "Paris", "Madrid", "Sevilla", "Beja", "Funchal", "Pico, Açores", "Braga", "Guarda, Portugal", "Guimarães", "Santarém", "Seia, Portugal"};
+    static String[] names = {"Ricardo", "Margarida", "Carlos", "Anabela", "TóZé", "hunter2", "MissingNo", "Anon", "*****", "aijasus", "robot2", "robot1", "Gladis", "robot3", "robot4", "Neo", "Morpheus", "Trinity", "Agent Smith", "Gaben", "Notch", "Obama", "Goku", "Ezio", "Altair", "Rambo", "Rocky", "John Snow", "Darth JarJar", "Luke", "DumbHodor", "Hari Potter", "Ben Dover"};
+    private static MainActivity context;
+
 
     /* Functionality Android methods*/
 
@@ -48,6 +65,9 @@ public class MainActivity extends  AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        // the context
+        context = MainActivity.this;
 
         menuEvent = (FloatingActionMenu) findViewById(R.id.menu_event);
 
@@ -104,14 +124,70 @@ public class MainActivity extends  AppCompatActivity {
             }
         });
 
+        // Create our new array adapter
+        adapter = new EventArrayAdapter(this, 0, eventList);
+        // Find list view and bind it with the custom adapter
+        eventListView = (ListView) findViewById(R.id.EventList);
+        eventListView.setAdapter(adapter);
+        eventListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                Event clickedEvent = eventList.get(position);
+                ArrayList<User> participants = eventParticipants.get(clickedEvent);
+                Log.i("Quem sao? ",participants.toString());
+                Log.i("MainActivity", "Event click: "+clickedEvent.getTitle());
+                LaunchEvent(clickedEvent, participants);
+            }
+        });
+
         // TODO remove after testing
         testPopulate();
 
+        //TODO connect to server
     }
 
 
-
     /* Activity methods */
+
+    /** Method called to open an Event from the event list
+     * @param event the event to be launched
+     * @param participants the participants of the event */
+    private void LaunchEvent(Event event, ArrayList<User> participants) {
+        Intent intent = new Intent(MainActivity.this, EventActivity.class);
+        // add the title
+        intent.putExtra("Title", event.getTitle());
+        // add the destination
+        String destination = event.getDestination();
+        Bundle destinationBundle = new Bundle();
+        LatLng destinationLatLng = getLocationFromAddress(getApplicationContext(), destination);
+        destinationBundle.putParcelable("destinationLatLng", destinationLatLng);
+        destinationBundle.putString("destinationAddress", destination);
+        intent.putExtra("Destination", destinationBundle);
+        // add the participants
+        Bundle participantsBundle = new Bundle();
+        participantsBundle.putParcelableArrayList("Participants", participants);
+        // add the user
+        User user;
+        Random random = new Random();
+        String name = names[random.nextInt(names.length)];
+        Log.i("Participant Name",name);
+        String addr = pickup[random.nextInt(pickup.length)];
+        Log.i("Participant PickUp",addr);
+        boolean driver = random.nextBoolean();
+        int seats = 0;
+        if (driver) {
+            seats = ThreadLocalRandom.current().nextInt(1, 6+1);
+            user = new User(name , addr, getLocationFromAddress(context, addr), seats );
+        }
+        else {
+            user = new User(name, addr, getLocationFromAddress(context, addr));
+        }
+        participantsBundle.putParcelable("User", user);
+        intent.putExtra("Participants", participantsBundle);
+        // start
+        startActivity(intent);
+    }
+
     /** Method called to launch the CreateEventActivity */
     public void CreateEvent(View view){
         Intent intent = new Intent(MainActivity.this, CreateEventActivity.class);
@@ -121,13 +197,14 @@ public class MainActivity extends  AppCompatActivity {
         menuEvent.toggle(true);
     }
     /** Method called to launch the JoinEventActivity */
-    private void LaunchEvent(String identifier) {
+    private void JoinEvent(String identifier) {
 
         Intent intent = new Intent(MainActivity.this, JoinEventActivity.class);
         // For testing purposes only. TODO Remove!!!
         if(identifier.equals("teste")) {
-            intent.putExtra("Destination", createJoinActivityDestinationBundle());
-            intent.putExtra("Participants", createJoinActivityParticipantsBundle());
+            intent.putExtra("Title", "Tour de France");
+            intent.putExtra("Destination", createJoinActivityDestinationTestBundle());
+            intent.putExtra("Participants", createJoinActivityParticipantsTestBundle());
             startActivity(intent);
             // Drop the menu down
             menuEvent.toggle(true);
@@ -206,7 +283,7 @@ public class MainActivity extends  AppCompatActivity {
                 // Dismiss the popup window
                 cPopupWindow.dismiss();
                 // Confirm Event
-                MainActivity.this.LaunchEvent(identifier.getText().toString());
+                MainActivity.this.JoinEvent(identifier.getText().toString());
 
             }
         });
@@ -250,28 +327,54 @@ public class MainActivity extends  AppCompatActivity {
     /* Auxiliary methods */
 
     /** Request updates from the server and update eventList */
-    private void fetchUpdates() { /*TODO*/ }
+    private void fetchUpdates() { /*TODO*/
+        adapter.clear();
+        adapter.notifyDataSetChanged();
+        testPopulate();
+    }
 
     /** Method to populate the Activity ListView with dummy events */
     private void testPopulate() {
-
+        Random random = new Random();
         // Create our events
-        eventList.add(new Event("yoooo", "wassuppp", 10, "ic_launcher_round"));
-        eventList.add(new Event("ooooy", "bleeeee", 5, "ic_launcher_round"));
-        eventList.add(new Event("rsrsrsrs", "mekieeee", 100, "ic_launcher_round"));
-        eventList.add(new Event("yoooo", "wassuppp", 10, "ic_launcher_round"));
-        eventList.add(new Event("ooooy", "bleeeee", 5, "ic_launcher_round"));
-        eventList.add(new Event("rsrsrsrs", "mekieeee", 100, "ic_launcher_round"));
-        // Create our new array adapter
-        ArrayAdapter<Event> adapter = new EventArrayAdapter(this, 0, eventList);
-        // Find list view and bind it with the custom adapter
-        ListView listView = (ListView) findViewById(R.id.EventList);
-        listView.setAdapter(adapter);
-
+        int eventNum = ThreadLocalRandom.current().nextInt(1, 10 + 1);
+        Log.i("Nº Eventos", Integer.toString(eventNum));
+        for (int i=0; i<eventNum; i++ ) {
+            int participantsNum = ThreadLocalRandom.current().nextInt(3, 7 + 1);
+            Log.i("Nº Particiantes", Integer.toString(participantsNum));
+            participants = new ArrayList<>();
+            for(int j=0; j<participantsNum; j++) {
+                User participant;
+                String name = names[random.nextInt(names.length)];
+                Log.i("Participant Name",name);
+                String addr = pickup[random.nextInt(pickup.length)];
+                Log.i("Participant PickUp",addr);
+                // is driver?
+                boolean driver = random.nextBoolean();
+                int seats = 0;
+                if (driver) {
+                    seats = ThreadLocalRandom.current().nextInt(1, 6+1);
+                    participant = new User(name, addr, getLocationFromAddress(this, addr), seats );
+                }
+                else {
+                    participant = new User(names[random.nextInt(names.length)], addr, getLocationFromAddress(this, addr));
+                }
+                participants.add(participant);
+            }
+            Event event = new Event(titles[random.nextInt(titles.length)], locations[random.nextInt(locations.length)], participants.size(), "ic_launcher_round");
+            event.setParticipantsList(participants);
+            eventList.add(event);
+            Log.i("este evento", event.toString());
+            Log.i("estes participantes", participants.toString());
+            eventParticipants.put(event, participants);
+            Log.i("este evento 2", event.toString());
+            eventParticipants.get(event);
+            Log.i("estes participantes 2", eventParticipants.get(event).toString());
+        }
     }
 
     /** Create a Bundle with destinations Latitude, Longitude and Address */
-    public Bundle createJoinActivityDestinationBundle(){
+    public Bundle createJoinActivityDestinationTestBundle(){
 
         Bundle destinationBundle = new Bundle();
         LatLng destinationLatLng = getLocationFromAddress(getApplicationContext(), "R. Cap. Salgueiro Maia, 2725-079 Algueirão- Mem Martins, Portugal");
@@ -281,17 +384,17 @@ public class MainActivity extends  AppCompatActivity {
     }
 
     /** Create a Bundle of Users participating in an Event */
-    public Bundle createJoinActivityParticipantsBundle(){
+    public Bundle createJoinActivityParticipantsTestBundle(){
         Bundle participantsBundle = new Bundle();
         ArrayList<User> participants = new ArrayList<User>();
 
         //TODO remove after testing
         // Dummy user 1
-        User participant1 = new User("Participant1", "Avenida da Républica, Lisboa, Portugal", getLocationFromAddress(getApplicationContext(), "Avenida da Républica, Lisboa, Portugal"), false, 6);
+        User participant1 = new User("Participant1", "Avenida da Républica, Lisboa, Portugal", getLocationFromAddress(getApplicationContext(), "Avenida da Républica, Lisboa, Portugal"), 6);
         // Dummy user 2
-        User participant2 = new User("Participant2", "Instituto Superior Técnico", getLocationFromAddress(getApplicationContext(), "Instituto Superior Técnico"), true, 1);
+        User participant2 = new User("Participant2", "Instituto Superior Técnico", getLocationFromAddress(getApplicationContext(), "Instituto Superior Técnico"), 1);
         // Dummy user 3
-        User participant3 = new User("Participant3", "Algualva-Cacém", getLocationFromAddress(getApplicationContext(), "Agualva-Cacém"), true, 10);
+        User participant3 = new User("Participant3", "Algualva-Cacém", getLocationFromAddress(getApplicationContext(), "Agualva-Cacém"), 10);
 
         participants.add(participant1);
         participants.add(participant2);
@@ -301,7 +404,7 @@ public class MainActivity extends  AppCompatActivity {
     }
 
     /** Get latitude and longitude from the address*/
-    public LatLng getLocationFromAddress(Context context, String strAddress) {
+    public static LatLng getLocationFromAddress(Context context, String strAddress) {
 
         Geocoder coder = new Geocoder(context);
         List<Address> address;

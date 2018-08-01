@@ -1,139 +1,264 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:fab="http://schemas.android.com/apk/res-auto"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:map="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fillViewport="true"
-    tools:context=".JoinEventActivity">
+    android:layout_width="match_parent"
+    tools:context=".JoinEventActivity"
+    android:id="@+id/joinEventLayout">
+
+    <fragment
+        android:id="@+id/map"
+        android:name="com.google.android.gms.maps.SupportMapFragment"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        map:uiRotateGestures="true"
+        map:uiZoomGestures="true"
+        map:uiZoomControls="false"/>
 
     <LinearLayout
+        android:id="@+id/event_inputs"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginEnd="16dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="24dp"
+        android:gravity="center_vertical"
         android:orientation="vertical">
 
         <android.support.constraint.ConstraintLayout
-            android:id="@+id/joinEventActivityCL"
+            android:id="@+id/coordinates_inputs"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_above="@id/button_join">
+            android:background="@color/white_background_dark">
 
-            <fragment xmlns:android="http://schemas.android.com/apk/res/android"
-                xmlns:map="http://schemas.android.com/apk/res-auto"
-                xmlns:tools="http://schemas.android.com/tools"
-                android:id="@+id/destinationMap_join"
-                android:name="com.google.android.gms.maps.SupportMapFragment"
-                android:layout_width="match_parent"
-                android:layout_height="227dp"
-                map:uiRotateGestures="true"
-                map:uiZoomControls="true"
-                map:uiZoomGestures="true"
-                tools:context=".JoinEventActivity" />
+            <android.support.constraint.ConstraintLayout
+                android:id="@+id/start_to_destination_drawables"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@+id/coordinates_inputs">
+
+                <ImageView
+                    android:id="@+id/square_drawable"
+                    android:layout_width="5dp"
+                    android:layout_height="5dp"
+                    android:layout_marginStart="10dp"
+                    android:layout_marginTop="24dp"
+                    android:src="@drawable/small_square"
+                    map:layout_constraintStart_toStartOf="parent"
+                    map:layout_constraintTop_toTopOf="parent" />
+
+                <View
+                    android:id="@+id/line_drawable"
+                    android:layout_width="1dp"
+                    android:layout_height="32dp"
+                    android:layout_alignParentStart="true"
+                    android:layout_marginStart="12dp"
+                    android:background="#000000"
+                    map:layout_constraintStart_toStartOf="parent"
+                    map:layout_constraintTop_toBottomOf="@id/square_drawable" />
+
+                <ImageView
+                    android:id="@+id/circle_drawable"
+                    android:layout_width="5dp"
+                    android:layout_height="5dp"
+                    android:layout_marginStart="10dp"
+                    android:src="@drawable/small_circle"
+                    map:layout_constraintStart_toStartOf="parent"
+                    map:layout_constraintTop_toBottomOf="@id/line_drawable" />
+            </android.support.constraint.ConstraintLayout>
 
             <TextView
-                android:id="@+id/startTextView"
+                android:id="@+id/destination_information"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="8dp"
-                android:layout_marginStart="16dp"
-                android:layout_marginTop="16dp"
-                android:text="@string/question_starting_position"
-                android:textSize="18sp"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintHorizontal_bias="0.0"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/destinationMap_join" />
-
-            <fragment
-                android:id="@+id/start_autocomplete_fragment_join"
-                android:name="com.google.android.gms.location.places.ui.PlaceAutocompleteFragment"
-                android:layout_width="0dp"
-                android:layout_height="33dp"
-                android:layout_marginStart="8dp"
-                android:layout_marginTop="8dp"
-                app:layout_constraintEnd_toStartOf="@+id/imageButton3"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/startTextView" />
-
-            <ScrollView
-                android:id="@+id/scrollView2"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="8dp"
-                android:layout_marginStart="8dp"
-                android:layout_marginTop="16dp"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/start_autocomplete_fragment_join">
-
-                <expandablelib.gotogether.ExpandableLayout
-                    android:id="@+id/el_join"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    app:childLayout="@layout/layout_child"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:parentLayout="@layout/layout_parent"
-                    tools:layout_editor_absoluteX="8dp"
-                    tools:layout_editor_absoluteY="172dp" />
-
-            </ScrollView>
-
-            <ImageButton
-                android:id="@+id/imageButton3"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_height="32dp"
+                android:layout_alignParentTop="true"
                 android:layout_marginEnd="16dp"
+                android:layout_marginStart="8dp"
                 android:layout_marginTop="8dp"
-                android:background="@drawable/rectangle_roundcorners_border"
-                android:onClick="setMyLocation"
-                android:padding="5dp"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/startTextView"
-                app:srcCompat="@drawable/baseline_my_location_24" />
+                android:gravity="center_vertical"
+                android:paddingStart="8dp"
+                android:scrollHorizontally="true"
+                android:singleLine="true"
+                android:textSize="18sp"
+                android:textColor="@color/black"
+                map:layout_constraintEnd_toEndOf="parent"
+                map:layout_constraintStart_toEndOf="@+id/start_to_destination_drawables"
+                map:layout_constraintTop_toTopOf="parent" />
+
+            <EditText
+                android:id="@+id/start_autocomplete"
+                android:layout_width="0dp"
+                android:layout_height="32dp"
+                android:layout_marginBottom="8dp"
+                android:layout_marginEnd="16dp"
+                android:layout_marginStart="8dp"
+                android:layout_marginTop="8dp"
+                android:background="@color/white"
+                android:gravity="center_vertical"
+                android:hint="@string/question_starting_position"
+                android:paddingStart="8dp"
+                android:scrollHorizontally="true"
+                android:singleLine="true"
+                android:textCursorDrawable="@drawable/cursor_red"
+                android:textSize="18sp"
+                android:inputType="textCapSentences|textNoSuggestions"
+                android:imeOptions="actionDone"
+                map:layout_constraintBottom_toBottomOf="parent"
+                map:layout_constraintEnd_toEndOf="parent"
+                map:layout_constraintStart_toEndOf="@+id/start_to_destination_drawables"
+                map:layout_constraintTop_toBottomOf="@id/destination_information" />
         </android.support.constraint.ConstraintLayout>
 
-        <RelativeLayout
-            android:id="@+id/button_join"
+        <android.support.constraint.ConstraintLayout
+            android:id="@+id/driver_inputs"
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1">
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp">
 
-           <!-- <ImageButton
-                android:id="@+id/join_done"
-                android:layout_width="66dp"
-                android:layout_height="66dp"
-                android:layout_alignParentBottom="true"
-                android:layout_alignParentEnd="true"
-                android:layout_centerInParent="true"
-                android:layout_marginBottom="24dp"
-                android:layout_marginTop="24dp"
-                android:layout_marginEnd="8dp"
-                android:background="@drawable/shadow_circle"
-                android:contentDescription="TODO"
-                android:onClick="concludeCreation"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:srcCompat="@drawable/baseline_done_white_24" /> -->
-
-            <com.github.clans.fab.FloatingActionButton
-                android:id="@+id/join_done"
-                android:layout_width="wrap_content"
+            <android.support.constraint.ConstraintLayout
+                android:id="@+id/seat_question"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:layout_marginBottom="16dp"
-                android:layout_marginEnd="16dp"
-                android:src="@drawable/baseline_done_white_24"
-                fab:fab_size="normal"
-                style="@style/MenuButton_Green"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                android:layout_alignParentBottom="true"
-                android:layout_alignParentEnd="true"
-                android:onClick="concludeCreation"
-                android:visibility="invisible"
-                tools:visibility="visible" />
-        </RelativeLayout>
+                android:layout_below="@+id/driver_inputs"
+                android:layout_marginTop="20dp"
+                android:background="@color/white_background_dark"
+                android:visibility="visible"
+                map:layout_constraintEnd_toEndOf="parent"
+                map:layout_constraintTop_toTopOf="parent">
+
+                <ImageView
+                    android:id="@+id/circle_vehicle_drawable"
+                    android:layout_width="5dp"
+                    android:layout_height="5dp"
+                    android:layout_marginStart="10dp"
+                    android:layout_marginTop="38dp"
+                    android:src="@drawable/small_circle"
+                    android:visibility="visible"
+                    map:layout_constraintStart_toStartOf="parent"
+                    map:layout_constraintTop_toTopOf="parent" />
+
+                <LinearLayout
+                    android:id="@+id/driverInfo"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginTop="18dp"
+                    android:orientation="horizontal"
+                    android:visibility="visible"
+                    map:layout_constraintEnd_toEndOf="parent"
+                    map:layout_constraintStart_toEndOf="@id/circle_vehicle_drawable"
+                    map:layout_constraintTop_toTopOf="parent">
+
+                    <TextView
+                        android:id="@+id/seatNumberText"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="0.70"
+                        android:gravity="center_vertical"
+                        android:text="@string/seats_in_car"
+                        android:textSize="14sp"
+                        android:visibility="visible" />
+
+                    <EditText
+                        android:id="@+id/seatNumberEdit"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="16dp"
+                        android:layout_weight="0.10"
+                        android:hint="4"
+                        android:inputType="number"
+                        android:paddingEnd="8dp"
+                        android:paddingStart="8dp"
+                        android:textAlignment="center"
+                        android:textSize="16sp"
+                        android:visibility="visible"
+                        android:elevation="0dp"/>
+                </LinearLayout>
+
+            </android.support.constraint.ConstraintLayout>
+
+            <android.support.constraint.ConstraintLayout
+                android:id="@+id/driver_question"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@color/white_background_dark">
+
+                <TextView
+                    android:id="@+id/driver_question_tv"
+                    android:layout_width="0dp"
+                    android:layout_height="32dp"
+                    android:layout_alignParentTop="true"
+                    android:layout_marginBottom="8dp"
+                    android:layout_marginEnd="16dp"
+                    android:layout_marginStart="2dp"
+                    android:layout_marginTop="8dp"
+                    android:background="@color/white"
+                    android:clickable="true"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="8dp"
+                    android:drawableEnd="@drawable/checkbox_fill"
+                    android:drawablePadding="8dp"
+                    android:focusable="true"
+                    android:foreground="?android:attr/selectableItemBackground"
+                    android:gravity="center_vertical"
+                    android:onClick="DriverVolunteer"
+                    android:text="Do you volunteer as a driver?"
+                    android:textSize="18sp"
+                    map:layout_constraintBottom_toBottomOf="parent"
+                    map:layout_constraintEnd_toEndOf="parent"
+                    map:layout_constraintStart_toEndOf="@+id/vehicle_drawable"
+                    map:layout_constraintTop_toTopOf="parent" />
+
+                <ImageView
+                    android:id="@+id/vehicle_drawable"
+                    android:layout_width="wrap_content"
+                    android:layout_height="18dp"
+                    android:layout_marginStart="3dp"
+                    android:layout_marginTop="16dp"
+                    android:src="@drawable/baseline_directions_car_black_18"
+                    map:layout_constraintStart_toStartOf="parent"
+                    map:layout_constraintTop_toTopOf="parent" />
+            </android.support.constraint.ConstraintLayout>
+        </android.support.constraint.ConstraintLayout>
     </LinearLayout>
-</ScrollView>
+
+    <LinearLayout
+        android:id="@+id/suggestions_slider"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/event_inputs"
+        android:background="@color/white_background_dark"
+        android:visibility="visible"
+        android:orientation="vertical">
+
+        <Button
+            android:id="@+id/my_location"
+            android:layout_width="match_parent"
+            android:layout_height="32dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="8dp"
+            android:background="@color/white"
+            android:drawablePadding="8dp"
+            android:drawableStart="@drawable/baseline_my_location_black_18"
+            android:paddingEnd="8dp"
+            android:paddingStart="8dp"
+            android:text="Use my current location"
+            android:textAlignment="viewStart"
+            android:textAllCaps="false"
+            android:textSize="18sp"/>
+
+        <ListView
+            android:id="@+id/places_suggestions"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_below="@id/my_location"
+            android:layout_marginEnd="16dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="8dp"
+            android:background="@color/white"
+            android:divider="@android:color/transparent"
+            android:scrollbars="none"/>
+    </LinearLayout>
+</RelativeLayout>

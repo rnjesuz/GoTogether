@@ -1,6 +1,8 @@
 package app.gotogether;
 
 import android.Manifest;
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
@@ -16,27 +18,45 @@ import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.annotation.RequiresApi;
 import android.support.constraint.ConstraintLayout;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
+import android.text.Editable;
 import android.text.Html;
+import android.text.SpannableString;
+import android.text.Spanned;
 import android.text.TextUtils;
+import android.text.TextWatcher;
+import android.util.DisplayMetrics;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewGroupOverlay;
+import android.view.ViewTreeObserver;
 import android.view.animation.AnimationUtils;
+import android.view.inputmethod.EditorInfo;
+import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.ListView;
 import android.widget.PopupWindow;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -62,11 +82,11 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
-import com.google.android.gms.tasks.OnSuccessListener;
 
 import java.io.IOException;
 import java.util.List;
@@ -77,6 +97,7 @@ import expandablelib.gotogether.ExpandableLayout;
 import expandablelib.gotogether.Section;
 
 import static android.support.constraint.Constraints.TAG;
+import static app.gotogether.CreateEventActivity.hideKeyboard;
 
 public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener, ActivityCompat.OnRequestPermissionsResultCallback {
 
@@ -95,8 +116,19 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
     private String destination = null;
     private LatLng destinationLatLng = null;
     private String start = null;
-    private boolean isDriver = false;
+    private LatLng startLatLng;
+    private String title = null;
+    private boolean isDriver = true;
     private int emptySeats = -1; // -1 = no car. >0 = how many empty seats
+    private GooglePlacesAutocompleteAdapter dataAdapter;
+    private ListView placeSuggestions;
+    private EditText startET;
+    private boolean searching;
+    private boolean locationClick = false;
+    private ActionBar actionBar;
+    private Marker mStart;
+    private LinearLayout suggestions;
+    private static final int UP_BUTTON_ID = 16908332; // because R.id.home doesn't seem to work....
 
     @SuppressLint("ClickableViewAccessibility")
     @Override
@@ -106,7 +138,7 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
         getSupportActionBar().setHomeAsUpIndicator(R.drawable.ic_close); // change the return to parent button
 
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
-                .findFragmentById(R.id.destinationMap_join);
+                .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
         Bundle bundle = getIntent().getParcelableExtra("Destination");
@@ -115,26 +147,138 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
         // Get destination latitude and longitude
         destinationLatLng = bundle.getParcelable("destinationLatLng");
 
-        // Initialize both fragment (Start and Destination queries) for Google's Places API
-        initializePlaceAutoCompleteFragments();
-        // Initialize an ExpandableLayout that opens if user wants to volunteer as driver
-        initializeExpandableLayout();
+        // Get event title
+        title = getIntent().getStringExtra("Title");
+
         // Set location service provider
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
         // Build location request parameters
         buildLocationRequest();
 
-        FloatingActionButton completeEvent = (FloatingActionButton) findViewById(R.id.join_done);
-        completeEvent.setShowAnimation(AnimationUtils.loadAnimation(this, R.anim.fab_scale_up));
-        completeEvent.setHideAnimation(AnimationUtils.loadAnimation(this, R.anim.fab_scale_down));
-        int delay = 1000;
-        new Handler().postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                completeEvent.show(true);
-            }
-        }, delay);
+        // get destination field - set it to destination addr
+        TextView destinationTV = findViewById(R.id.destination_information);
+        destinationTV.setText(destination);
 
+        // set the adapter use to get place suggestions
+        dataAdapter = new GooglePlacesAutocompleteAdapter(JoinEventActivity.this, R.layout.place_suggestion_view){};
+        // get references to some layout views
+        placeSuggestions =  findViewById(R.id.places_suggestions);
+        startET = findViewById(R.id.start_autocomplete);
+
+        // Assign adapter to ListView
+        placeSuggestions.setAdapter(dataAdapter);
+        //enables filtering for the contents of the given ListView
+        placeSuggestions.setTextFilterEnabled(true);
+        // behavior when item is clicked
+        placeSuggestions.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int ClickedPosition, long id) {
+                //Getting clicked item from list view
+                start = dataAdapter.getItem(ClickedPosition);
+                startET.setText(start);
+                addMapMarker("Start", start);
+                startET.clearFocus();
+                hideKeyboard(JoinEventActivity.this);
+                CollapseAfterInput();
+                searching = false;
+            }
+        });
+
+        // Get a support ActionBar corresponding to this toolbar
+        actionBar = getSupportActionBar();
+        // Changing title
+        actionBar.setTitle(title);
+
+        // Enable the Up button
+        actionBar.setDisplayHomeAsUpEnabled(true);
+        // change the up button icon
+        actionBar.setHomeAsUpIndicator(R.drawable.ic_close);
+        // set slider as invisible
+        suggestions = findViewById(R.id.suggestions_slider);
+        suggestions.setVisibility(View.INVISIBLE);
+
+        startET.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if (event.getAction() == MotionEvent.ACTION_UP) {
+                    // has drawable?  || 0 = left, 1 = top, 2 = right, 3 = bottom
+                    if (startET.getCompoundDrawables()[2] != null) {
+                        // clicked on the drawable?
+                        if (event.getRawX() >= (startET.getRight() - startET.getLeft() - startET.getCompoundDrawables()[2].getBounds().width())) {
+                            start = null; // delete start addr
+                            // remove corresponding marker
+                            if(mStart!=null) {
+                                mStart.remove();
+                                mStart = null;
+                            }
+                            startET.setText(null);
+                            startET.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
+                            // if text was cleared while slider is collapsed
+                            if(!searching) {
+                                Log.i("teste", Boolean.toString(searching));
+                                startET.clearFocus();
+                                return true; // to prevent keyboard appearance
+                            }
+                            return false;
+                        }
+                        // clicked outside drawable
+                        else {
+                            StartAutoComplete();
+                            return false;
+                        }
+                    }
+                    // no drawable
+                    else {
+                        StartAutoComplete();
+                        return false;
+                    }
+                }
+                return false;
+            }
+        });
+        startET.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                // no text
+                if(s.length() == 0){
+                    // has drawable?  || 0 = left, 1 = top, 2 = right, 3 = bottom
+                    if (startET.getCompoundDrawables()[2] != null)
+                        startET.setCompoundDrawablesWithIntrinsicBounds(null,null,null,null);
+                } else {
+                    startET.setCompoundDrawablesWithIntrinsicBounds(0,0, R.drawable.ic_close_red,0);
+                }
+                if (!locationClick)
+                    dataAdapter.getFilter().filter(s.toString());
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+            }
+        });
+        startET.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+            @Override
+            public void onFocusChange(View v, boolean hasFocus) {
+                if (!hasFocus){
+                    dataAdapter.clear();
+                    dataAdapter.getFilter().filter("");
+                    dataAdapter.notifyDataSetChanged();
+                }
+            }
+        });
+
+        Button myLocation = findViewById(R.id.my_location);
+        // add a listener for click
+        myLocation.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                setMyLocation(v);
+                hideKeyboard(JoinEventActivity.this);
+                CollapseAfterInput();
+                searching = false;
+            }
+        });
     }
 
     private void buildLocationRequest() {
@@ -143,14 +287,15 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
                 .setInterval(5 * 1000)        // 10 seconds, in milliseconds
                 .setFastestInterval(1 * 1000); // 1 second, in milliseconds
         // Build callback for new location request
-        buildLocationCalback();
+        buildLocationCallback();
     }
 
-    private void buildLocationCalback() {
+    private void buildLocationCallback() {
         mLocationCallback = new LocationCallback(){
             @Override
             public void onLocationResult(LocationResult locationResult) {
                 if (locationResult == null) {
+                    Log.e("GPS", "LocationResult returned with null");
                     return;
                 }
 
@@ -160,10 +305,12 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
                     currentLocation = location;
                 }
 
-                // Get an address for the location and write it in the AutoComplete fragment
+                // Get an address for the location and write it in the AutoComplete EditText
                 start = getCompleteAddressString(currentLocation.getLatitude(), currentLocation.getLongitude());
-                PlaceAutocompleteFragment startAutocompleteFragment = (PlaceAutocompleteFragment) getFragmentManager().findFragmentById(R.id.start_autocomplete_fragment_join);
-                startAutocompleteFragment.setText(start);
+                locationClick = true;
+                startET.setText(start);
+                addMapMarker("Start", start);
+                locationClick = false; // reset
 
                 // Remove continuous location updates after we get current location
                 mFusedLocationClient.removeLocationUpdates(mLocationCallback);
@@ -183,16 +330,17 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
-        // Move the camera
-        CameraUpdate cu = CameraUpdateFactory.newLatLngZoom(destinationLatLng, 12);
-        mMap.moveCamera(cu);
-        // Add some markers to the map, and add a data object to each marker.
-        //Bitmap img = BitmapFactory.decodeResource(getResources(),R.drawable.destination_png); // new icon
-        //BitmapDescriptor bitmapDescriptor = BitmapDescriptorFactory.fromBitmap(img);
-        mDestination = mMap.addMarker(new MarkerOptions().position(destinationLatLng).title("Destination").snippet(destination));
-        mDestination.showInfoWindow();
         // Set a listener for marker click.
         mMap.setOnMarkerClickListener(this);
+        // disable map tools
+        googleMap.getUiSettings().setMapToolbarEnabled(false);
+        // set some padding to restrict markers to bottom half
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+        int screenHeight = displayMetrics.heightPixels;
+        mMap.setPadding(0, screenHeight / 2, 0, 0);
+        // Add destination marker to the map
+        addMapMarker("Destination", destination);
     }
 
     /** Called when the user clicks a marker. */
@@ -201,80 +349,243 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
 
         // Show Toast with marker location
         Toast.makeText(this, marker.getTitle() + "\n" + marker.getSnippet(), Toast.LENGTH_SHORT).show();
+        // Show marker info window
+        marker.showInfoWindow();
 
         // Return false to indicate that we have not consumed the event and that we wish
         // for the default behavior to occur (which is for the camera to move such that the
         // marker is centered and for the marker's info window to open, if it has one).
-        return false;
+        return true;
     }
 
-    private void initializeExpandableLayout() {
-        // get the layout
-        ExpandableLayout sectionLinearLayout = (ExpandableLayout) findViewById(R.id.el_join);
-        // set renderers for parent and child views
-        sectionLinearLayout.setRenderer(new ExpandableLayout.Renderer<Driver, SeatNumber>() {
-            @Override
-            public void renderParent(View view, Driver model, boolean isExpanded, int parentPosition) {
-                ((TextView) view.findViewById(R.id.tvParent)).setText(model.name);
-                view.findViewById(R.id.checkbox).setBackgroundResource(isExpanded ? R.drawable.checkbox_fill : R.drawable.checkbox_outlined);
+    private void addMapMarker(String label, String address){
+        // Add some markers to the map, and add a data object to each marker.
+        if (label.equals("Destination")){
+            mDestination = mMap.addMarker(new MarkerOptions().position(destinationLatLng).title(label).snippet(address));
+            mDestination.showInfoWindow();
+        }
+        if (label.equals("Start")){
+            startLatLng = getLocationFromAddress(this, address); // Get LatLng
+            mStart = mMap.addMarker(new MarkerOptions().position(startLatLng).title(label).snippet(address).icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
+            mStart.showInfoWindow();
+        }
+        // Move the camera
+        moveCamera();
+    }
+
+    private void removeMapMarker(Marker marker){
+        marker.remove();
+    }
+
+    private void moveCamera() {
+        if(mStart==null){
+            //no destination so we center on pickup
+            CameraUpdate cu = CameraUpdateFactory.newLatLngZoom(destinationLatLng, 12);
+            mMap.moveCamera(cu);
+        }
+        else {
+            // we have both locations so we center on them
+            // Center map between pick-up and destination
+            final View mapView = getSupportFragmentManager().findFragmentById(R.id.map).getView();
+            if (mapView.getViewTreeObserver().isAlive()) {
+                mapView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                    @SuppressLint("NewApi") // We check which build version we are using.
+                    @Override
+                    public void onGlobalLayout() {
+                        LatLngBounds bounds = new LatLngBounds.Builder()
+                                .include(destinationLatLng)
+                                .include(startLatLng)
+                                .build();
+                        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN) {
+                            mapView.getViewTreeObserver().removeGlobalOnLayoutListener(this);
+                        } else {
+                            mapView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                        }
+                        mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, 200));
+                    }
+                });
             }
+        }
+    }
 
-            @Override
-            public void renderChild(View view, SeatNumber model, int parentPosition, int childPosition) {
-                ((TextView) view.findViewById(R.id.tvChild)).setText(model.name);
-            }
-        });
+    /** Override method to change functionality in times where layout is CollapsedForInput() */
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case UP_BUTTON_ID: // hardcoded cause i can't find the id name for the up button
+                if (searching) {
+                    hideKeyboard(JoinEventActivity.this);
+                    CollapseAfterInput();
+                    searching = false;
+                } else
+                    return false; // don't consume the action
+                return true;
 
-        // create wanted sections - one, to ask for driving possibility
-        sectionLinearLayout.addSection(getSection());
+            case R.id.action_create:
+                concludeCreation();
+                return false;
 
-        //create listeners for expansion or collapse of the layout
-        sectionLinearLayout.setExpandListener((ExpandCollapseListener.ExpandListener<Driver>) (parentIndex, parent, view) -> {
-            // layout expanded = volunteering for driving
-            isDriver = true;
-        });
-        sectionLinearLayout.setCollapseListener((ExpandCollapseListener.CollapseListener<Driver>) (parentIndex, parent, view) -> {
-            // layout collapsed = don't want to be driver
+            default:
+                // If we got here, the user's action was not recognized.
+                // Invoke the superclass to handle it.
+                return super.onOptionsItemSelected(item);
+        }
+    }
+
+    /** Override method to change functionality in times where layout is CollapsedForInput() */
+    public void onBackPressed(){
+        if(searching){
+            hideKeyboard(JoinEventActivity.this);
+            CollapseAfterInput();
+            searching = false;
+        }
+        else
+            super.onBackPressed();
+    }
+
+    private void StartAutoComplete() {
+        // expand the Layout
+        ExpandForInput();
+        // indicate searching for pickup location
+        searching = true;
+    }
+
+    private void ExpandForInput() {
+        // move the layout up by removing margins
+        LinearLayout grandparent = findViewById(R.id.event_inputs);
+        ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) grandparent.getLayoutParams();
+        params.leftMargin=0; params.rightMargin=0; params.topMargin=0;
+
+        ImageView topImage= findViewById(R.id.square_drawable);
+        ViewGroup.MarginLayoutParams paramsIMG = (ViewGroup.MarginLayoutParams) topImage.getLayoutParams();
+        paramsIMG.topMargin = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 16, getResources().getDisplayMetrics());
+        topImage.setLayoutParams(paramsIMG);
+
+        TextView topInsert = findViewById(R.id.destination_information);
+        ViewGroup.MarginLayoutParams paramsTV = (ViewGroup.MarginLayoutParams) topInsert.getLayoutParams();
+        paramsTV.topMargin = 0;
+        topInsert.setLayoutParams(paramsTV);
+
+        // add padding
+        ConstraintLayout parent = findViewById(R.id.coordinates_inputs);
+        parent.setPadding((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 16, getResources().getDisplayMetrics()),
+                0,
+                (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 16, getResources().getDisplayMetrics()),
+                (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 8, getResources().getDisplayMetrics()));
+        grandparent.requestLayout();
+        // change action bar color
+        actionBar.setBackgroundDrawable(new ColorDrawable(getResources().getColor(R.color.white_background_dark)));
+        // change actionbar elevation
+        //TODO or maybe set the input fields elevation?
+        actionBar.setElevation(0);
+        // remove actionbar title
+        actionBar.setTitle("");
+        // remove the driver layout
+        ConstraintLayout driverInputs = findViewById(R.id.driver_inputs);
+        driverInputs.setVisibility(View.GONE);
+        // change up button icon
+        actionBar.setHomeAsUpIndicator(R.drawable.ic_arrow_black); // the default arrow
+        // change create option color
+        TextView create = findViewById(R.id.action_create);
+        create.setTextColor(getResources().getColor(R.color.black));
+        // slide up the suggestions layout
+        suggestions.setVisibility(View.VISIBLE);
+        suggestions.animate().translationY(0);
+    }
+
+    private void CollapseAfterInput() {
+        // move the layout down by adding margins
+        LinearLayout grandparent = findViewById(R.id.event_inputs);
+        ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) grandparent.getLayoutParams();
+        params.leftMargin=(int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 16, getResources().getDisplayMetrics());
+        params.rightMargin=(int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 16, getResources().getDisplayMetrics());
+        params.topMargin=(int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 24, getResources().getDisplayMetrics());
+
+        ImageView topImage= findViewById(R.id.square_drawable);
+        ViewGroup.MarginLayoutParams paramsIMG = (ViewGroup.MarginLayoutParams) topImage.getLayoutParams();
+        paramsIMG.topMargin = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 24, getResources().getDisplayMetrics());
+        topImage.setLayoutParams(paramsIMG);
+
+        TextView topInsert = findViewById(R.id.destination_information);
+        ViewGroup.MarginLayoutParams paramsTV = (ViewGroup.MarginLayoutParams) topInsert.getLayoutParams();
+        paramsTV.topMargin = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 8, getResources().getDisplayMetrics());
+        topInsert.setLayoutParams(paramsTV);
+
+        // add padding
+        ConstraintLayout parent = findViewById(R.id.coordinates_inputs);
+        parent.setPadding(0,0,0,0);
+        grandparent.requestLayout();
+        grandparent.requestLayout();
+        // change action bar color
+        actionBar.setBackgroundDrawable(new ColorDrawable(getResources().getColor(R.color.green_normal)));
+        // change actionbar elevation
+        actionBar.setElevation((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 4, getResources().getDisplayMetrics()));
+        // remove actionbar title
+        actionBar.setTitle(title);
+        // set the driver layout visible
+        ConstraintLayout driverInputs = findViewById(R.id.driver_inputs);
+        driverInputs.setVisibility(View.VISIBLE);
+        // change up button icon
+        actionBar.setHomeAsUpIndicator(R.drawable.ic_close); // the default arrow
+        // change create option color
+        TextView create = findViewById(R.id.action_create);
+        create.setTextColor(getResources().getColor(R.color.white));
+        // slide down the suggestions layout
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+        int screenHeight = displayMetrics.heightPixels;
+        suggestions.animate().translationY(screenHeight - parent.getHeight());
+    }
+
+    // create an action bar button
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.create_menu, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    public void DriverVolunteer(View view){
+        ConstraintLayout seatQuestion = (ConstraintLayout) findViewById(R.id.seat_question);
+        TextView driverQuestion = (TextView) findViewById(R.id.driver_question_tv);
+        seatQuestion.requestLayout();
+        if(isDriver) {
+            driverQuestion.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.checkbox_outlined, 0);
+            slideDrawerUp(seatQuestion);
             isDriver = false;
-            emptySeats = -1;
-        });
+        } else {
+            driverQuestion.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.checkbox_fill, 0);
+            slideDrawerDown(seatQuestion);
+            isDriver = true;
+        }
     }
 
-    private void initializePlaceAutoCompleteFragments() {
-
-        // Set bounds to Portugal
-        LatLngBounds portugalBounds = new LatLngBounds(new LatLng(32.2895, -31.4648), new LatLng(42.154311, -6.189159));
-
-        //the fragment for the starting location
-        PlaceAutocompleteFragment startAutocompleteFragment = (PlaceAutocompleteFragment) getFragmentManager().findFragmentById(R.id.start_autocomplete_fragment_join);
-        startAutocompleteFragment.setOnPlaceSelectedListener(new PlaceSelectionListener() {
-            @Override
-            public void onPlaceSelected(Place place) {
-                // TODO: Get info about the selected place.
-                start = place.getAddress().toString();
-                Log.i(TAG, "Place - start: " + place.getAddress().toString());
-            }
-
-            @Override
-            public void onError(Status status) {
-                // TODO: Handle the error.
-                Log.i(TAG, "An error occurred: " + status);
-            }
-        });
-
-        startAutocompleteFragment.setBoundsBias(portugalBounds);
+    private void slideDrawerUp(ConstraintLayout view) {
+        view.animate()
+                .translationY(-view.getHeight()/2)
+                .alpha(0.0f)
+                .setDuration(1000)
+                .setListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        super.onAnimationEnd(animation);
+                        view.setVisibility(View.INVISIBLE);
+                    }
+                });
     }
 
-    /** Create a section to be displayed in the ExpandableLayout */
-    public Section<Driver, SeatNumber> getSection() {
-        Section<Driver, SeatNumber> Section = new Section<>();
-        Driver Driver = new Driver(parents);
-        SeatNumber seat = new SeatNumber();
+    private void slideDrawerDown(ConstraintLayout view) {
+        view.setVisibility(View.VISIBLE);
+        view.setAlpha(0.0f);
 
-        Section.parent = Driver;
-        Section.children.add(seat);
-        Section.expanded = false;
-        return Section;
+        int bottom = view.getTop();
+        int top = view.getBottom();
+        // Start the animation
+        view.animate()
+                .translationY(bottom-top+(view.getHeight()))
+                .alpha(1.0f)
+                .setDuration(1000)
+                .setListener(null);
     }
 
     /**
@@ -282,7 +593,7 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
      Validate activity fields
      */
     @RequiresApi(api = Build.VERSION_CODES.O)
-    public void concludeCreation(View view) {
+    public void concludeCreation() {
         // Has pick-up location?
         if (start == null) {
             // Send error message
@@ -290,7 +601,7 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
             return;
         }
         // Volunteered as driver?
-        EditText seatsText = findViewById(R.id.tvChild);
+        EditText seatsText = findViewById(R.id.seatNumberEdit);
         boolean unspecifiedSeats = TextUtils.isEmpty(seatsText.getText());
         if (isDriver) {
             if (unspecifiedSeats) {
@@ -306,7 +617,7 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
     }
 
     public void createTextPopUpWindow(String message) {
-        ConstraintLayout tConstraintLayout = (ConstraintLayout) findViewById(R.id.joinEventActivityCL);
+        RelativeLayout tConstraintLayout = (RelativeLayout) findViewById(R.id.joinEventLayout);
         PopupWindow tPopupWindow;
         // Initialize a new instance of LayoutInflater service
         LayoutInflater inflater = (LayoutInflater) getApplicationContext().getSystemService(LAYOUT_INFLATER_SERVICE);
@@ -380,7 +691,7 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
     }
 
     private void createConfirmationPopUpWindow() {
-        ConstraintLayout cConstraintLayout = (ConstraintLayout) findViewById(R.id.joinEventActivityCL);
+        RelativeLayout cConstraintLayout = (RelativeLayout) findViewById(R.id.joinEventLayout);
         PopupWindow cPopupWindow;
         // Initialize a new instance of LayoutInflater service
         LayoutInflater inflater = (LayoutInflater) getApplicationContext().getSystemService(LAYOUT_INFLATER_SERVICE);
@@ -414,6 +725,13 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
         if (Build.VERSION.SDK_INT >= 21) {
             cPopupWindow.setElevation(5.0f);
         }
+
+        // Get a reference for the custom view title
+        TextView titleText = (TextView) customView.findViewById(R.id.titleTV);
+        String htmlTitle = "<b>"+title+"</b>";
+        Spanned s = Html.fromHtml(htmlTitle);
+        SpannableString sString = new SpannableString(s);
+        titleText.setText(sString);
 
         // Get a reference for the custom view text
         TextView messageText = (TextView) customView.findViewById(R.id.tv);
@@ -514,14 +832,16 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
 
         //Launch new activity
         // TODO do split? if finalized : if not finalized - different activities based on each
-        /*Bundle args = new Bundle();
-        LatLng destinationLatLng = getLocationFromAddress(getApplicationContext(), destination);
-        args.putParcelable("destinationLatLng", destinationLatLng);*/
         Intent intent = new Intent(JoinEventActivity.this, EventActivity.class);
+        // Title
+        intent.putExtra("Title", title);
+        // Destination
         intent.putExtra("Destination", (Bundle) getIntent().getParcelableExtra("Destination"));
+        // PickUp
         Bundle participantsBundle = getIntent().getParcelableExtra("Participants");
         participantsBundle.putParcelable("User", createUser());
         intent.putExtra("Participants", participantsBundle);
+        // Start
         startActivity(intent);
     }
 
@@ -554,7 +874,7 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
         LatLng startLatLng = getLocationFromAddress(getApplicationContext(), start);
         User user;
         if (isDriver) {
-            user = new User("Ricardo", start, startLatLng, isDriver, emptySeats);
+            user = new User("Ricardo", start, startLatLng, emptySeats);
         } else {
             user = new User("Ricardo", start, startLatLng);
         }
@@ -578,27 +898,6 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
                 if (checkConnectivity()) {
                     Log.i("Set My Location", "Getting new location");
                     mFusedLocationClient.requestLocationUpdates(mLocationRequest, mLocationCallback, null);
-
-                /*Log.i(TAG, "GPS is turned on. Getting last known location");
-                mFusedLocationClient.getLastLocation()
-                        .addOnSuccessListener(this, new OnSuccessListener<Location>() {
-                            @SuppressLint("MissingPermission")
-                            @Override
-                            public void onSuccess(Location location) {
-                                // Got last known location. In some rare situations this can be null.
-                                if (location != null) {
-                                    Log.i("Set My Location", "Using last known location");
-                                    String locationAddress = getCompleteAddressString(location.getLatitude(), location.getLongitude());
-                                    start = locationAddress;
-                                    PlaceAutocompleteFragment startAutocompleteFragment = (PlaceAutocompleteFragment) getFragmentManager().findFragmentById(R.id.start_autocomplete_fragment_join);
-                                    startAutocompleteFragment.setText(start);
-                                } else {
-                                    Log.i("Set My Location", "Getting new location");
-                                    mFusedLocationClient.requestLocationUpdates(mLocationRequest, mLocationCallback, null );
-                                }
-                            }
-                        });*/
-
                 }
                 else {
                     Toast.makeText(JoinEventActivity.this,"No Internet connection detected.",Toast.LENGTH_SHORT).show();

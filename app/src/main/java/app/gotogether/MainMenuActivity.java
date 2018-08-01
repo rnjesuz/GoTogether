@@ -181,11 +181,11 @@ public class MainMenuActivity extends AppCompatActivity
         Bundle participantsBundle = new Bundle();
         ArrayList<User> participants = new ArrayList<User>();
         // Dummy user 1
-        User participant1 = new User("Participant1", "Avenida da Républica, Lisboa, Portugal", getLocationFromAddress(getApplicationContext(), "Avenida da Républica, Lisboa, Portugal"), false, 6);
+        User participant1 = new User("Participant1", "Avenida da Républica, Lisboa, Portugal", getLocationFromAddress(getApplicationContext(), "Avenida da Républica, Lisboa, Portugal"), 6);
         // Dummy user 2
-        User participant2 = new User("Participant2", "Instituto Superior Técnico", getLocationFromAddress(getApplicationContext(), "Instituto Superior Técnico"), true, 1);
+        User participant2 = new User("Participant2", "Instituto Superior Técnico", getLocationFromAddress(getApplicationContext(), "Instituto Superior Técnico"), 1);
         // Dummy user 3
-        User participant3 = new User("Participant3", "Algualva-Cacém", getLocationFromAddress(getApplicationContext(), "Agualva-Cacém"), true, 10);
+        User participant3 = new User("Participant3", "Algualva-Cacém", getLocationFromAddress(getApplicationContext(), "Agualva-Cacém"), 10);
 
         participants.add(participant1);
         participants.add(participant2);
@@ -317,7 +317,7 @@ public class MainMenuActivity extends AppCompatActivity
         //eventIdentifier = editable.toString();
 
 
-        Intent intent = new Intent(MainMenuActivity.this, JoinEventActivity.class);
+        Intent intent = new Intent(MainMenuActivity.this, JoinEventOldActivity.class);
         // For testing purposes only. TODO Remove!!!
         if(identifier.equals("teste")) {
             intent.putExtra("Destination", createJoinActivityDestinationBundle());

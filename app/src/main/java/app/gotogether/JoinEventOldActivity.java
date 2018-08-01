@@ -13,18 +13,18 @@ import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationManager;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Build;
 import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.annotation.RequiresApi;
 import android.support.constraint.ConstraintLayout;
-import android.os.Bundle;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.os.Bundle;
 import android.text.Html;
-import android.text.SpannableString;
-import android.text.Spanned;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.Gravity;
@@ -38,7 +38,6 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.PopupWindow;
 import android.widget.TextView;
-import android.view.ViewGroup.LayoutParams;
 import android.widget.Toast;
 
 import com.github.clans.fab.FloatingActionButton;
@@ -58,9 +57,15 @@ import com.google.android.gms.location.LocationSettingsStatusCodes;
 import com.google.android.gms.location.places.Place;
 import com.google.android.gms.location.places.ui.PlaceAutocompleteFragment;
 import com.google.android.gms.location.places.ui.PlaceSelectionListener;
+import com.google.android.gms.maps.CameraUpdate;
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
-
+import com.google.android.gms.maps.model.Marker;
+import com.google.android.gms.maps.model.MarkerOptions;
 
 import java.io.IOException;
 import java.util.List;
@@ -72,37 +77,42 @@ import expandablelib.gotogether.Section;
 
 import static android.support.constraint.Constraints.TAG;
 
-public class CreateEventOldActivity extends AppCompatActivity implements
-        GoogleApiClient.ConnectionCallbacks,
-        GoogleApiClient.OnConnectionFailedListener,
-        com.google.android.gms.location.LocationListener {
+public class JoinEventOldActivity extends AppCompatActivity implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener, ActivityCompat.OnRequestPermissionsResultCallback {
 
     /** Id to identify a location permission request. */
     private static final int REQUEST_LOCATION = 0;
-    private static final int CONNECTION_FAILURE_RESOLUTION_REQUEST = 9000;
     /** Permissions required to use device location. */
     private static String[] PERMISSIONS_LOCATION = {Manifest.permission.ACCESS_FINE_LOCATION};
-    private GoogleApiClient mGoogleApiClient;
-    private Location mLastLocation;
     /** Provider of the user geolocation */
     private FusedLocationProviderClient mFusedLocationClient;
     private LocationRequest mLocationRequest;
     private LocationCallback mLocationCallback;
-    private Location currentLocation = null;
+    private GoogleApiClient googleApiClient;
+    private GoogleMap mMap;
+    private Marker mDestination;
     private String parents = "Do you volunteer as a Driver?";
     private String destination = null;
+    private LatLng destinationLatLng = null;
     private String start = null;
     private boolean isDriver = false;
     private int emptySeats = -1; // -1 = no car. >0 = how many empty seats
-    private boolean mRequestingLocationUpdates = false;
 
     @SuppressLint("ClickableViewAccessibility")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_create_event_old);
+        setContentView(R.layout.activity_join_event_old);
         getSupportActionBar().setHomeAsUpIndicator(R.drawable.ic_close); // change the return to parent button
 
+        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.destinationMap_join);
+        mapFragment.getMapAsync(this);
+
+        Bundle bundle = getIntent().getParcelableExtra("Destination");
+        // Get destination
+        destination = bundle.getString("destinationAddress");
+        // Get destination latitude and longitude
+        destinationLatLng = bundle.getParcelable("destinationLatLng");
 
         // Initialize both fragment (Start and Destination queries) for Google's Places API
         initializePlaceAutoCompleteFragments();
@@ -111,12 +121,9 @@ public class CreateEventOldActivity extends AppCompatActivity implements
         // Set location service provider
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
         // Build location request parameters
-        mLocationRequest = LocationRequest.create()
-                .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
-                .setInterval(5 * 1000)        // 10 seconds, in milliseconds
-                .setFastestInterval(1 * 1000); // 1 second, in milliseconds
+        buildLocationRequest();
 
-        FloatingActionButton completeEvent = (FloatingActionButton) findViewById(R.id.create_done);
+        FloatingActionButton completeEvent = (FloatingActionButton) findViewById(R.id.join_done);
         completeEvent.setShowAnimation(AnimationUtils.loadAnimation(this, R.anim.fab_scale_up));
         completeEvent.setHideAnimation(AnimationUtils.loadAnimation(this, R.anim.fab_scale_down));
         int delay = 1000;
@@ -126,12 +133,19 @@ public class CreateEventOldActivity extends AppCompatActivity implements
                 completeEvent.show(true);
             }
         }, delay);
+
     }
 
-    /** Build callback for new location request
-     *  After a location is found it's translated into an address and written on the respective AutoComplete Fragment
-     * @param location it's used to differentiate between a destination request and a start request*/
-    private void buildLocationCallBack(String location){
+    private void buildLocationRequest() {
+        mLocationRequest = LocationRequest.create()
+                .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
+                .setInterval(5 * 1000)        // 10 seconds, in milliseconds
+                .setFastestInterval(1 * 1000); // 1 second, in milliseconds
+        // Build callback for new location request
+        buildLocationCalback();
+    }
+
+    private void buildLocationCalback() {
         mLocationCallback = new LocationCallback(){
             @Override
             public void onLocationResult(LocationResult locationResult) {
@@ -139,68 +153,63 @@ public class CreateEventOldActivity extends AppCompatActivity implements
                     return;
                 }
 
-                //currentLocation = (Location) locationResult.getLastLocation();
+                Location currentLocation = null;
+                // TODO is this really only 1 location?
                 for (Location location: locationResult.getLocations()) {
                     currentLocation = location;
                 }
 
-                // Start or destination request?
-                if(location.equals("start"))
-                    handleNewLocation(currentLocation, "start");
-                else if (location.equals("destination"))
-                    handleNewLocation(currentLocation, "destination");
+                // Get an address for the location and write it in the AutoComplete fragment
+                start = getCompleteAddressString(currentLocation.getLatitude(), currentLocation.getLongitude());
+                PlaceAutocompleteFragment startAutocompleteFragment = (PlaceAutocompleteFragment) getFragmentManager().findFragmentById(R.id.start_autocomplete_fragment_join);
+                startAutocompleteFragment.setText(start);
 
+                // Remove continuous location updates after we get current location
                 mFusedLocationClient.removeLocationUpdates(mLocationCallback);
             }};
     }
 
-    private void initializePlaceAutoCompleteFragments() {
 
-        // Create bounds to Portugal
-        LatLngBounds portugalBounds = new LatLngBounds(new LatLng(32.2895, -31.4648), new LatLng(42.154311, -6.189159));
+    /**
+     * Manipulates the map once available.
+     * This callback is triggered when the map is ready to be used.
+     * This is where we can add markers or lines, add listeners or move the camera.
+     * If Google Play services is not installed on the device, the user will be prompted to install
+     * it inside the SupportMapFragment. This method will only be triggered once the user has
+     * installed Google Play services and returned to the app.
+     */
+    @Override
+    public void onMapReady(GoogleMap googleMap) {
+        mMap = googleMap;
 
-        //the fragment for the destination
-        PlaceAutocompleteFragment destinationAutocompleteFragment = (PlaceAutocompleteFragment) getFragmentManager().findFragmentById(R.id.destination_autocomplete_fragment_create);
-        destinationAutocompleteFragment.setOnPlaceSelectedListener(new PlaceSelectionListener() {
-            @Override
-            public void onPlaceSelected(Place place) {
-                // TODO: Get info about the selected place.
-                destination = place.getAddress().toString();
-                Log.i(TAG, "Place - destination: " + place.getAddress().toString());
-            }
+        // Move the camera
+        CameraUpdate cu = CameraUpdateFactory.newLatLngZoom(destinationLatLng, 12);
+        mMap.moveCamera(cu);
+        // Add some markers to the map, and add a data object to each marker.
+        //Bitmap img = BitmapFactory.decodeResource(getResources(),R.drawable.destination_png); // new icon
+        //BitmapDescriptor bitmapDescriptor = BitmapDescriptorFactory.fromBitmap(img);
+        mDestination = mMap.addMarker(new MarkerOptions().position(destinationLatLng).title("Destination").snippet(destination));
+        mDestination.showInfoWindow();
+        // Set a listener for marker click.
+        mMap.setOnMarkerClickListener(this);
+    }
 
-            @Override
-            public void onError(Status status) {
-                // TODO: Handle the error.
-                Log.i(TAG, "An error occurred: " + status);
-            }
-        });
-        // Set bias using bounds
-        destinationAutocompleteFragment.setBoundsBias(portugalBounds);
+    /** Called when the user clicks a marker. */
+    @Override
+    public boolean onMarkerClick(final Marker marker) {
 
-        //the fragment for the starting location
-        PlaceAutocompleteFragment startAutocompleteFragment = (PlaceAutocompleteFragment) getFragmentManager().findFragmentById(R.id.start_autocomplete_fragment_create);
-        startAutocompleteFragment.setOnPlaceSelectedListener(new PlaceSelectionListener() {
-            @Override
-            public void onPlaceSelected(Place place) {
-                // TODO: Get info about the selected place.
-                start = place.getAddress().toString();
-                Log.i(TAG, "Place - start: " + place.getAddress().toString());
-            }
+        // Show Toast with marker location
+        Toast.makeText(this, marker.getTitle() + "\n" + marker.getSnippet(), Toast.LENGTH_SHORT).show();
 
-            @Override
-            public void onError(Status status) {
-                // TODO: Handle the error.
-                Log.i(TAG, "An error occurred: " + status);
-            }
-        });
-        // Set bias using bounds
-        startAutocompleteFragment.setBoundsBias(portugalBounds);
+        // Return false to indicate that we have not consumed the event and that we wish
+        // for the default behavior to occur (which is for the camera to move such that the
+        // marker is centered and for the marker's info window to open, if it has one).
+        return false;
     }
 
     private void initializeExpandableLayout() {
         // get the layout
-        ExpandableLayout sectionLinearLayout = (ExpandableLayout) findViewById(R.id.el);
+        ExpandableLayout sectionLinearLayout = (ExpandableLayout) findViewById(R.id.el_join);
         // set renderers for parent and child views
         sectionLinearLayout.setRenderer(new ExpandableLayout.Renderer<Driver, SeatNumber>() {
             @Override
@@ -215,12 +224,12 @@ public class CreateEventOldActivity extends AppCompatActivity implements
             }
         });
 
-        // create wanted sections - one, to ask for dricving possibility
+        // create wanted sections - one, to ask for driving possibility
         sectionLinearLayout.addSection(getSection());
 
         //create listeners for expansion or collapse of the layout
         sectionLinearLayout.setExpandListener((ExpandCollapseListener.ExpandListener<Driver>) (parentIndex, parent, view) -> {
-            // layour expanded = volunteering for driving
+            // layout expanded = volunteering for driving
             isDriver = true;
         });
         sectionLinearLayout.setCollapseListener((ExpandCollapseListener.CollapseListener<Driver>) (parentIndex, parent, view) -> {
@@ -228,6 +237,31 @@ public class CreateEventOldActivity extends AppCompatActivity implements
             isDriver = false;
             emptySeats = -1;
         });
+    }
+
+    private void initializePlaceAutoCompleteFragments() {
+
+        // Set bounds to Portugal
+        LatLngBounds portugalBounds = new LatLngBounds(new LatLng(32.2895, -31.4648), new LatLng(42.154311, -6.189159));
+
+        //the fragment for the starting location
+        PlaceAutocompleteFragment startAutocompleteFragment = (PlaceAutocompleteFragment) getFragmentManager().findFragmentById(R.id.start_autocomplete_fragment_join);
+        startAutocompleteFragment.setOnPlaceSelectedListener(new PlaceSelectionListener() {
+            @Override
+            public void onPlaceSelected(Place place) {
+                // TODO: Get info about the selected place.
+                start = place.getAddress().toString();
+                Log.i(TAG, "Place - start: " + place.getAddress().toString());
+            }
+
+            @Override
+            public void onError(Status status) {
+                // TODO: Handle the error.
+                Log.i(TAG, "An error occurred: " + status);
+            }
+        });
+
+        startAutocompleteFragment.setBoundsBias(portugalBounds);
     }
 
     /** Create a section to be displayed in the ExpandableLayout */
@@ -244,16 +278,10 @@ public class CreateEventOldActivity extends AppCompatActivity implements
 
     /**
      Finalize event creation.
-     Validate activity fields.
+     Validate activity fields
      */
     @RequiresApi(api = Build.VERSION_CODES.O)
     public void concludeCreation(View view) {
-        // Has destination?
-        if (destination == null) {
-            // Send error message
-            createTextPopUpWindow("The event's destination cannot be empty.");
-            return;
-        }
         // Has pick-up location?
         if (start == null) {
             // Send error message
@@ -276,14 +304,14 @@ public class CreateEventOldActivity extends AppCompatActivity implements
         createConfirmationPopUpWindow();
     }
 
-    private void createConfirmationPopUpWindow() {
-        ConstraintLayout cConstraintLayout = (ConstraintLayout) findViewById(R.id.cl);
-        PopupWindow cPopupWindow;
+    public void createTextPopUpWindow(String message) {
+        ConstraintLayout tConstraintLayout = (ConstraintLayout) findViewById(R.id.joinEventActivityCL);
+        PopupWindow tPopupWindow;
         // Initialize a new instance of LayoutInflater service
         LayoutInflater inflater = (LayoutInflater) getApplicationContext().getSystemService(LAYOUT_INFLATER_SERVICE);
 
         // Inflate the custom layout/view
-        View customView = inflater.inflate(R.layout.confirmation_pop_up_window, null);
+        View customView = inflater.inflate(R.layout.simple_text_pop_up_window, null);
 
                 /*
                     public PopupWindow (View contentView, int width, int height)
@@ -299,10 +327,84 @@ public class CreateEventOldActivity extends AppCompatActivity implements
                         height : the popup's height
                 */
         // Initialize a new instance of popup window
+        tPopupWindow = new PopupWindow(
+                customView,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                true
+        );
+
+        // Set an elevation value for popup window
+        // Call requires API level 21
+        if (Build.VERSION.SDK_INT >= 21) {
+            tPopupWindow.setElevation(5.0f);
+        }
+
+        // Get a reference for the custom view text
+        TextView messageText = (TextView) customView.findViewById(R.id.tv);
+
+        // Set text
+        messageText.setText(message);
+
+        // Get a reference for the custom view close button
+        ImageButton closeButton = (ImageButton) customView.findViewById(R.id.ib_close);
+
+        // Set a click listener for the popup window close button
+        closeButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                // Restore activity to opaque
+                ViewGroup root = (ViewGroup) getWindow().getDecorView().getRootView();
+                clearDim(root);
+                // Dismiss the popup window
+                tPopupWindow.dismiss();
+            }
+        });
+
+        // Detect a click outside the window - Dismiss is the default behaviour of outside click
+        tPopupWindow.setOnDismissListener(new PopupWindow.OnDismissListener() {
+            @Override
+            public void onDismiss() {
+                ViewGroup root = (ViewGroup) getWindow().getDecorView().getRootView();
+                clearDim(root);
+            }
+        });
+
+        // Finally, show the popup window at the center location of root relative layout
+        tPopupWindow.showAtLocation(tConstraintLayout, Gravity.CENTER, 0, 0);
+
+        // Dim the activity
+        ViewGroup root = (ViewGroup) getWindow().getDecorView().getRootView();
+        applyDim(root, 0.8f);
+    }
+
+    private void createConfirmationPopUpWindow() {
+        ConstraintLayout cConstraintLayout = (ConstraintLayout) findViewById(R.id.joinEventActivityCL);
+        PopupWindow cPopupWindow;
+        // Initialize a new instance of LayoutInflater service
+        LayoutInflater inflater = (LayoutInflater) getApplicationContext().getSystemService(LAYOUT_INFLATER_SERVICE);
+
+        // Inflate the custom layout/view
+        View customView = inflater.inflate(R.layout.confirmation_pop_up_window, null);
+
+                /*
+                    public PopupWindow (View contentView, int width, int height)
+                        Create a new non focusable popup window which can display the contentView.
+                        The dimension of the window must be passed to this constructor.
+
+                        The popup does not provide any background. This should be handled by
+                        the content view.
+
+                    Parameters1
+                        contentView : the popup's content
+                        width : the popup's width
+                        height : the popup's height
+                */
+        // Initialize a new instance of popup window
         cPopupWindow = new PopupWindow(
                 customView,
-                LayoutParams.WRAP_CONTENT,
-                LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
                 true
         );
 
@@ -317,9 +419,7 @@ public class CreateEventOldActivity extends AppCompatActivity implements
         // Set text
         if (isDriver) {
             String htmlMsg = "<b>Event destination: </b><br />" + destination + "<br /><b>Your pick-up location: </b><br />" + start + "<br /><b>Driver?</b><br />Yes<br /><b>Available seats: </b><br />" + emptySeats;
-            Spanned spanned = Html.fromHtml(htmlMsg);
-            SpannableString spannableString = new SpannableString(spanned);
-            messageText.setText(spannableString);
+            messageText.setText(Html.fromHtml(htmlMsg));
         } else {
             String htmlMsg = "<b>Event destination: </b><br />" + destination + "<br /><b>Your pick-up location: </b><br />" + start + "<br /><b>Driver?</b><br />No";
             messageText.setText(Html.fromHtml(htmlMsg));
@@ -337,7 +437,7 @@ public class CreateEventOldActivity extends AppCompatActivity implements
                 // Dismiss the popup window
                 cPopupWindow.dismiss();
                 // Confirm Event
-                CreateEventOldActivity.this.confirmEvent();
+                JoinEventOldActivity.this.confirmEvent();
 
             }
         });
@@ -371,6 +471,7 @@ public class CreateEventOldActivity extends AppCompatActivity implements
                         y : the popup's y location offset
                 */
 
+
         // Detect a click outside the window - Dismiss is the default behaviour of outside click
         cPopupWindow.setOnDismissListener(new PopupWindow.OnDismissListener() {
             @Override
@@ -382,98 +483,6 @@ public class CreateEventOldActivity extends AppCompatActivity implements
 
         // Finally, show the popup window at the center location of root relative layout
         cPopupWindow.showAtLocation(cConstraintLayout, Gravity.CENTER, 0, 0);
-
-        // Dim the activity
-        ViewGroup root = (ViewGroup) getWindow().getDecorView().getRootView();
-        applyDim(root, 0.8f);
-    }
-
-    public void createTextPopUpWindow(String message) {
-        ConstraintLayout tConstraintLayout = (ConstraintLayout) findViewById(R.id.cl);
-        PopupWindow tPopupWindow;
-        // Initialize a new instance of LayoutInflater service
-        LayoutInflater inflater = (LayoutInflater) getApplicationContext().getSystemService(LAYOUT_INFLATER_SERVICE);
-
-        // Inflate the custom layout/view
-        View customView = inflater.inflate(R.layout.simple_text_pop_up_window, null);
-
-                /*
-                    public PopupWindow (View contentView, int width, int height)
-                        Create a new non focusable popup window which can display the contentView.
-                        The dimension of the window must be passed to this constructor.
-
-                        The popup does not provide any background. This should be handled by
-                        the content view.
-
-                    Parameters
-                        contentView : the popup's content
-                        width : the popup's width
-                        height : the popup's height
-                */
-        // Initialize a new instance of popup window
-        tPopupWindow = new PopupWindow(
-                customView,
-                LayoutParams.WRAP_CONTENT,
-                LayoutParams.WRAP_CONTENT,
-                true
-        );
-
-        // Set an elevation value for popup window
-        // Call requires API level 21
-        if (Build.VERSION.SDK_INT >= 21) {
-            tPopupWindow.setElevation(5.0f);
-        }
-
-        // Get a reference for the custom view text
-        TextView messageText = (TextView) customView.findViewById(R.id.tv);
-
-        // Set text
-        messageText.setText(message);
-
-        // Get a reference for the custom view close button
-        ImageButton closeButton = (ImageButton) customView.findViewById(R.id.ib_close);
-
-        // Set a click listener for the popup window close button
-        closeButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                // Restore activity to opaque
-                ViewGroup root = (ViewGroup) getWindow().getDecorView().getRootView();
-                clearDim(root);
-                // Dismiss the popup window
-                tPopupWindow.dismiss();
-            }
-        });
-
-                /*
-                    public void showAtLocation (View parent, int gravity, int x, int y)
-                        Display the content view in a popup window at the specified location. If the
-                        popup window cannot fit on screen, it will be clipped.
-                        Learn WindowManager.LayoutParams for more information on how gravity and the x
-                        and y parameters are related. Specifying a gravity of NO_GRAVITY is similar
-                        to specifying Gravity.LEFT | Gravity.TOP.
-
-                    Parameters
-                        parent : a parent view to get the getWindowToken() token from
-                        gravity : the gravity which controls the placement of the popup window
-                        x : the popup's x location offset
-                        y : the popup's y location offset
-
-
-                */
-
-
-        // Detect a click outside the window - Dismiss is the default behaviour of outside click
-        tPopupWindow.setOnDismissListener(new PopupWindow.OnDismissListener() {
-            @Override
-            public void onDismiss() {
-                ViewGroup root = (ViewGroup) getWindow().getDecorView().getRootView();
-                clearDim(root);
-            }
-        });
-
-        // Finally, show the popup window at the center location of root relative layout
-        tPopupWindow.showAtLocation(tConstraintLayout, Gravity.CENTER, 0, 0);
 
         // Dim the activity
         ViewGroup root = (ViewGroup) getWindow().getDecorView().getRootView();
@@ -496,7 +505,6 @@ public class CreateEventOldActivity extends AppCompatActivity implements
         overlay.clear();
     }
 
-
     public void confirmEvent() {
         Log.d("Confirmation", "Yup");
         //Talk with server
@@ -505,25 +513,14 @@ public class CreateEventOldActivity extends AppCompatActivity implements
 
         //Launch new activity
         // TODO do split? if finalized : if not finalized - different activities based on each
-        Intent intent = new Intent(CreateEventOldActivity.this, EventActivity.class);
-        // Destination Bundle
-        Bundle destinationBundle = new Bundle();
+        /*Bundle args = new Bundle();
         LatLng destinationLatLng = getLocationFromAddress(getApplicationContext(), destination);
-        destinationBundle.putParcelable("destinationLatLng", destinationLatLng);
-        destinationBundle.putString("destinationAddress", destination);
-        intent.putExtra("Destination", destinationBundle);
-        // User Bundle
-        Bundle userBundle = new Bundle();
-        LatLng startLatLng = getLocationFromAddress(getApplicationContext(), start);
-        User user;
-        if (isDriver) {
-            user = new User("Ricardo", start, startLatLng, emptySeats);
-        } else {
-            user = new User("Ricardo", start, startLatLng);
-        }
-        userBundle.putParcelable("User", user);
-        intent.putExtra("Participants", userBundle);
-        // Start
+        args.putParcelable("destinationLatLng", destinationLatLng);*/
+        Intent intent = new Intent(JoinEventOldActivity.this, EventActivity.class);
+        intent.putExtra("Destination", (Bundle) getIntent().getParcelableExtra("Destination"));
+        Bundle participantsBundle = getIntent().getParcelableExtra("Participants");
+        participantsBundle.putParcelable("User", createUser());
+        intent.putExtra("Participants", participantsBundle);
         startActivity(intent);
     }
 
@@ -537,7 +534,6 @@ public class CreateEventOldActivity extends AppCompatActivity implements
         try {
             // May throw an IOException
             address = coder.getFromLocationName(strAddress, 5);
-            //TODO resolver caso do oceano, ou propriedade privada sem estrada -> Nenhum emdereço será retornado
             if (address == null) {
                 return null;
             }
@@ -553,21 +549,34 @@ public class CreateEventOldActivity extends AppCompatActivity implements
         return p1;
     }
 
-    public void setMyLocationDestination(View view) {
-        Log.i(TAG, "My location (destination) button pressed. Checking permission.");
+    public User createUser() {
+        LatLng startLatLng = getLocationFromAddress(getApplicationContext(), start);
+        User user;
+        if (isDriver) {
+            user = new User("Ricardo", start, startLatLng, emptySeats);
+        } else {
+            user = new User("Ricardo", start, startLatLng);
+        }
+        return user;
+    }
+
+    public void setMyLocation(View view) {
+        Log.i(TAG, "My location button pressed. Checking permission.");
         // BEGIN_INCLUDE(location_permission)
         // Check if the Location permission is already available.
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+         //&& ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                ){
             // Location permission has not been granted
             requestLocationPermission(view);
         } else {
             // Location permissions is already available, use last known location.
             Log.i(TAG, "LOCATION permission has already been granted.");
             // Check for GPS service
-            if (checkGPS()) {
-                Log.i("Set My Location", "Destination - Getting new location");
-                buildLocationCallBack("destination");
-                mFusedLocationClient.requestLocationUpdates(mLocationRequest, mLocationCallback, null );
+            if(checkGPS()) {
+                if (checkConnectivity()) {
+                    Log.i("Set My Location", "Getting new location");
+                    mFusedLocationClient.requestLocationUpdates(mLocationRequest, mLocationCallback, null);
 
                 /*Log.i(TAG, "GPS is turned on. Getting last known location");
                 mFusedLocationClient.getLastLocation()
@@ -577,90 +586,54 @@ public class CreateEventOldActivity extends AppCompatActivity implements
                             public void onSuccess(Location location) {
                                 // Got last known location. In some rare situations this can be null.
                                 if (location != null) {
-                                    Log.i("Set My Location", "Destination - Using last known location");
-                                    handleNewLocation(location, "destination");
-
+                                    Log.i("Set My Location", "Using last known location");
+                                    String locationAddress = getCompleteAddressString(location.getLatitude(), location.getLongitude());
+                                    start = locationAddress;
+                                    PlaceAutocompleteFragment startAutocompleteFragment = (PlaceAutocompleteFragment) getFragmentManager().findFragmentById(R.id.start_autocomplete_fragment_join);
+                                    startAutocompleteFragment.setText(start);
                                 } else {
-                                    Log.i("Set My Location", "Destination - Getting new location");
-                                    buildLocationCallBack("destination");
-                                    mFusedLocationClient.requestLocationUpdates(mLocationRequest, mLocationCallback, null);
+                                    Log.i("Set My Location", "Getting new location");
+                                    mFusedLocationClient.requestLocationUpdates(mLocationRequest, mLocationCallback, null );
                                 }
                             }
                         });*/
+
+                }
+                else {
+                    Toast.makeText(JoinEventOldActivity.this,"No Internet connection detected.",Toast.LENGTH_SHORT).show();
+                }
             }
         }
 
     }
 
-    public void setMyLocationStart(View view) {
-        Log.i(TAG, "My location button (start) pressed. Checking permission.");
-        // BEGIN_INCLUDE(location_permission)
-        // Check if the Location permission is already available.
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // Location permission has not been granted
-            requestLocationPermission(view);
-        } else {
-            // Location permissions is already available, use last known location.
-            Log.i(TAG, "LOCATION permission has already been granted. Using last know location.");
-            if (checkGPS()) {
-                Log.i("Set My Location", "Start - Getting new location");
-                buildLocationCallBack("start");
-                mFusedLocationClient.requestLocationUpdates(mLocationRequest, mLocationCallback, null);
+    private boolean checkConnectivity(){
+        ConnectivityManager cm =
+                (ConnectivityManager)getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
 
-                /*Log.i(TAG, "GPS is turned on. Getting last known location");
-                mFusedLocationClient.getLastLocation()
-                        .addOnSuccessListener(this, new OnSuccessListener<Location>() {
-                            @SuppressLint("MissingPermission")
-                            @Override
-                            public void onSuccess(Location location) {
-                                // Got last known location. In some rare situations this can be null.
-                                if (location != null) {
-                                    Log.i("Set My Location", "Start - Using last known location");
-                                    handleNewLocation(location, "start");
+        NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+        boolean isConnected = activeNetwork != null &&
+                activeNetwork.isConnectedOrConnecting();
 
-                                } else {
-                                    Log.i("Set My Location", "Start - Getting new location");
-                                    buildLocationCallBack("start");
-                                    mFusedLocationClient.requestLocationUpdates(mLocationRequest, mLocationCallback, null);
-                                }
-                            }
-                        });*/
-            }
-        }
-
-    }
-
-    private void handleNewLocation(Location location, String splitter) {
-        if (splitter.equals("start")) {
-            String locationAddress = getCompleteAddressString(location.getLatitude(), location.getLongitude());
-            start = locationAddress;
-            PlaceAutocompleteFragment startAutocompleteFragment = (PlaceAutocompleteFragment) getFragmentManager().findFragmentById(R.id.start_autocomplete_fragment_create);
-            startAutocompleteFragment.setText(start);
-        }
-        if (splitter.equals("destination")) {
-            String locationAddress = getCompleteAddressString(location.getLatitude(), location.getLongitude());
-            destination = locationAddress;
-            PlaceAutocompleteFragment destinationAutocompleteFragment = (PlaceAutocompleteFragment) getFragmentManager().findFragmentById(R.id.destination_autocomplete_fragment_create);
-            destinationAutocompleteFragment.setText(destination);
-        }
+        return isConnected;
     }
 
     private boolean checkGPS() {
         boolean gpsEnabled = false;
-        final LocationManager manager = (LocationManager) CreateEventOldActivity.this.getSystemService(Context.LOCATION_SERVICE);
+        final LocationManager manager = (LocationManager) JoinEventOldActivity.this.getSystemService(Context.LOCATION_SERVICE);
 
-        if (!hasGPSDevice(CreateEventOldActivity.this)) {
-            Log.e("GPS", "Gps not supported");
-            Toast.makeText(CreateEventOldActivity.this, "Gps not Supported", Toast.LENGTH_SHORT).show();
+        if(!hasGPSDevice(JoinEventOldActivity.this)){
+            Log.e("GPS","Gps not supported");
+            Toast.makeText(JoinEventOldActivity.this,"Gps not Supported",Toast.LENGTH_SHORT).show();
             gpsEnabled = false;
         }
 
-        if (!manager.isProviderEnabled(LocationManager.GPS_PROVIDER) && hasGPSDevice(CreateEventOldActivity.this)) {
-            Log.e("GPS", "Gps not enabled");
+        if (!manager.isProviderEnabled(LocationManager.GPS_PROVIDER) && hasGPSDevice(JoinEventOldActivity.this)) {
+            Log.i("GPS","Gps not enabled");
             enableLoc();
             gpsEnabled = false;
-        } else {
-            Log.i("GPS", "Gps is enabled");
+        }else{
+            Log.i("GPS","Gps is enabled");
             gpsEnabled = true;
         }
         return gpsEnabled;
@@ -678,7 +651,8 @@ public class CreateEventOldActivity extends AppCompatActivity implements
     }
 
     private void enableLoc() {
-        mGoogleApiClient = new GoogleApiClient.Builder(CreateEventOldActivity.this)
+
+            googleApiClient = new GoogleApiClient.Builder(JoinEventOldActivity.this)
                     .addApi(LocationServices.API)
                     .addConnectionCallbacks(new GoogleApiClient.ConnectionCallbacks() {
                         @Override
@@ -688,17 +662,17 @@ public class CreateEventOldActivity extends AppCompatActivity implements
 
                         @Override
                         public void onConnectionSuspended(int i) {
-                            mGoogleApiClient.connect();
+                            googleApiClient.connect();
                         }
                     })
                     .addOnConnectionFailedListener(new GoogleApiClient.OnConnectionFailedListener() {
                         @Override
                         public void onConnectionFailed(ConnectionResult connectionResult) {
 
-                            Log.d("Location error", "Location error " + connectionResult.getErrorCode());
+                            Log.d("Location error","Location error " + connectionResult.getErrorCode());
                         }
                     }).build();
-            mGoogleApiClient.connect();
+            googleApiClient.connect();
 
             LocationRequest locationRequest = LocationRequest.create();
             locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
@@ -707,10 +681,10 @@ public class CreateEventOldActivity extends AppCompatActivity implements
             LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder()
                     .addLocationRequest(locationRequest);
 
-            builder.setAlwaysShow(true);
+            builder.setAlwaysShow(false);
 
             PendingResult<LocationSettingsResult> result =
-                    LocationServices.SettingsApi.checkLocationSettings(mGoogleApiClient, builder.build());
+                    LocationServices.SettingsApi.checkLocationSettings(googleApiClient, builder.build());
             result.setResultCallback(new ResultCallback<LocationSettingsResult>() {
                 @Override
                 public void onResult(LocationSettingsResult result) {
@@ -724,7 +698,7 @@ public class CreateEventOldActivity extends AppCompatActivity implements
                             try {
                                 // Show the dialog by calling startResolutionForResult(),
                                 // and check the result in onActivityResult().
-                                status.startResolutionForResult(CreateEventOldActivity.this, REQUEST_LOCATION);
+                                status.startResolutionForResult(JoinEventOldActivity.this, REQUEST_LOCATION);
 
                                 //finish();
                             } catch (IntentSender.SendIntentException e) {
@@ -745,13 +719,13 @@ public class CreateEventOldActivity extends AppCompatActivity implements
             // Provide an additional rationale to the user if the permission was not granted
             // and the user would benefit from additional context for the use of the permission.
             // For example if the user has previously denied the permission.
-            Log.i(TAG, "Displaying location permission rationale to provide additional context.");
+            Log.i(TAG,"Displaying location permission rationale to provide additional context.");
             Snackbar.make(view, R.string.permission_location_rationale,
                     Snackbar.LENGTH_INDEFINITE)
                     .setAction(R.string.ok, new View.OnClickListener() {
                         @Override
                         public void onClick(View view) {
-                            ActivityCompat.requestPermissions(CreateEventOldActivity.this, PERMISSIONS_LOCATION, REQUEST_LOCATION);
+                            ActivityCompat.requestPermissions(JoinEventOldActivity.this, PERMISSIONS_LOCATION, REQUEST_LOCATION);
                         }
                     })
                     .show();
@@ -759,7 +733,7 @@ public class CreateEventOldActivity extends AppCompatActivity implements
             // Location permission has not been granted yet. Request it directly.
             ActivityCompat.requestPermissions(this, PERMISSIONS_LOCATION, REQUEST_LOCATION);
         }
-        // END_INCLUDE(location_permission_request)
+    // END_INCLUDE(location_permission_request)
     }
 
     /**
@@ -768,18 +742,18 @@ public class CreateEventOldActivity extends AppCompatActivity implements
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
 
-        if (requestCode == REQUEST_LOCATION) {
+         if (requestCode == REQUEST_LOCATION) {
             Log.i(TAG, "Received response for location permissions request.");
 
             // Received permission result
             if (grantResults.length == 1 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 // All required permissions have been granted.
-                Snackbar.make(findViewById(R.id.cl), R.string.permission_available_location,
+                Snackbar.make(findViewById(R.id.joinEventActivityCL), R.string.permission_available_location,
                         Snackbar.LENGTH_SHORT)
                         .show();
             } else {
                 Log.i(TAG, "Location permissions were NOT granted.");
-                Snackbar.make(findViewById(R.id.cl), R.string.permissions_not_granted,
+                Snackbar.make(findViewById(R.id.joinEventActivityCL), R.string.permissions_not_granted,
                         Snackbar.LENGTH_SHORT)
                         .show();
             }
@@ -813,81 +787,4 @@ public class CreateEventOldActivity extends AppCompatActivity implements
         }
         return strAdd;
     }
-
-    @Override
-    public void onConnected(Bundle bundle) {
-    }
-
-    @Override
-    public void onConnectionSuspended(int i) {
-
-    }
-
-    @Override
-    public void onConnectionFailed(ConnectionResult connectionResult) {
-        /*
-         * Google Play services can resolve some errors it detects.
-         * If the error has a resolution, try sending an Intent to
-         * start a Google Play services activity that can resolve
-         * error.
-         */
-        if (connectionResult.hasResolution()) {
-            try {
-                // Start an Activity that tries to resolve the error
-                connectionResult.startResolutionForResult(this,  CONNECTION_FAILURE_RESOLUTION_REQUEST);
-                /*
-                 * Thrown if Google Play services canceled the original
-                 * PendingIntent
-                 */
-            } catch (IntentSender.SendIntentException e) {
-                // Log the error
-                e.printStackTrace();
-            }
-        } else {
-            /*
-             * If no resolution is available, display a dialog to the
-             * user with the error.
-             */
-            Log.i(TAG, "Location services connection failed with code " + connectionResult.getErrorCode());
-        }
-    }
-
-    @Override
-    public void onLocationChanged(Location location) {
-    }
-
-    /*@Override
-    protected void onResume() {
-        super.onResume();
-        if (mRequestingLocationUpdates) {
-            startLocationUpdates();
-        }
-    }*/
-
-   /* private void startLocationUpdates() {
-        if (mFusedLocationClient != null)
-            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                // TODO: Consider calling
-                //    ActivityCompat#requestPermissions
-                // here to request the missing permissions, and then overriding
-                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                //                                          int[] grantResults)
-                // to handle the case where the user grants the permission. See the documentation
-                // for ActivityCompat#requestPermissions for more details.
-                return;
-            }
-            mFusedLocationClient.requestLocationUpdates(mLocationRequest, mLocationCallback, null);
-    }*/
-
-    /*@Override
-    protected void onPause() {
-        super.onPause();
-        if (mRequestingLocationUpdates) {
-            stopLocationUpdates();
-        }
-    }*/
-    /*private void stopLocationUpdates() {
-        if (mFusedLocationClient != null)
-            mFusedLocationClient.removeLocationUpdates(mLocationCallback);
-    }*/
 }
