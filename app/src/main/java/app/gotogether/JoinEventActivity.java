@@ -89,6 +89,7 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -111,12 +112,13 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
     private LocationCallback mLocationCallback;
     private GoogleApiClient googleApiClient;
     private GoogleMap mMap;
-    private Marker mDestination;
     private String parents = "Do you volunteer as a Driver?";
+    private Marker mDestination;
     private String destination = null;
     private LatLng destinationLatLng = null;
-    private String start = null;
-    private LatLng startLatLng;
+    private Marker mStart = null;
+    private static String start = null;
+    private LatLng startLatLng = null;
     private String title = null;
     private boolean isDriver = true;
     private int emptySeats = -1; // -1 = no car. >0 = how many empty seats
@@ -126,9 +128,11 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
     private boolean searching;
     private boolean locationClick = false;
     private ActionBar actionBar;
-    private Marker mStart;
     private LinearLayout suggestions;
     private static final int UP_BUTTON_ID = 16908332; // because R.id.home doesn't seem to work....
+    private ArrayList<User> participants;
+    ArrayList<Marker> participantsMarkers = new ArrayList<>();
+    private LatLngBounds bounds;
 
     @SuppressLint("ClickableViewAccessibility")
     @Override
@@ -141,14 +145,16 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
-        Bundle bundle = getIntent().getParcelableExtra("Destination");
-        // Get destination
-        destination = bundle.getString("destinationAddress");
-        // Get destination latitude and longitude
-        destinationLatLng = bundle.getParcelable("destinationLatLng");
-
-        // Get event title
+        // Get title from Intent
         title = getIntent().getStringExtra("Title");
+        getSupportActionBar().setTitle(title);
+        // Get destination from Intent
+        Bundle destinationBundle = getIntent().getParcelableExtra("Destination");
+        destination = destinationBundle.getString("destinationAddress");
+        destinationLatLng = destinationBundle.getParcelable("destinationLatLng");
+        // Get participants from Intent
+        Bundle participantsBundle = getIntent().getParcelableExtra("Participants");
+        participants = participantsBundle.getParcelableArrayList("Participants");;
 
         // Set location service provider
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
@@ -173,10 +179,16 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
         placeSuggestions.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int ClickedPosition, long id) {
+                // reseting info
+                if(mStart!=null) {
+                    mStart.remove();
+                    mStart = null;
+                }
+                startLatLng= null;
                 //Getting clicked item from list view
                 start = dataAdapter.getItem(ClickedPosition);
                 startET.setText(start);
-                addMapMarker("Start", start);
+                addMapMarker("Start");
                 startET.clearFocus();
                 hideKeyboard(JoinEventActivity.this);
                 CollapseAfterInput();
@@ -206,6 +218,7 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
                         // clicked on the drawable?
                         if (event.getRawX() >= (startET.getRight() - startET.getLeft() - startET.getCompoundDrawables()[2].getBounds().width())) {
                             start = null; // delete start addr
+                            startLatLng = null;
                             // remove corresponding marker
                             if(mStart!=null) {
                                 mStart.remove();
@@ -247,6 +260,14 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
                     // has drawable?  || 0 = left, 1 = top, 2 = right, 3 = bottom
                     if (startET.getCompoundDrawables()[2] != null)
                         startET.setCompoundDrawablesWithIntrinsicBounds(null,null,null,null);
+
+                    // delete start info
+                    JoinEventActivity.start = null;
+                    startLatLng = null;
+                    if(mStart!=null) {
+                        mStart.remove();
+                        mStart = null;
+                    }
                 } else {
                     startET.setCompoundDrawablesWithIntrinsicBounds(0,0, R.drawable.ic_close_red,0);
                 }
@@ -309,7 +330,7 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
                 start = getCompleteAddressString(currentLocation.getLatitude(), currentLocation.getLongitude());
                 locationClick = true;
                 startET.setText(start);
-                addMapMarker("Start", start);
+                addMapMarker("Start");
                 locationClick = false; // reset
 
                 // Remove continuous location updates after we get current location
@@ -339,8 +360,31 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
         getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
         int screenHeight = displayMetrics.heightPixels;
         mMap.setPadding(0, screenHeight / 2, 0, 0);
-        // Add destination marker to the map
-        addMapMarker("Destination", destination);
+
+        // Add some markers to the map, and add a data object to each marker.
+        // Participants markers
+        if(participants != null) {
+            for (User u : participants) {
+                Marker participantMarker = mMap.addMarker(new MarkerOptions()
+                        .position(u.getStartLatLng())
+                        .title(u.getUsername())
+                        .snippet(u.getStartAddress())
+                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE))
+                        // Lowest z-index to force marker to bee at bottom when overlapping
+                        .zIndex(0));
+                participantsMarkers.add(participantMarker);
+            }
+        }
+        // Destination marker
+        mDestination = mMap.addMarker(new MarkerOptions()
+                .position(destinationLatLng)
+                .title("Destination")
+                .snippet(destination)
+                // Highest z-index. Destination is the most important marker
+                .zIndex(2));
+        mDestination.showInfoWindow();
+
+        moveCamera();
     }
 
     /** Called when the user clicks a marker. */
@@ -358,15 +402,16 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
         return true;
     }
 
-    private void addMapMarker(String label, String address){
+    private void addMapMarker(String label){
         // Add some markers to the map, and add a data object to each marker.
         if (label.equals("Destination")){
-            mDestination = mMap.addMarker(new MarkerOptions().position(destinationLatLng).title(label).snippet(address));
+            mDestination = mMap.addMarker(new MarkerOptions().position(destinationLatLng).title(label).snippet(destination));
             mDestination.showInfoWindow();
         }
         if (label.equals("Start")){
-            startLatLng = getLocationFromAddress(this, address); // Get LatLng
-            mStart = mMap.addMarker(new MarkerOptions().position(startLatLng).title(label).snippet(address).icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
+            if (startLatLng == null)
+                startLatLng = getLocationFromAddress(this, start); // Get LatLng
+            mStart = mMap.addMarker(new MarkerOptions().position(startLatLng).title(label).snippet(start).icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
             mStart.showInfoWindow();
         }
         // Move the camera
@@ -378,33 +423,31 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
     }
 
     private void moveCamera() {
-        if(mStart==null){
-            //no destination so we center on pickup
-            CameraUpdate cu = CameraUpdateFactory.newLatLngZoom(destinationLatLng, 12);
-            mMap.moveCamera(cu);
+        // create builder to center the map
+        LatLngBounds.Builder boundsBuilder = new LatLngBounds.Builder();
+        boundsBuilder.include(mDestination.getPosition());
+        for (Marker m : participantsMarkers) {
+            boundsBuilder.include(m.getPosition());
         }
-        else {
-            // we have both locations so we center on them
-            // Center map between pick-up and destination
-            final View mapView = getSupportFragmentManager().findFragmentById(R.id.map).getView();
-            if (mapView.getViewTreeObserver().isAlive()) {
-                mapView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-                    @SuppressLint("NewApi") // We check which build version we are using.
-                    @Override
-                    public void onGlobalLayout() {
-                        LatLngBounds bounds = new LatLngBounds.Builder()
-                                .include(destinationLatLng)
-                                .include(startLatLng)
-                                .build();
-                        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN) {
-                            mapView.getViewTreeObserver().removeGlobalOnLayoutListener(this);
-                        } else {
-                            mapView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-                        }
-                        mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, 200));
+        if (mStart != null)
+            boundsBuilder.include(mStart.getPosition());
+        bounds = boundsBuilder.build();
+
+        final View mapView = getSupportFragmentManager().findFragmentById(R.id.map).getView();
+        if (mapView.getViewTreeObserver().isAlive()) {
+            mapView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                @SuppressLint("NewApi") // We check which build version we are using.
+                @Override
+                public void onGlobalLayout() {
+
+                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN) {
+                        mapView.getViewTreeObserver().removeGlobalOnLayoutListener(this);
+                    } else {
+                        mapView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
                     }
-                });
-            }
+                    mMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 200));
+                }
+            });
         }
     }
 

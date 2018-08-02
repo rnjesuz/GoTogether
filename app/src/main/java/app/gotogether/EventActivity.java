@@ -169,6 +169,9 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
         boundsBuilder.include(destinationLatLng);
         //mDestination.showInfoWindow();
 
+        // get map bounds
+        bounds = boundsBuilder.build();
+
         // Set a listener for marker click.
         mMap.setOnMarkerClickListener(this);
         googleMap.getUiSettings().setMapToolbarEnabled(false);
@@ -181,9 +184,6 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
         getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
         int screenHeight = displayMetrics.heightPixels;
         mMap.setPadding(0, screenHeight / 2, 0, 0);*/
-
-        // get map bounds
-        bounds = boundsBuilder.build();
 
         // Center map between pick-up and destination
         final View mapView = getSupportFragmentManager().findFragmentById(R.id.map_event).getView();
