@@ -187,12 +187,14 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
                 startLatLng= null;
                 //Getting clicked item from list view
                 start = dataAdapter.getItem(ClickedPosition);
+
                 startET.setText(start);
                 addMapMarker("Start");
                 startET.clearFocus();
                 hideKeyboard(JoinEventActivity.this);
                 CollapseAfterInput();
                 searching = false;
+                invalidateOptionsMenu();
             }
         });
 
@@ -218,6 +220,7 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
                         // clicked on the drawable?
                         if (event.getRawX() >= (startET.getRight() - startET.getLeft() - startET.getCompoundDrawables()[2].getBounds().width())) {
                             start = null; // delete start addr
+                            invalidateOptionsMenu();
                             startLatLng = null;
                             // remove corresponding marker
                             if(mStart!=null) {
@@ -263,6 +266,7 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
 
                     // delete start info
                     JoinEventActivity.start = null;
+                    invalidateOptionsMenu();
                     startLatLng = null;
                     if(mStart!=null) {
                         mStart.remove();
@@ -328,6 +332,7 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
 
                 // Get an address for the location and write it in the AutoComplete EditText
                 start = getCompleteAddressString(currentLocation.getLatitude(), currentLocation.getLongitude());
+                invalidateOptionsMenu();
                 locationClick = true;
                 startET.setText(start);
                 addMapMarker("Start");
@@ -476,6 +481,16 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
         }
     }
 
+    @Override
+    public boolean onPrepareOptionsMenu (Menu menu) {
+        if (start != null) {
+            menu.getItem(0).setEnabled(true);
+        }
+        else
+            menu.getItem(0).setEnabled(false);
+        return true;
+    }
+
     /** Override method to change functionality in times where layout is CollapsedForInput() */
     public void onBackPressed(){
         if(searching){
@@ -531,7 +546,8 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
         actionBar.setHomeAsUpIndicator(R.drawable.ic_arrow_black); // the default arrow
         // change create option color
         TextView create = findViewById(R.id.action_create);
-        create.setTextColor(getResources().getColor(R.color.black));
+        create.setVisibility(View.GONE);
+        //create.setTextColor(getResources().getColor(R.color.black));
         // slide up the suggestions layout
         suggestions.setVisibility(View.VISIBLE);
         suggestions.animate().translationY(0);
@@ -573,7 +589,8 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
         actionBar.setHomeAsUpIndicator(R.drawable.ic_close); // the default arrow
         // change create option color
         TextView create = findViewById(R.id.action_create);
-        create.setTextColor(getResources().getColor(R.color.white));
+        create.setVisibility(View.VISIBLE);
+        //create.setTextColor(getResources().getColor(R.color.white));
         // slide down the suggestions layout
         DisplayMetrics displayMetrics = new DisplayMetrics();
         getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
@@ -585,6 +602,7 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.create_menu, menu);
+        menu.getItem(0).setEnabled(false);
         return super.onCreateOptionsMenu(menu);
     }
 

@@ -99,8 +99,8 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
     int PLACE_AUTOCOMPLETE_REQUEST_CODE_START = 2;
     private LatLng destinationLatLng = null;
     private LatLng startLatLng = null;
-    private String destination = null;
-    private String start = null;
+    private static String destination = null;
+    private static String start = null;
     private String title = "";
     private int searching = -1; // >0 means searching. 1 is for destinations; 2 is for pick-up
     private boolean locationClick = false; // is location input being set through button?
@@ -167,7 +167,13 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
                 //Getting clicked item from list view
                 switch (searching){
                     case 1: {
+                        // reseting info
+                        if(mDestination!=null) {
+                            mDestination.remove();
+                            mDestination = null;
+                        }
                         destination = dataAdapter.getItem(ClikedPosition);
+                        invalidateOptionsMenu();
                         destinationET.setText(destination);
                         addMapMarker("Destination", destination);
                         if (start == null) {
@@ -183,7 +189,13 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
                     }
 
                     case 2: {
+                        // reseting info
+                        if(mStart!=null) {
+                            mStart.remove();
+                            mStart = null;
+                        }
                         start = dataAdapter.getItem(ClikedPosition);
+                        invalidateOptionsMenu();
                         startET.setText(start);
                         addMapMarker("Start", start);
                         if (destination == null){
@@ -251,6 +263,7 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
             @Override
             public void afterTextChanged(Editable s) {
                 title = s.toString();
+                invalidateOptionsMenu();
             }
         });
 
@@ -264,6 +277,7 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
                         if (event.getRawX() >= (destinationET.getRight() - destinationET.getLeft() - destinationET.getCompoundDrawables()[2].getBounds().width())) {
                             // delete destination addr
                             destination = null;
+                            invalidateOptionsMenu();
                             // remove corresponding marker
                             if (mDestination != null) {
                                 mDestination.remove();
@@ -304,6 +318,15 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
                     // has drawable?  || 0 = left, 1 = top, 2 = right, 3 = bottom
                     if (destinationET.getCompoundDrawables()[2] != null)
                         destinationET.setCompoundDrawablesWithIntrinsicBounds(null,null,null,null);
+
+                    // delete start info
+                    CreateEventActivity.destination = null;
+                    invalidateOptionsMenu();
+                    destinationLatLng = null;
+                    if(mDestination!=null) {
+                        mDestination.remove();
+                        mDestination = null;
+                    }
                 } else {
                     destinationET.setCompoundDrawablesWithIntrinsicBounds(0,0, R.drawable.ic_close_red,0);
                 }
@@ -334,6 +357,7 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
                         // clicked on the drawable?
                         if (event.getRawX() >= (startET.getRight() - startET.getLeft() - startET.getCompoundDrawables()[2].getBounds().width())) {
                             start = null; // delete start addr
+                            invalidateOptionsMenu();
                             // remove corresponding marker
                             if(mStart!=null) {
                                 mStart.remove();
@@ -375,6 +399,15 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
                     // has drawable?  || 0 = left, 1 = top, 2 = right, 3 = bottom
                     if (startET.getCompoundDrawables()[2] != null)
                         startET.setCompoundDrawablesWithIntrinsicBounds(null,null,null,null);
+
+                    // delete start info
+                    CreateEventActivity.start = null;
+                    invalidateOptionsMenu();
+                    startLatLng = null;
+                    if(mStart!=null) {
+                        mStart.remove();
+                        mStart = null;
+                    }
                 } else {
                     startET.setCompoundDrawablesWithIntrinsicBounds(0,0, R.drawable.ic_close_red,0);
                 }
@@ -619,7 +652,8 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
         actionBar.setHomeAsUpIndicator(R.drawable.ic_arrow_black); // the default arrow
         // change create option color
         TextView create = findViewById(R.id.action_create);
-        create.setTextColor(getResources().getColor(R.color.black));
+        create.setVisibility(View.GONE);
+        //create.setTextColor(getResources().getColor(R.color.black));
         // slide up the suggestions layout
         suggestions.setVisibility(View.VISIBLE);
         suggestions.animate().translationY(0);
@@ -662,7 +696,8 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
         actionBar.setHomeAsUpIndicator(R.drawable.ic_close); // the default arrow
         // change create option color
         TextView create = findViewById(R.id.action_create);
-        create.setTextColor(getResources().getColor(R.color.white));
+        create.setVisibility(View.VISIBLE);
+        //create.setTextColor(getResources().getColor(R.color.white));
         // slide down the suggestions layout
         DisplayMetrics displayMetrics = new DisplayMetrics();
         getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
@@ -674,7 +709,19 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.create_menu, menu);
+        menu.getItem(0).setEnabled(false);
         return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onPrepareOptionsMenu (Menu menu) {
+
+        if (start != null && destination != null && !title.equals("")) {
+            menu.getItem(0).setEnabled(true);
+        }
+        else
+            menu.getItem(0).setEnabled(false);
+        return true;
     }
 
     @Override
@@ -683,6 +730,7 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
             if (resultCode == RESULT_OK) {
                 Place place = PlaceAutocomplete.getPlace(this, data);
                 destination = place.getAddress().toString();
+                invalidateOptionsMenu();
                 EditText destinationET = ((EditText) findViewById(R.id.destination_autocomplete));
                 destinationET.setText(destination);
                 destinationET.setCompoundDrawablesWithIntrinsicBounds(0,0,R.drawable.ic_close_red,0);
@@ -701,6 +749,7 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
             if (resultCode == RESULT_OK) {
                 Place place = PlaceAutocomplete.getPlace(this, data);
                 start = place.getAddress().toString();
+                invalidateOptionsMenu();
                 ((TextView) findViewById(R.id.start_autocomplete)).setText(start);
                 Log.i(TAG, "Place: " + place.getName());
             } else if (resultCode == PlaceAutocomplete.RESULT_ERROR) {
@@ -1221,12 +1270,14 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
         if (splitter.equals("start")) {
             String locationAddress = getCompleteAddressString(location.getLatitude(), location.getLongitude());
             start = locationAddress;
+            invalidateOptionsMenu();
             startET.setText(start);
             addMapMarker("Start", start);
         }
         if (splitter.equals("destination")) {
             String locationAddress = getCompleteAddressString(location.getLatitude(), location.getLongitude());
             destination = locationAddress;
+            invalidateOptionsMenu();
             destinationET.setText(destination);
             addMapMarker("Destination", destination);
         }
