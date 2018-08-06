@@ -217,14 +217,14 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
      * Initiated by a button in the bottom sheet */
     public void goMarkerUser(View view){
         bottomSheetBehavior.setState(4); // collapse the sheet
-        mMap.animateCamera(CameraUpdateFactory.newLatLng(startLatLng));
+        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(startLatLng, 15));
     }
 
     /** Center map on the destination marker
      * Initiated by a button in the bottom sheet */
     public void goMarkerDestination(View view){
         bottomSheetBehavior.setState(4); // collapse the sheet
-        mMap.animateCamera(CameraUpdateFactory.newLatLng(destinationLatLng));
+        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(destinationLatLng, 15));
     }
 
     /** Center map on a participant marker
@@ -232,7 +232,7 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
      * @param participant the participant we each to center on */
     public static void goMarkerParticipant(User participant){
         bottomSheetBehavior.setState(4); // collapse the sheet
-        mMap.animateCamera(CameraUpdateFactory.newLatLng(participant.getStartLatLng()));
+        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(participant.getStartLatLng(), 15));
     }
 
     /** Recenter the map */
