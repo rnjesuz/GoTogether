@@ -68,8 +68,8 @@
                     map:layout_constraintTop_toBottomOf="@id/line_drawable" />
             </android.support.constraint.ConstraintLayout>
 
-            <TextView
-                android:id="@+id/destination_information"
+            <EditText
+                android:id="@+id/start_autocomplete"
                 android:layout_width="0dp"
                 android:layout_height="32dp"
                 android:layout_alignParentTop="true"
@@ -81,33 +81,35 @@
                 android:scrollHorizontally="true"
                 android:singleLine="true"
                 android:textSize="18sp"
-                android:textColor="@color/black"
+                android:background="@color/white"
+                android:hint="@string/question_starting_position"
+                android:textCursorDrawable="@drawable/cursor_red"
+                android:inputType="textCapSentences|textNoSuggestions"
+                android:imeOptions="actionDone"
                 map:layout_constraintEnd_toEndOf="parent"
                 map:layout_constraintStart_toEndOf="@+id/start_to_destination_drawables"
-                map:layout_constraintTop_toTopOf="parent" />
+                map:layout_constraintTop_toTopOf="parent"
+                />
 
-            <EditText
-                android:id="@+id/start_autocomplete"
+            <TextView
+                android:id="@+id/destination_information"
                 android:layout_width="0dp"
                 android:layout_height="32dp"
                 android:layout_marginBottom="8dp"
                 android:layout_marginEnd="16dp"
                 android:layout_marginStart="8dp"
                 android:layout_marginTop="8dp"
-                android:background="@color/white"
                 android:gravity="center_vertical"
-                android:hint="@string/question_starting_position"
                 android:paddingStart="8dp"
                 android:scrollHorizontally="true"
                 android:singleLine="true"
-                android:textCursorDrawable="@drawable/cursor_red"
                 android:textSize="18sp"
-                android:inputType="textCapSentences|textNoSuggestions"
-                android:imeOptions="actionDone"
-                map:layout_constraintBottom_toBottomOf="parent"
+                android:textColor="@color/black"
                 map:layout_constraintEnd_toEndOf="parent"
                 map:layout_constraintStart_toEndOf="@+id/start_to_destination_drawables"
-                map:layout_constraintTop_toBottomOf="@id/destination_information" />
+                map:layout_constraintTop_toBottomOf="@id/start_autocomplete"
+                map:layout_constraintBottom_toBottomOf="parent"
+                />
         </android.support.constraint.ConstraintLayout>
 
         <android.support.constraint.ConstraintLayout

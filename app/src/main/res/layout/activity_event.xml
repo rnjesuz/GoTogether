@@ -19,7 +19,8 @@
         map:uiRotateGestures="true"
         map:uiZoomControls="false"
         map:uiZoomGestures="true"
-        tools:context=".EventActivity" />
+        tools:context=".EventActivity"
+        />
 
     <com.github.clans.fab.FloatingActionButton
         android:id="@+id/recenter_button"
@@ -31,7 +32,7 @@
         app:fab_colorPressed="@color/white_background"
         app:fab_colorRipple="@color/white_background_dark"
         android:layout_gravity="bottom|end"
-        android:layout_marginBottom="32dp"
+        android:layout_marginBottom="48dp"
         android:layout_marginEnd="16dp"
         android:onClick="centerMap"
         />
@@ -43,7 +44,7 @@
         android:orientation="vertical"
         app:layout_behavior="android.support.design.widget.BottomSheetBehavior"
         android:background="@drawable/top_roundcorners_noborder"
-        android:elevation="2dp">
+        android:elevation="10dp">
 
         <ImageView
             android:id="@+id/bottom_sheet_image"
@@ -84,8 +85,8 @@
                 android:layout_marginEnd="8dp"
                 android:background="@color/white"
                 android:gravity="center_vertical"
-                android:src="@drawable/baseline_directions_black_24"
                 android:onClick="goMarkerDestination"
+                android:src="@drawable/baseline_directions_black_24"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />

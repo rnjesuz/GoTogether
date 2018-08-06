@@ -23,7 +23,7 @@
     <string name="manage_events">Manage Events</string>
     <string name="do_you_volunteer_as_a_driver">Do you volunteer as a driver?</string>
     <string name="question_destination">Enter event\'s destination</string>
-    <string name="question_starting_position">Enter pickup point</string>
+    <string name="question_starting_position">Enter your pickup point</string>
     <string name="title_activity_create_event">Create Event</string>
     <string name="set">Set</string>
     <string name="seats_in_car">How many available seats in the car?</string>
