@@ -83,7 +83,7 @@ public class GooglePlacesAutocompleteAdapter extends ArrayAdapter implements Fil
 
         try {
             // Create a JSON object hierarchy from the results
-            Log.d("Adapter Results",jsonResults.toString());
+            Log.i("Adapter Results",jsonResults.toString());
             JSONObject jsonObj = new JSONObject(jsonResults.toString());
             JSONArray predsJsonArray = jsonObj.getJSONArray("predictions");
 

@@ -18,7 +18,6 @@
         android:hint="What's the Identifier?"
         android:inputType="text"
         android:padding="25sp"
-        android:text="teste"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />

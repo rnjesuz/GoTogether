@@ -22,6 +22,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.RequiresApi;
 import android.support.constraint.ConstraintLayout;
 import android.support.design.widget.Snackbar;
+import android.support.design.widget.TextInputLayout;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
@@ -224,9 +225,23 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
         actionBar.setDisplayHomeAsUpEnabled(true);
         // change the up button icon
         actionBar.setHomeAsUpIndicator(R.drawable.ic_close);
+
         // set slider as invisible
+        // TODO
         suggestions = findViewById(R.id.suggestions_slider);
-        suggestions.setVisibility(View.INVISIBLE);
+        if (suggestions.getViewTreeObserver().isAlive()) {
+            suggestions.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                @SuppressLint("NewApi") // We check which build version we are using.
+                @Override
+                public void onGlobalLayout() {
+                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN) {
+                        suggestions.getViewTreeObserver().removeGlobalOnLayoutListener(this);
+                    } else {
+                        suggestions.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                    }
+                    suggestions.setVisibility(View.INVISIBLE);
+                }});
+        }
 
         //findViewById(R.id.destination_autocomplete).setBackgroundColor(getResources().getColor(R.color.white));
 
@@ -640,11 +655,9 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
         // change actionbar elevation
          //TODO or maybe set the input fields elevation?
         actionBar.setElevation(0);
-        // remove actionbar title
-        //actionBar.setTitle(null);
         //remove the title input layout
-        RelativeLayout titlefield = findViewById(R.id.create_title);
-        titlefield.setVisibility(View.GONE);
+        TextInputLayout titleField = findViewById(R.id.create_title);
+        titleField.setVisibility(View.GONE);
         // remove the driver layout
         ConstraintLayout driverInputs = findViewById(R.id.driver_inputs);
         driverInputs.setVisibility(View.GONE);
@@ -653,7 +666,6 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
         // change create option color
         TextView create = findViewById(R.id.action_create);
         create.setVisibility(View.GONE);
-        //create.setTextColor(getResources().getColor(R.color.black));
         // slide up the suggestions layout
         suggestions.setVisibility(View.VISIBLE);
         suggestions.animate().translationY(0);
@@ -687,8 +699,8 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
         // change actionbar elevation
         actionBar.setElevation((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 4, getResources().getDisplayMetrics()));
         // set the title input layout visible
-        RelativeLayout titlefield = findViewById(R.id.create_title);
-        titlefield.setVisibility(View.VISIBLE);
+        TextInputLayout titleField = findViewById(R.id.create_title);
+        titleField.setVisibility(View.VISIBLE);
         // set the driver layout visible
         ConstraintLayout driverInputs = findViewById(R.id.driver_inputs);
         driverInputs.setVisibility(View.VISIBLE);
@@ -697,7 +709,6 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
         // change create option color
         TextView create = findViewById(R.id.action_create);
         create.setVisibility(View.VISIBLE);
-        //create.setTextColor(getResources().getColor(R.color.white));
         // slide down the suggestions layout
         DisplayMetrics displayMetrics = new DisplayMetrics();
         getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);

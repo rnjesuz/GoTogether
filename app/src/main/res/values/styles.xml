@@ -41,9 +41,11 @@
         <item name="android:elevation">4dp</item>
     </style>
 
-    <style name="GoTogether_Theme.EditText" parent="Theme.AppCompat.Light.DarkActionBar">
-        <item name="colorControlNormal">@color/green_normal</item>
+    <style name="GoTogether_Theme.EditText" parent="GoTogether_Theme">
+        <item name="colorControlNormal">@color/white_38_opacity</item>
         <item name="colorControlActivated">@color/green_complementary</item>
+
+        <item name="android:textColorHint">@color/white_38_opacity</item>
     </style>
 
 </resources>
