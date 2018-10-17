@@ -101,7 +101,10 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
         // the participants part
         RecyclerView bottomSheet = findViewById(R.id.bottom_sheet_participants);
         // Create bottom sheet items
-        ArrayList<User> items = new ArrayList<>(participants);
+        ArrayList<User> items = null;
+        if(participants != null) {
+            items = new ArrayList<>(participants);
+        }
 
         // Instantiate adapter
         UserInEventAdapter userDescriptionAdapter = new UserInEventAdapter(items, null);

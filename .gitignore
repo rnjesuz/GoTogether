@@ -8,3 +8,6 @@
 /build
 /captures
 .externalNativeBuild
+
+/server/python-functions/env
+/app/release

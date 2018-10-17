@@ -601,7 +601,7 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
     // create an action bar button
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.create_menu, menu);
+        getMenuInflater().inflate(R.menu.join_menu, menu);
         menu.getItem(0).setEnabled(false);
         return super.onCreateOptionsMenu(menu);
     }

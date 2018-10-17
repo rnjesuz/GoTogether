@@ -1,0 +1,10 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <!-- Join, should appear as action button always -->
+    <item
+        android:id="@+id/action_join"
+        android:title="Join"
+        app:showAsAction="always"
+        android:textColor="@color/white"/>
+</menu>

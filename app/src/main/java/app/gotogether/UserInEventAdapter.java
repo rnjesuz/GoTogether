@@ -37,7 +37,10 @@ public class UserInEventAdapter extends RecyclerView.Adapter<UserInEventAdapter.
 
     @Override
     public int getItemCount() {
-        return mUserDescriptions.size();
+        int size = 0;
+        if (mUserDescriptions != null)
+            size = mUserDescriptions.size();
+        return size;
     }
 
     public class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
