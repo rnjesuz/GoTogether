@@ -27,6 +27,7 @@
         <item name="colorPrimary">@color/green_normal</item>
         <item name="colorPrimaryDark">@color/green_rippled</item>
         <item name="colorAccent">@color/green_complementary</item>
+        <item name="android:windowBackground">@color/material_green_50</item>
     </style>
 
     <style name="GoTogether_Theme.NoActionBar" parent="Theme.AppCompat.Light.NoActionBar" >
@@ -46,6 +47,13 @@
         <item name="colorControlActivated">@color/green_complementary</item>
 
         <item name="android:textColorHint">@color/white_38_opacity</item>
+    </style>
+
+    <style name="GreenTheme">
+        <item name="colorPrimary">@color/material_green_500</item>
+        <item name="colorPrimaryDark">@color/material_green_700</item>
+        <item name="colorAccent">@color/material_purple_a700</item>
+        <item name="android:windowBackground">@color/material_green_50</item>
     </style>
 
 </resources>

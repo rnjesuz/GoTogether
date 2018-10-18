@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="app.gotogether">
 
     <!-- To auto-complete the email text field in the login form with the user's emails -->
@@ -18,7 +19,8 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/GoTogether_Theme">
+        android:theme="@style/GoTogether_Theme"
+        tools:ignore="GoogleAppIndexingWarning">
 
         <!--
              The API key for Google Maps-based APIs is defined as a string resource.
@@ -32,7 +34,7 @@
             android:name="com.google.android.geo.API_KEY"
             android:value="@string/google_maps_key" />
 
-        <activity
+        <!--<activity
             android:name=".LoginActivity"
             android:configChanges="orientation|keyboardHidden"
             android:label="@string/app_name"
@@ -42,7 +44,20 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+        </activity>-->
+
+        <activity
+            android:name=".MultipleLoginActivity"
+            android:configChanges="orientation|keyboardHidden"
+            android:label="@string/app_name"
+            android:screenOrientation="portrait">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
         </activity>
+
         <!--
         <activity
         android:name=".MainMenuActivity"

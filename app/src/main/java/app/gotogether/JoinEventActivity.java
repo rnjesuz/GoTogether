@@ -470,7 +470,7 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
                     return false; // don't consume the action
                 return true;
 
-            case R.id.action_create:
+            case R.id.action_join:
                 concludeCreation();
                 return false;
 
@@ -545,7 +545,7 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
         // change up button icon
         actionBar.setHomeAsUpIndicator(R.drawable.ic_arrow_black); // the default arrow
         // change create option color
-        TextView create = findViewById(R.id.action_create);
+        TextView create = findViewById(R.id.action_join);
         create.setVisibility(View.GONE);
         //create.setTextColor(getResources().getColor(R.color.black));
         // slide up the suggestions layout
@@ -588,7 +588,7 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
         // change up button icon
         actionBar.setHomeAsUpIndicator(R.drawable.ic_close); // the default arrow
         // change create option color
-        TextView create = findViewById(R.id.action_create);
+        TextView create = findViewById(R.id.action_join);
         create.setVisibility(View.VISIBLE);
         //create.setTextColor(getResources().getColor(R.color.white));
         // slide down the suggestions layout
@@ -598,7 +598,7 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
         suggestions.animate().translationY(screenHeight - parent.getHeight());
     }
 
-    // create an action bar button
+    /** create an action bar button */
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.join_menu, menu);

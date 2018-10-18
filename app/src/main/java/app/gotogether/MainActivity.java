@@ -10,12 +10,15 @@ import android.location.Geocoder;
 import android.os.Build;
 import android.os.Handler;
 import android.support.annotation.NonNull;
+import android.support.annotation.RequiresApi;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewGroupOverlay;
@@ -28,9 +31,12 @@ import android.widget.PopupWindow;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
+import com.firebase.ui.auth.AuthUI;
 import com.github.clans.fab.FloatingActionButton;
 import com.github.clans.fab.FloatingActionMenu;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -40,8 +46,11 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
+import static app.gotogether.CreateEventActivity.hideKeyboard;
+
 public class MainActivity extends  AppCompatActivity {
 
+    private static final String TAG = "MainActivity";
     private FloatingActionMenu menuEvent;
     private ArrayList<Event> eventList = new ArrayList<>();
     private ArrayList<User> participants;
@@ -144,6 +153,42 @@ public class MainActivity extends  AppCompatActivity {
         testPopulate();
 
         //TODO connect to server
+    }
+
+    /** create an action bar button */
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.logout_menu, menu);
+        menu.getItem(0).setVisible(true);
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.action_logout:
+                logOut();
+                return false;
+
+            default:
+                // If we got here, the user's action was not recognized.
+                // Invoke the superclass to handle it.
+                return super.onOptionsItemSelected(item);
+        }
+    }
+
+    private void logOut() {
+        Log.i(TAG, "User is logging out...");
+        AuthUI.getInstance()
+                .signOut(this)
+                .addOnCompleteListener(new OnCompleteListener<Void>() {
+                    public void onComplete(@NonNull Task<Void> task) {
+                        // user is now signed out
+                        startActivity(new Intent(MainActivity.this, MultipleLoginActivity.class));
+                        finish();
+                    }
+                });
     }
 
 

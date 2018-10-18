@@ -1,0 +1,13 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context=".activities.MainActivity"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <!-- Join, should appear as action button always -->
+    <item
+        android:id="@+id/action_logout"
+        android:title="LogOut"
+        app:showAsAction="always"
+        android:icon="@drawable/baseline_power_settings_new_24"
+        android:textColor="@color/white"/>
+</menu>

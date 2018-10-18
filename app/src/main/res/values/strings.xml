@@ -42,6 +42,10 @@
     <string name="participants">Participants</string>
     <string name="edit">Edit</string>
 
+    <string name="sign_in_cancelled">Sign in cancelled</string>
+    <string name="unknown_error">An unknown error occurred</string>
+    <string name="no_internet_connection">No internet connection</string>
+
     <!-- Strings related to Settings -->
 
     <!-- Example General settings -->
