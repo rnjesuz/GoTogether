@@ -35,8 +35,8 @@ public class User implements Parcelable, Serializable {
     public User(String username, String startAddress, int seats){
         this.username=username;
         this.startAddress=startAddress;
-        this.isDriver = true;
-        this.seats = seats;
+        if ( (this.seats = seats) != -1)
+            this.isDriver = true;
     }
 
     // constructor to save non-driving user with no defined pickup point

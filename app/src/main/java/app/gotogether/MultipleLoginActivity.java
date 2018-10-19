@@ -37,7 +37,7 @@ public class MultipleLoginActivity extends AppCompatActivity {
     private static final int RC_SIGN_IN = 123;
     private static final String GOOGLE_TOS_URL = "https://www.google.com/policies/terms/";
     private FirebaseAuth auth;
-    FirebaseFirestore db;
+    private FirebaseFirestore db;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

@@ -37,6 +37,16 @@ import com.github.clans.fab.FloatingActionMenu;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestoreSettings;
+import com.google.firebase.firestore.GeoPoint;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.QuerySnapshot;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -58,6 +68,8 @@ public class MainActivity extends  AppCompatActivity {
     private Handler mUiHandler = new Handler();
     private ArrayAdapter<Event> adapter;
     private ListView eventListView;
+    private FirebaseFirestore db;
+    private FirebaseAuth auth;
 
     /* Testing variables */
     String[] titles = {"Tour de France", "ComicCon", "Sombra da bananeira", "Mundial 2022", "Fuga dos Paraliticos po Deserto", "Rumo ao tetra", "VDL", "Á procura da piada", "feira do tremoço", "po tras do sol posto", "ver os animais", "coçar macacos no zoo"};
@@ -74,6 +86,16 @@ public class MainActivity extends  AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        // initialize the authenticator
+        auth = FirebaseAuth.getInstance();
+        // initialize the db
+        db = FirebaseFirestore.getInstance();
+        // required settings
+        FirebaseFirestoreSettings settings = new FirebaseFirestoreSettings.Builder()
+                .setTimestampsInSnapshotsEnabled(true)
+                .build();
+        db.setFirestoreSettings(settings);
 
         // the context
         context = MainActivity.this;
@@ -133,26 +155,13 @@ public class MainActivity extends  AppCompatActivity {
             }
         });
 
-        // Create our new array adapter
-        adapter = new EventArrayAdapter(this, 0, eventList);
-        // Find list view and bind it with the custom adapter
-        eventListView = (ListView) findViewById(R.id.EventList);
-        eventListView.setAdapter(adapter);
-        eventListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                Event clickedEvent = eventList.get(position);
-                ArrayList<User> participants = eventParticipants.get(clickedEvent);
-                Log.i("Quem sao? ",participants.toString());
-                Log.i("MainActivity", "Event click: "+clickedEvent.getTitle());
-                LaunchEvent(clickedEvent, participants);
-            }
-        });
 
         // TODO remove after testing
-        testPopulate();
+        //testPopulate();
 
         //TODO connect to server
+        populate();
+
     }
 
     /** create an action bar button */
@@ -191,7 +200,6 @@ public class MainActivity extends  AppCompatActivity {
                 });
     }
 
-
     /* Activity methods */
 
     /** Method called to open an Event from the event list
@@ -202,7 +210,7 @@ public class MainActivity extends  AppCompatActivity {
         // add the title
         intent.putExtra("Title", event.getTitle());
         // add the destination
-        String destination = event.getDestination();
+        String destination = event.getDestinationStreet();
         Bundle destinationBundle = new Bundle();
         LatLng destinationLatLng = getLocationFromAddress(getApplicationContext(), destination);
         destinationBundle.putParcelable("destinationLatLng", destinationLatLng);
@@ -213,8 +221,9 @@ public class MainActivity extends  AppCompatActivity {
         participantsBundle.putParcelableArrayList("Participants", participants);
         // add the user
         User user;
+        FirebaseUser fbUser = auth.getCurrentUser();
         Random random = new Random();
-        String name = names[random.nextInt(names.length)];
+        String name = fbUser.getDisplayName();
         Log.i("Participant Name",name);
         String addr = pickup[random.nextInt(pickup.length)];
         Log.i("Participant PickUp",addr);
@@ -241,6 +250,7 @@ public class MainActivity extends  AppCompatActivity {
         // Drop the menu down
         menuEvent.toggle(true);
     }
+
     /** Method called to launch the JoinEventActivity */
     private void JoinEvent(String identifier) {
 
@@ -374,8 +384,112 @@ public class MainActivity extends  AppCompatActivity {
     /** Request updates from the server and update eventList */
     private void fetchUpdates() { /*TODO*/
         adapter.clear();
-        adapter.notifyDataSetChanged();
-        testPopulate();
+        populate();
+        //adapter.notifyDataSetChanged(); TODO is thi needded?
+    }
+
+    /** Method to populate the Activity ListView with the user's events*/
+    private void populate() {
+        // get the user and its uniqueidentifier
+        FirebaseUser fbUser = auth.getCurrentUser();
+        String uid = fbUser.getUid();
+        // get the events the user is participating in
+        db.collection("users").document(uid)
+                .get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
+            @Override
+            public void onComplete(@NonNull Task<DocumentSnapshot> task) {
+                if (task.isSuccessful()) {
+                    DocumentSnapshot document = task.getResult();
+                    if (document.exists()) {
+                        Log.i(TAG, "DocumentSnapshot data: " + document.getData());
+                        List<DocumentReference> events = (List<DocumentReference>) document.get("events");
+                        for (int i = 0; i < events.size(); i++) {
+                            String eventID = events.get(i).getId();
+                            Log.i(TAG, "events id: " + eventID);
+                                // get the event info
+                                // the event itself
+                                DocumentReference docRef = db.collection("events").document(eventID);
+                                docRef.get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
+                                    @Override
+                                    public void onComplete(@NonNull Task<DocumentSnapshot> task) {
+                                        if (task.isSuccessful()) {
+                                            DocumentSnapshot document = task.getResult();
+                                            if (document.exists()) {
+                                                Log.i(TAG, "DocumentSnapshot data: " + document.getData());
+                                                task.getResult();
+                                                Event newEvent = task.getResult().toObject(Event.class);
+                                                newEvent.setImage("ic_launcher_round");
+                                                Log.i(TAG, "new Event: " + newEvent.toString());
+
+                                                // the participants info
+                                                ArrayList<User> participants = new ArrayList<>();
+                                                db.collection("events").document(eventID).collection("participants")
+                                                        .get()
+                                                        .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+                                                            @Override
+                                                            public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                                                                if (task.isSuccessful()) {
+                                                                    for (QueryDocumentSnapshot document : task.getResult()) {
+                                                                        Log.d(TAG, document.getId() + " => " + document.getData());
+                                                                        String username = document.getString("username");
+                                                                        Map<String, Object> start = (Map<String, Object>) document.get("start");
+                                                                        String startAdress = (String) start.get("street");
+                                                                        GeoPoint geoPoint = (GeoPoint) start.get("LatLng");
+                                                                        double latitude = geoPoint.getLatitude();
+                                                                        double longitude = geoPoint.getLongitude();
+                                                                        LatLng startLatLng = new LatLng(latitude , longitude);
+                                                                        int seats = document.getBoolean("driver") ? document.getDouble("seats").intValue() : -1;
+                                                                        participants.add(new User(username, startAdress, startLatLng, seats));
+                                                                        newEvent.setParticipants(participants.size());
+                                                                        newEvent.setParticipantsList(participants);
+                                                                    }
+                                                                    eventList.add(newEvent);
+                                                                    eventParticipants.put(newEvent, participants);
+                                                                    // initialize the adapter
+                                                                    initializeAdapter();
+                                                                } else {
+                                                                    Log.d(TAG, "Error getting documents: ", task.getException());
+                                                                }
+                                                            }
+                                                        });
+
+                                                //participants = getEventParticipants(eventID);
+                                            } else {
+                                                Log.d(TAG, "No such document");
+                                            }
+                                        } else {
+                                            Log.d(TAG, "get failed with ", task.getException());
+                                        }
+                                    }
+                                });
+                            }
+                    } else {
+                        Log.d(TAG, "No such document");
+                    }
+                } else {
+                    Log.d(TAG, "get failed with ", task.getException());
+                }
+            }
+        });
+    }
+
+    private void initializeAdapter() {
+        // Create our new array adapter
+        if(adapter == null)
+            adapter = new EventArrayAdapter(this, 0, eventList);
+        // Find list view and bind it with the custom adapter
+        eventListView = (ListView) findViewById(R.id.EventList);
+        eventListView.setAdapter(adapter);
+        eventListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                Event clickedEvent = eventList.get(position);
+                ArrayList<User> participants = eventParticipants.get(clickedEvent);
+                Log.i("Quem sao? ",participants.toString());
+                Log.i("MainActivity", "Event click: "+clickedEvent.getTitle());
+                LaunchEvent(clickedEvent, participants);
+            }
+        });
     }
 
     /** Method to populate the Activity ListView with dummy events */

@@ -84,6 +84,9 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestoreSettings;
 
 import java.io.IOException;
 import java.util.List;
@@ -1028,6 +1031,7 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
         //Talk with server
         //TODO send info. receive token
         //TODO make pop-up to confirm input
+        databaseWrite();
 
         //Launch new activity
         Intent intent = new Intent(CreateEventActivity.this, EventActivity.class);
@@ -1052,6 +1056,18 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
         intent.putExtra("Participants", userBundle);
         // Start
         startActivity(intent);
+    }
+
+    private void databaseWrite() {
+        // initialize the db
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        // required settings
+        FirebaseFirestoreSettings settings = new FirebaseFirestoreSettings.Builder()
+                .setTimestampsInSnapshotsEnabled(true)
+                .build();
+        db.setFirestoreSettings(settings);
+        DocumentReference docRef = db.collection("events").document();
+        // TODO write data
     }
 
     /** Get latitude and longitude from the address*/
