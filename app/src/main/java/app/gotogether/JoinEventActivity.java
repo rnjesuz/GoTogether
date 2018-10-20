@@ -92,6 +92,7 @@ import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreSettings;
+import com.google.firebase.firestore.GeoPoint;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -160,7 +161,7 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
         // Get event's uid from intent
         eventUID = getIntent().getStringExtra("eventUID");
         // Get user's UID from intent
-        userUID = getIntent().getStringExtra("userUID");
+        //userUID = getIntent().getStringExtra("userUID");
         // Get title from Intent
         title = getIntent().getStringExtra("Title");
         getSupportActionBar().setTitle(title);
@@ -911,6 +912,8 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
         //Launch new activity
         // TODO do split? if finalized : if not finalized - different activities based on each
         Intent intent = new Intent(JoinEventActivity.this, EventActivity.class);
+        // Event's UID
+        intent.putExtra("eventUID", eventUID);
         // Title
         intent.putExtra("Title", title);
         // Destination
@@ -932,27 +935,36 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
                 .build();
         db.setFirestoreSettings(settings);
 
-        // update to the event document if driver
+        // update the event document if driver
+        DocumentReference eventDocRef = db.collection("events").document(eventUID);
+        DocumentReference userDocRef = db.collection("users").document(userUID);
         if (isDriver) {
-            DocumentReference eventDocRef = db.collection("events").document(eventUID);
-            DocumentReference userDocRef = db.collection("users").document(auth.getUid());
             final Map<String, Object> addUserToArrayMap = new HashMap<>();
             addUserToArrayMap.put("drivers", FieldValue.arrayUnion(userDocRef));
             eventDocRef.update(addUserToArrayMap);
         }
+
         // Write to the participants subcollection
         DocumentReference participantRef = db
                 .collection("events").document(eventUID)
                 .collection("participants").document(userUID);
-        participantRef.update("username", displayName);
+        Map<String, Object> participant = new HashMap<>();
+        participant.put("username", displayName);
+        participantRef.set(participant);
+        participantRef.update("driver", isDriver);
         if (isDriver) {
-            participantRef.update("driver", false);
             participantRef.update("seats", emptySeats);
         }
         Map<String, Object> start = new HashMap<>();
-        start.put("street", destination);
-        start.put("LatLng", destinationLatLng);
-        participantRef.update(start);
+        start.put("street", this.start);
+        GeoPoint destinationGeoPoint = new GeoPoint(startLatLng.latitude, startLatLng.longitude);
+        start.put("LatLng", destinationGeoPoint);
+        participantRef.update("start", start);
+
+        // update user's events
+        final Map<String, Object> addEventToArrayMap = new HashMap<>();
+        addEventToArrayMap.put("events", FieldValue.arrayUnion(eventDocRef));
+        userDocRef.update(addEventToArrayMap);
     }
 
     /** Get latitude and longitude from the address*/

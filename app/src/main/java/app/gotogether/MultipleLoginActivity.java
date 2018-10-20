@@ -99,7 +99,7 @@ public class MultipleLoginActivity extends AppCompatActivity {
 
                 // Add to DB
                 Map<String, Object> user = new HashMap<>();
-                user.put("usernasme", name);
+                user.put("username", name);
                 user.put("events", new ArrayList<>());
                 db.collection("users").document(uid)
                         .set(user)

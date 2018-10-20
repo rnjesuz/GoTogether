@@ -51,12 +51,15 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
     private static BottomSheetBehavior bottomSheetBehavior;
     private LatLngBounds bounds;
     private String title;
+    private String eventUID;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_event);
 
+        // Get event's uid from intent
+        eventUID = getIntent().getStringExtra("eventUID");
         // Get title from Intent
         title = getIntent().getStringExtra("Title");
         getSupportActionBar().setTitle(title);
@@ -247,6 +250,7 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
     /** launches activity for user to edit his inputs for the event */
     public void editUserInputs(View view) {
         Intent intent = new Intent(EventActivity.this, JoinEventActivity.class);
+        intent.putExtra("eventUID", eventUID);
         intent.putExtra("Title", title);
         intent.putExtra("Destination", getIntent().getBundleExtra("Destination"));
         intent.putExtra("Participants", getIntent().getBundleExtra("Participants"));

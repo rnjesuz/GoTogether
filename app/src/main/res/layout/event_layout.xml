@@ -145,7 +145,6 @@
             android:layout_marginStart="15dp"
             android:text="@string/edit"
             android:drawableStart="@drawable/baseline_edit_24"
-            android:onClick="editEvent"
             android:singleLine="true"
             android:textAllCaps="false"
             android:backgroundTint="@color/white"

@@ -207,10 +207,11 @@ public class MainActivity extends  AppCompatActivity {
      * @param participants the participants of the event */
     private void LaunchEvent(Event event, ArrayList<User> participants) {
         Intent intent = new Intent(MainActivity.this, EventActivity.class);
+        // TODO refactor event class | add uid to intent
         // add the title
         intent.putExtra("Title", event.getTitle());
         // add the destination
-        String destination = event.getDestinationStreet();
+        String destination = event.getstreet();
         Bundle destinationBundle = new Bundle();
         LatLng destinationLatLng = getLocationFromAddress(getApplicationContext(), destination);
         destinationBundle.putParcelable("destinationLatLng", destinationLatLng);
@@ -255,27 +256,47 @@ public class MainActivity extends  AppCompatActivity {
     private void JoinEvent(String identifier) {
 
         Intent intent = new Intent(MainActivity.this, JoinEventActivity.class);
-        // For testing purposes only. TODO Remove!!!
-        if(identifier.equals("teste")) {
-            intent.putExtra("Title", "Tour de France");
-            intent.putExtra("Destination", createJoinActivityDestinationTestBundle());
-            intent.putExtra("Participants", createJoinActivityParticipantsTestBundle());
-            startActivity(intent);
-            // Drop the menu down
-            menuEvent.toggle(true);
-        }
-        else{
-            // Show Toast to inform of incorrect identifier
-            Toast.makeText(this, "The provided identifier is an invalid one. Please try again.", Toast.LENGTH_SHORT).show();
-        }
-
-
+        intent.putExtra("eventUID", identifier);
         // Get data from server
-        // TODO
-        // Generate Intent with destination and participants
-        // TODO
+        DocumentReference eventRef = db.collection("events").document(identifier);
+        eventRef.get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
+            @Override
+            public void onComplete(@NonNull Task<DocumentSnapshot> task) {
+                if (task.isSuccessful()) {
+                    DocumentSnapshot document = task.getResult();
+                    if (document.exists()) {
+                        Log.d(TAG, "DocumentSnapshot data: " + document.getData());
 
-        //startActivity(intent);
+                        intent.putExtra("Title", (String) document.get("title"));
+                        intent.putExtra("Destination", createJoinActivityDestinationBundle(document) );
+                        db.collection("events")
+                                .document(document.getId())
+                                .collection("participants")
+                                .get()
+                                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+                                    @Override
+                                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                                        if (task.isSuccessful()) {
+                                            intent.putExtra("Participants", createJoinActivityParticipantsBundle(task) );
+                                            // Drop the menu down
+                                            menuEvent.toggle(true);
+                                            // start the activity
+                                            startActivity(intent);
+                                        } else {
+                                            Log.d(TAG, "Error getting documents: ", task.getException());
+                                        }
+                                    }
+                                });
+                    } else {
+                        Log.d(TAG, "No such document");
+                        // Show Toast to inform of incorrect identifier
+                        Toast.makeText(MainActivity.this, "The provided identifier is an invalid one. Please try again.", Toast.LENGTH_SHORT).show();
+                    }
+                } else {
+                    Log.d(TAG, "get failed with ", task.getException());
+                }
+            }
+        });
     }
 
     private void createTest() {
@@ -532,32 +553,45 @@ public class MainActivity extends  AppCompatActivity {
         }
     }
 
-    /** Create a Bundle with destinations Latitude, Longitude and Address */
-    public Bundle createJoinActivityDestinationTestBundle(){
+    /** Create a Bundle with destinations Latitude, Longitude and Address
+     * @param document*/
+    public Bundle createJoinActivityDestinationBundle(DocumentSnapshot document){
 
         Bundle destinationBundle = new Bundle();
-        LatLng destinationLatLng = getLocationFromAddress(getApplicationContext(), "R. Cap. Salgueiro Maia, 2725-079 Algueirão- Mem Martins, Portugal");
+        Map<String, Object> destination = (Map<String, Object>) document.get("destination");
+        GeoPoint destinationGP = (GeoPoint) destination.get("LatLng");
+        LatLng destinationLatLng = new LatLng(destinationGP.getLatitude(), destinationGP.getLongitude());
         destinationBundle.putParcelable("destinationLatLng", destinationLatLng);
-        destinationBundle.putString("destinationAddress", "R. Cap. Salgueiro Maia, 2725-079 Algueirão- Mem Martins, Portugal");
+        destinationBundle.putString("destinationAddress", (String) destination.get("street") );
         return destinationBundle;
     }
 
-    /** Create a Bundle of Users participating in an Event */
-    public Bundle createJoinActivityParticipantsTestBundle(){
+    /** Create a Bundle of Users participating in an Event
+     * @param   task    The query returning all the participants of the event
+     * @return  A bundle with the different Users(Participants) generated from the query
+     * */
+    public Bundle createJoinActivityParticipantsBundle(Task<QuerySnapshot> task){
         Bundle participantsBundle = new Bundle();
         ArrayList<User> participants = new ArrayList<User>();
 
-        //TODO remove after testing
-        // Dummy user 1
-        User participant1 = new User("Participant1", "Avenida da Républica, Lisboa, Portugal", getLocationFromAddress(getApplicationContext(), "Avenida da Républica, Lisboa, Portugal"), 6);
-        // Dummy user 2
-        User participant2 = new User("Participant2", "Instituto Superior Técnico", getLocationFromAddress(getApplicationContext(), "Instituto Superior Técnico"), 1);
-        // Dummy user 3
-        User participant3 = new User("Participant3", "Algualva-Cacém", getLocationFromAddress(getApplicationContext(), "Agualva-Cacém"), 10);
+        for (QueryDocumentSnapshot document : task.getResult()) {
+            Log.d(TAG, document.getId() + " => " + document.getData());
+            User participant;
+            String username = document.getString("username");
+            Map<String, Object> start = (Map<String,Object>) document.get("start");
+            String street = (String) start.get("street");
+            GeoPoint startGP = (GeoPoint) start.get("LatLng");
+            LatLng startLatLng = new LatLng(startGP.getLatitude(), startGP.getLongitude());
+            Boolean isDriver = (Boolean) document.get("driver");
+            if(isDriver) {
+                int seats = ((Long) document.get("seats")).intValue();
+                participant = new User(username, street, startLatLng, seats);
+            }
+            else
+                participant = new User(username, street, startLatLng);
+            participants.add(participant);
+        }
 
-        participants.add(participant1);
-        participants.add(participant2);
-        participants.add(participant3);
         participantsBundle.putParcelableArrayList("Participants", participants);
         return participantsBundle;
     }

@@ -85,10 +85,12 @@ import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreSettings;
+import com.google.firebase.firestore.GeoPoint;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -1039,10 +1041,13 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
     public void confirmEvent() {
         Log.d("Confirmation", "Yup");
         //Talk with server
-        databaseWrite();
+        String eventUID = databaseWrite();
 
         //Launch new activity
+        // Create intent
         Intent intent = new Intent(CreateEventActivity.this, EventActivity.class);
+        // Add event uid
+        intent.putExtra("eventUID", eventUID);
         // Title
         intent.putExtra("Title", title);
         // Destination Bundle
@@ -1066,7 +1071,12 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
         startActivity(intent);
     }
 
-    private void databaseWrite() {
+    /**
+     * Writes the new event to the Database
+     * Adds the event and updates the user's events
+     * @return returns the UID of the created event
+     */
+    private String databaseWrite() {
         // initialize the db
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         // required settings
@@ -1077,8 +1087,14 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
 
         // Write the event document
         DocumentReference eventDocRef = db.collection("events").document();
-        Event newEvent = new Event(title, destination, 1, null);
-        newEvent.setDestinationLatLng(getLocationFromAddress(this, destination));
+        String eventUID = eventDocRef.getId();
+        EventForDB newEvent = new EventForDB();
+        newEvent.setTitle(title);
+        newEvent.setParticipants(1);
+        LatLng latlng = getLocationFromAddress(this, destination);
+        GeoPoint gp = new GeoPoint(latlng.latitude, latlng.longitude);
+        newEvent.setstreet(destination);
+        newEvent.setLatLng(gp);
         newEvent.setCompleted(false);
         eventDocRef.set(newEvent);
         DocumentReference userDocRef = db.collection("users").document(userUID);
@@ -1087,22 +1103,34 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
             addUserToArrayMap.put("drivers", FieldValue.arrayUnion(userDocRef));
             eventDocRef.update(addUserToArrayMap);
         }
-        // Write the participants subcollection
+        eventDocRef.update("owner", userUID);
+
+        // Write the participants sub-collection
         DocumentReference participantRef = db
-                .collection("events").document(eventDocRef.getId())
+                .collection("events").document(eventUID)
                 .collection("participants").document(userUID);
-        participantRef.update("username", displayName);
+        Map<String, Object> participant = new HashMap<>();
+        participant.put("username", displayName);
+        participantRef.set(participant);
+        participantRef.update("driver", isDriver);
         if (isDriver) {
-            participantRef.update("driver", false);
             participantRef.update("seats", emptySeats);
         }
         Map<String, Object> start = new HashMap<>();
-        start.put("street", destination);
-        start.put("LatLng", destinationLatLng);
-        participantRef.update(start);
+        start.put("street", this.start);
+        GeoPoint destinationGeoPoint = new GeoPoint(startLatLng.latitude, startLatLng.longitude);
+        start.put("LatLng", destinationGeoPoint);
+        participantRef.update("start", start);
+
+        // update user's events
+        final Map<String, Object> addEventToArrayMap = new HashMap<>();
+        addEventToArrayMap.put("events", FieldValue.arrayUnion(eventDocRef));
+        userDocRef.update(addEventToArrayMap);
 
         // Show the generate Event ID to share
-        createTextPopUpWindow("This is your new Event id:\n" + eventDocRef.getId());
+        createTextPopUpWindow("This is your new Event id:\n" + eventUID);
+
+        return eventUID;
     }
 
     /** Get latitude and longitude from the address*/
