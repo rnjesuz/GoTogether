@@ -87,11 +87,18 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FieldValue;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestoreSettings;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import expandablelib.gotogether.ExpandCollapseListener;
 import expandablelib.gotogether.ExpandableLayout;
@@ -119,6 +126,11 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
     private Marker mStart = null;
     private static String start = null;
     private LatLng startLatLng = null;
+    private String eventUID = null;
+    // initialize the authenticator
+    private FirebaseAuth auth = FirebaseAuth.getInstance();
+    private String userUID = auth.getCurrentUser().getUid();
+    private String displayName = auth.getCurrentUser().getDisplayName();
     private String title = null;
     private boolean isDriver = true;
     private int emptySeats = -1; // -1 = no car. >0 = how many empty seats
@@ -145,6 +157,10 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
+        // Get event's uid from intent
+        eventUID = getIntent().getStringExtra("eventUID");
+        // Get user's UID from intent
+        userUID = getIntent().getStringExtra("userUID");
         // Get title from Intent
         title = getIntent().getStringExtra("Title");
         getSupportActionBar().setTitle(title);
@@ -890,7 +906,8 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
         //Talk with server
         //TODO send info. receive token
         //TODO make pop-up to confirm input
-
+        databaseWrite();
+        
         //Launch new activity
         // TODO do split? if finalized : if not finalized - different activities based on each
         Intent intent = new Intent(JoinEventActivity.this, EventActivity.class);
@@ -904,6 +921,38 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
         intent.putExtra("Participants", participantsBundle);
         // Start
         startActivity(intent);
+    }
+
+    private void databaseWrite() {
+        // initialize the db
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        // required settings
+        FirebaseFirestoreSettings settings = new FirebaseFirestoreSettings.Builder()
+                .setTimestampsInSnapshotsEnabled(true)
+                .build();
+        db.setFirestoreSettings(settings);
+
+        // update to the event document if driver
+        if (isDriver) {
+            DocumentReference eventDocRef = db.collection("events").document(eventUID);
+            DocumentReference userDocRef = db.collection("users").document(auth.getUid());
+            final Map<String, Object> addUserToArrayMap = new HashMap<>();
+            addUserToArrayMap.put("drivers", FieldValue.arrayUnion(userDocRef));
+            eventDocRef.update(addUserToArrayMap);
+        }
+        // Write to the participants subcollection
+        DocumentReference participantRef = db
+                .collection("events").document(eventUID)
+                .collection("participants").document(userUID);
+        participantRef.update("username", displayName);
+        if (isDriver) {
+            participantRef.update("driver", false);
+            participantRef.update("seats", emptySeats);
+        }
+        Map<String, Object> start = new HashMap<>();
+        start.put("street", destination);
+        start.put("LatLng", destinationLatLng);
+        participantRef.update(start);
     }
 
     /** Get latitude and longitude from the address*/

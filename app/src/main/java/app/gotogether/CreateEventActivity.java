@@ -84,13 +84,18 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreSettings;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public class CreateEventActivity extends AppCompatActivity implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener, ActivityCompat.OnRequestPermissionsResultCallback {
 
@@ -131,6 +136,11 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
     private GoogleMap mMap;
     private Marker mDestination;
     private Marker mStart;
+    // TODO receive user info from intent?
+    // initialize Authenticator
+    FirebaseAuth auth = FirebaseAuth.getInstance();
+    private String userUID = auth.getCurrentUser().getUid();
+    private String displayName = auth.getCurrentUser().getDisplayName();
 
     @SuppressLint("ClickableViewAccessibility")
     @RequiresApi(api = Build.VERSION_CODES.O)
@@ -1029,8 +1039,6 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
     public void confirmEvent() {
         Log.d("Confirmation", "Yup");
         //Talk with server
-        //TODO send info. receive token
-        //TODO make pop-up to confirm input
         databaseWrite();
 
         //Launch new activity
@@ -1066,8 +1074,35 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
                 .setTimestampsInSnapshotsEnabled(true)
                 .build();
         db.setFirestoreSettings(settings);
-        DocumentReference docRef = db.collection("events").document();
-        // TODO write data
+
+        // Write the event document
+        DocumentReference eventDocRef = db.collection("events").document();
+        Event newEvent = new Event(title, destination, 1, null);
+        newEvent.setDestinationLatLng(getLocationFromAddress(this, destination));
+        newEvent.setCompleted(false);
+        eventDocRef.set(newEvent);
+        DocumentReference userDocRef = db.collection("users").document(userUID);
+        if (isDriver) {
+            final Map<String, Object> addUserToArrayMap = new HashMap<>();
+            addUserToArrayMap.put("drivers", FieldValue.arrayUnion(userDocRef));
+            eventDocRef.update(addUserToArrayMap);
+        }
+        // Write the participants subcollection
+        DocumentReference participantRef = db
+                .collection("events").document(eventDocRef.getId())
+                .collection("participants").document(userUID);
+        participantRef.update("username", displayName);
+        if (isDriver) {
+            participantRef.update("driver", false);
+            participantRef.update("seats", emptySeats);
+        }
+        Map<String, Object> start = new HashMap<>();
+        start.put("street", destination);
+        start.put("LatLng", destinationLatLng);
+        participantRef.update(start);
+
+        // Show the generate Event ID to share
+        createTextPopUpWindow("This is your new Event id:\n" + eventDocRef.getId());
     }
 
     /** Get latitude and longitude from the address*/

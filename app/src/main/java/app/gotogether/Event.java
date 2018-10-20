@@ -1,5 +1,7 @@
 package app.gotogether;
 
+import com.google.android.gms.maps.model.LatLng;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -26,7 +28,10 @@ class Event implements Serializable {
         this.title = title;
         this.destination.put("street", destination);
         this.participants = participants;
-        this.image = img;
+        if (img != null)
+            this.image = img;
+        else
+            this.image = "ic_launcher_round";
     }
 
     public String getTitle() {
@@ -96,6 +101,14 @@ class Event implements Serializable {
 
     public void setDestination(Map<String, Object> destination) {
         this.destination = destination;
+    }
+
+    public void setDestinationStreet(String addr) {
+        this.destination.put("street", addr);
+    }
+
+    public void setDestinationLatLng(LatLng latlng) {
+        this.destination.put("LatLng", latlng);
     }
 
     public void setDrivers(ArrayList<Object> drivers) {
