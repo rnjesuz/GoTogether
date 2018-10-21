@@ -155,11 +155,7 @@ public class MainActivity extends  AppCompatActivity {
             }
         });
 
-
-        // TODO remove after testing
-        //testPopulate();
-
-        //TODO connect to server
+        // Get event data from database
         populate();
 
     }
@@ -208,6 +204,8 @@ public class MainActivity extends  AppCompatActivity {
     private void LaunchEvent(Event event, ArrayList<User> participants) {
         Intent intent = new Intent(MainActivity.this, EventActivity.class);
         // TODO refactor event class | add uid to intent
+        // add the uid
+        intent.putExtra("eventUID", event.getId());
         // add the title
         intent.putExtra("Title", event.getTitle());
         // add the destination
@@ -403,7 +401,7 @@ public class MainActivity extends  AppCompatActivity {
     /* Auxiliary methods */
 
     /** Request updates from the server and update eventList */
-    private void fetchUpdates() { /*TODO*/
+    private void fetchUpdates() {
         adapter.clear();
         populate();
         //adapter.notifyDataSetChanged(); TODO is thi needded?
@@ -440,6 +438,7 @@ public class MainActivity extends  AppCompatActivity {
                                                 task.getResult();
                                                 Event newEvent = task.getResult().toObject(Event.class);
                                                 newEvent.setImage("ic_launcher_round");
+                                                newEvent.setId(eventID);
                                                 Log.i(TAG, "new Event: " + newEvent.toString());
 
                                                 // the participants info

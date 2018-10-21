@@ -8,17 +8,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-class Event implements Serializable {
+class Event extends EventForDB implements Serializable {
 
     private String id;
-    private String title;
-    private boolean  completed;
-    private Map<String, Object> destination = new HashMap<>();
-    private ArrayList<Object> drivers;
-
-    private ArrayList<Map<Object, Object>> cluster;
-    private int participants;
-    private String image = "ic_launcher_round";
     private ArrayList<User> participantsList = new ArrayList<User>();
 
     /** empty constructor
@@ -26,13 +18,13 @@ class Event implements Serializable {
     public Event(){}
 
     public Event(String title, String destination, int participants, String img){
-        this.title = title;
-        this.destination.put("street", destination);
-        this.participants = participants;
+        setTitle(title);
+        super.setstreet(destination);
+        super.setParticipants(participants);
         if (img != null)
-            this.image = img;
+            super.setImage(img);
         else
-            this.image = "ic_launcher_round";
+            super.setImage("ic_launcher_round");
     }
 
     public String getId() {
@@ -43,23 +35,23 @@ class Event implements Serializable {
         this.id = id;
     }
     public String getTitle() {
-        return title;
+        return super.getTitle();
     }
 
     public String getstreet() {
-        return (String) destination.get("street");
+        return super.getstreet();
     }
 
     public Object getLatLng() {
-        return destination.get("LatLng");
+        return super.getLatLng();
     }
 
     public int getParticipants() {
-        return participants;
+        return super.getParticipants();
     }
 
     public String getImage() {
-        return image;
+        return super.getImage();
     }
 
     public ArrayList<User> getParticipantsList() { return participantsList; }
@@ -71,19 +63,19 @@ class Event implements Serializable {
     }
 
     public boolean isCompleted() {
-        return completed;
+        return super.isCompleted();
     }
 
     public Map<String, Object> getDestination() {
-        return destination;
+        return super.getDestination();
     }
 
     public ArrayList<Object> getDrivers() {
-        return drivers;
+        return super.getDrivers();
     }
 
     public ArrayList<Map<Object, Object>> getCluster() {
-        return cluster;
+        return super.getCluster();
     }
 
     @Override
@@ -92,38 +84,38 @@ class Event implements Serializable {
     }
 
     public void setTitle(String title) {
-        this.title = title;
+        super.setTitle(title);
     }
 
     public void setCompleted(boolean completed) {
-        this.completed = completed;
+        super.setCompleted(completed);
     }
 
     public void setDestination(Map<String, Object> destination) {
-        this.destination = destination;
+        super.setDestination(destination);
     }
 
     public void setstreet(String addr) {
-        this.destination.put("street", addr);
+        super.setstreet(addr);
     }
 
     public void setLatLng(GeoPoint gp) {
-        this.destination.put("LatLng", gp);
+        super.setLatLng(gp);
     }
 
     public void setDrivers(ArrayList<Object> drivers) {
-        this.drivers = drivers;
+        super.setDrivers(drivers);
     }
 
     public void setCluster(ArrayList<Map<Object, Object>> cluster) {
-        this.cluster = cluster;
+        super.setCluster(cluster);
     }
 
     public void setParticipants(int participants) {
-        this.participants = participants;
+        super.setParticipants(participants);
     }
 
     public void setImage(String image) {
-        this.image = image;
+        super.setImage(image);
     }
 }
