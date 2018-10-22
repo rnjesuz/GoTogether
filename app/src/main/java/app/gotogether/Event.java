@@ -38,13 +38,13 @@ class Event extends EventForDB implements Serializable {
         return super.getTitle();
     }
 
-    public String getstreet() {
+    /*public String getstreet() {
         return super.getstreet();
     }
 
-    public Object getLatLng() {
+    public GeoPoint getLatLng() {
         return super.getLatLng();
-    }
+    }*/
 
     public int getParticipants() {
         return super.getParticipants();
@@ -76,11 +76,6 @@ class Event extends EventForDB implements Serializable {
 
     public ArrayList<Map<Object, Object>> getCluster() {
         return super.getCluster();
-    }
-
-    @Override
-    public String toString() {
-        return "my title: "+getTitle()+"; my destination: "+getstreet()+"; my participants: "+getParticipants();
     }
 
     public void setTitle(String title) {

@@ -1,8 +1,15 @@
 package app.gotogether;
 
 import android.annotation.SuppressLint;
+import android.app.ActionBar;
+import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.graphics.Typeface;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomSheetBehavior;
@@ -12,12 +19,22 @@ import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.Html;
+import android.text.Spannable;
 import android.text.SpannableString;
+import android.text.style.ImageSpan;
 import android.util.Log;
+import android.view.Gravity;
+import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
+import android.view.ViewGroupOverlay;
 import android.view.ViewTreeObserver;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.PopupWindow;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -219,6 +236,60 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
         return false;
     }
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.event_menu, menu);
+        /*menu.add(0, 1, 1, menuIconWithText(getResources().getDrawable(R.drawable.ic_done_all_white_24dp), getResources().getString(R.string.conclude_event)));
+        menu.add(0, 2, 2, menuIconWithText(getResources().getDrawable(R.drawable.ic_person_add_white_24dp), getResources().getString(R.string.show_identifier)));
+        menu.add(0, 3, 3, menuIconWithText(getResources().getDrawable(R.drawable.ic_edit), getResources().getString(R.string.edit_event)));*/
+
+        android.support.v7.app.ActionBar bar = getSupportActionBar();
+        bar.setBackgroundDrawable(new ColorDrawable(Color.parseColor("#43a047")));
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.action_conclude: {
+                concludeEvent();
+                break;
+            }
+            case R.id.action_show_identifier: {
+                // show the identifier
+                showEventIdentifier(eventUID);
+                break;
+            }
+            case R.id.action_edit: {
+                // edit the event's original info
+                Intent intent = new Intent(EventActivity.this, UpdateEventActivity.class);
+                intent.putExtra("Title", title);
+                intent.putExtra("Start", start);
+                intent.putExtra("Destination", destination);
+                if(user.isDriver()){
+                    intent.putExtra("Driver", true);
+                    intent.putExtra("Seats", user.getSeats());
+                } else
+                    intent.putExtra("Driver", false);
+                startActivity(intent);
+            }
+            default:
+                // If we got here, the user's action was not recognized.
+                // Invoke the superclass to handle it.
+                return super.onOptionsItemSelected(item);
+        }
+        return true;
+    }
+
+    /**
+     * Concludes the event
+     * updates the database as a completed event
+     * sends an http request to calculate clusters
+     * TODO redraw the event? launch new activity? Update the adapter?
+     */
+    private void concludeEvent() {
+    }
+
     /** Center map on the user marker
      * Initiated by a button in the bottom sheet */
     public void goMarkerUser(View view){
@@ -255,5 +326,111 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
         intent.putExtra("Destination", getIntent().getBundleExtra("Destination"));
         intent.putExtra("Participants", getIntent().getBundleExtra("Participants"));
         startActivity(intent);
+    }
+
+    // shows text alongside the icon
+    private CharSequence menuIconWithText(Drawable r, String title) {
+
+        r.setBounds(0, 0, r.getIntrinsicWidth(), r.getIntrinsicHeight());
+        SpannableString sb = new SpannableString("    " + title);
+        ImageSpan imageSpan = new ImageSpan(r, ImageSpan.ALIGN_BOTTOM);
+        sb.setSpan(imageSpan, 0, 1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+
+        return sb;
+    }
+
+    /**
+     * Shows a PopUp window with the event's unique identifier
+     * @param eventUID the event identifier to show
+     *
+     */
+    public void showEventIdentifier(String eventUID) {
+        CoordinatorLayout tConstraintLayout = (CoordinatorLayout) findViewById(R.id.eventLayout);
+        PopupWindow tPopupWindow;
+        // Initialize a new instance of LayoutInflater service
+        LayoutInflater inflater = (LayoutInflater) getApplicationContext().getSystemService(LAYOUT_INFLATER_SERVICE);
+
+        // Inflate the custom layout/view
+        View customView = inflater.inflate(R.layout.show_identifier_pop_up_window, null);
+
+        // Initialize a new instance of popup window
+        tPopupWindow = new PopupWindow(
+                customView,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                true
+        );
+
+        // Set an elevation value for popup window
+        // Call requires API level 21
+        if (Build.VERSION.SDK_INT >= 21) {
+            tPopupWindow.setElevation(5.0f);
+        }
+
+        // Get a reference for the custom view text
+        TextView messageText = (TextView) customView.findViewById(R.id.id_tv);
+        // Set text
+        messageText.setText(eventUID);
+
+        // Get a reference for the custom view copy button
+        ImageButton copyButton = (ImageButton) customView.findViewById(R.id.ib_copy);
+        // Set a click listener for the popup window close button
+        copyButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                // Copy to Clipboard
+                ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+                ClipData clip = ClipData.newPlainText("Identifier", "Enter this identifier in Go-Together to join my Event!: " + eventUID);
+                clipboard.setPrimaryClip(clip);
+                // Confirm copy to user bia Toast
+                Toast.makeText(EventActivity.this, "Identifier copied to clipboard!", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        // Get a reference for the custom view close button
+        ImageButton closeButton = (ImageButton) customView.findViewById(R.id.ib_close);
+        // Set a click listener for the popup window close button
+        closeButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                // Restore activity to opaque
+                ViewGroup root = (ViewGroup) getWindow().getDecorView().getRootView();
+                clearDim(root);
+                // Dismiss the popup window
+                tPopupWindow.dismiss();
+            }
+        });
+
+        // Detect a click outside the window - Dismiss is the default behaviour of outside click
+        tPopupWindow.setOnDismissListener(new PopupWindow.OnDismissListener() {
+            @Override
+            public void onDismiss() {
+                ViewGroup root = (ViewGroup) getWindow().getDecorView().getRootView();
+                clearDim(root);
+            }
+        });
+
+        // Finally, show the popup window at the center location of root relative layout
+        tPopupWindow.showAtLocation(tConstraintLayout, Gravity.CENTER, 0, 0);
+
+        // Dim the activity
+        ViewGroup root = (ViewGroup) getWindow().getDecorView().getRootView();
+        applyDim(root, 0.8f);
+    }
+
+    /** Apply dim to the activity */
+    public void applyDim(@NonNull ViewGroup parent, float dimAmount) {
+        Drawable dim = new ColorDrawable(Color.BLACK);
+        dim.setBounds(0, 0, parent.getWidth(), parent.getHeight());
+        dim.setAlpha((int) (255 * dimAmount));
+
+        ViewGroupOverlay overlay = parent.getOverlay();
+        overlay.add(dim);
+    }
+
+    /** Clear dim from the activity */
+    public void clearDim(@NonNull ViewGroup parent) {
+        ViewGroupOverlay overlay = parent.getOverlay();
+        overlay.clear();
     }
 }

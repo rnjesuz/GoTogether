@@ -28,6 +28,7 @@
         <item name="colorPrimaryDark">@color/green_rippled</item>
         <item name="colorAccent">@color/green_complementary</item>
         <item name="android:windowBackground">@color/material_green_50</item>
+        <item name="actionBarItemBackground">@color/green_normal</item>
     </style>
 
     <style name="GoTogether_Theme.NoActionBar" parent="Theme.AppCompat.Light.NoActionBar" >

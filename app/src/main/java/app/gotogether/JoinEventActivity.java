@@ -924,6 +924,7 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
         intent.putExtra("Participants", participantsBundle);
         // Start
         startActivity(intent);
+        this.finish();
     }
 
     private void databaseWrite() {

@@ -5,6 +5,7 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.TaskStackBuilder;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
@@ -26,6 +27,7 @@ import android.support.constraint.ConstraintLayout;
 import android.support.design.widget.Snackbar;
 import android.support.design.widget.TextInputLayout;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.NavUtils;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.text.Editable;
@@ -97,9 +99,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-public class CreateEventActivity extends AppCompatActivity implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener, ActivityCompat.OnRequestPermissionsResultCallback {
+public class UpdateEventActivity extends AppCompatActivity implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener, ActivityCompat.OnRequestPermissionsResultCallback {
 
-    private static final String TAG = "CreateActivity";
+    private static final String TAG = "UpdateActivity";
     private static final int UP_BUTTON_ID = 16908332; // because R.id.home doesn't seem to work....
     private String parents = "Do you volunteer as a Driver?";
     private boolean isDriver = true;
@@ -147,7 +149,7 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_create_event);
+        setContentView(R.layout.activity_update_event);
 
         // Get map fragment
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
@@ -163,12 +165,28 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
                 .setFastestInterval(1 * 1000); // 1 second, in milliseconds
 
         // set the adapter use to get place suggestions
-        dataAdapter = new GooglePlacesAutocompleteAdapter(CreateEventActivity.this, R.layout.place_suggestion_view){};
+        dataAdapter = new GooglePlacesAutocompleteAdapter(UpdateEventActivity.this, R.layout.place_suggestion_view){};
         // get references to some layout views
         placeSuggestions =  findViewById(R.id.places_suggestions);
         destinationET = findViewById(R.id.destination_autocomplete);
         startET = findViewById(R.id.start_autocomplete);
         titleET = findViewById(R.id.title_input);
+
+        // Preset the layout views to the appropriate values
+        title = getIntent().getStringExtra("Title");
+        destination = getIntent().getStringExtra("Destination");
+        start = getIntent().getStringExtra("Start");
+        titleET.setText(title);
+        destinationET.setText(destination);
+        destinationET.setCompoundDrawablesWithIntrinsicBounds(0,0, R.drawable.ic_close_red,0);
+        startET.setText(start);
+        startET.setCompoundDrawablesWithIntrinsicBounds(0,0, R.drawable.ic_close_red,0);
+        if(getIntent().getExtras().getBoolean("Driver")){
+            EditText seats = findViewById(R.id.seatNumberEdit);
+            seats.setText(Integer.toString(getIntent().getExtras().getInt("Seats")));
+        } else {
+            DriverVolunteer(findViewById(R.id.driver_question_tv));
+        }
 
         // Assign adapter to ListView
         placeSuggestions.setAdapter(dataAdapter);
@@ -195,7 +213,7 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
                             searching = 2;
                         } else {
                             destinationET.clearFocus();
-                            hideKeyboard(CreateEventActivity.this);
+                            hideKeyboard(UpdateEventActivity.this);
                             CollapseAfterInput();
                             searching = -1;
                         }
@@ -218,7 +236,7 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
                         }
                         else {
                             startET.clearFocus();
-                            hideKeyboard(CreateEventActivity.this);
+                            hideKeyboard(UpdateEventActivity.this);
                             CollapseAfterInput();
                             searching = -1;
                         }
@@ -231,7 +249,6 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
         // Get a support ActionBar corresponding to this toolbar
         actionBar = getSupportActionBar();
         // Changing title
-        //actionBar.setTitle(getResources().getString(R.string.title_activity_create_event));
         actionBar.setTitle("");
 
         // Enable the Up button
@@ -348,7 +365,7 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
                         destinationET.setCompoundDrawablesWithIntrinsicBounds(null,null,null,null);
 
                     // delete start info
-                    CreateEventActivity.destination = null;
+                    UpdateEventActivity.destination = null;
                     invalidateOptionsMenu();
                     destinationLatLng = null;
                     if(mDestination!=null) {
@@ -429,7 +446,7 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
                         startET.setCompoundDrawablesWithIntrinsicBounds(null,null,null,null);
 
                     // delete start info
-                    CreateEventActivity.start = null;
+                    UpdateEventActivity.start = null;
                     invalidateOptionsMenu();
                     startLatLng = null;
                     if(mStart!=null) {
@@ -469,7 +486,7 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
                         startET.requestFocus();
                         searching = 2;
                     } else {
-                        hideKeyboard(CreateEventActivity.this);
+                        hideKeyboard(UpdateEventActivity.this);
                         CollapseAfterInput();
                         searching = -1;
                     }
@@ -481,7 +498,7 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
                         destinationET.requestFocus();
                         searching = 1;
                     } else {
-                        hideKeyboard(CreateEventActivity.this);
+                        hideKeyboard(UpdateEventActivity.this);
                         CollapseAfterInput();
                         searching = -1;
                     }
@@ -510,6 +527,9 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
         getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
         int screenHeight = displayMetrics.heightPixels;
         mMap.setPadding(0, screenHeight / 2, 0, 0);
+
+        addMapMarker("Destination", destination);
+        addMapMarker("Start", start);
     }
 
     /** Called when the user clicks a marker. */
@@ -592,17 +612,18 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
-            case UP_BUTTON_ID: // hardcoded cause i can't find the id name for the up button
+            case android.R.id.home: // hardcoded cause i can't find the id name for the up button
                 if (searching > 0) {
-                    hideKeyboard(CreateEventActivity.this);
+                    hideKeyboard(UpdateEventActivity.this);
                     CollapseAfterInput();
                     searching = -1;
-                } else
-                    return false; // don't consume the action
+                } else {
+                    onBackPressed();
+                }
                 return true;
 
-            case R.id.action_create:
-                hideKeyboard(CreateEventActivity.this);
+            case R.id.action_update:
+                hideKeyboard(UpdateEventActivity.this);
                 concludeCreation();
                 return false;
 
@@ -616,7 +637,7 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
     /** Override method to change functionality in times where layout is CollapsedForInput() */
     public void onBackPressed(){
         if(searching > 0){
-            hideKeyboard(CreateEventActivity.this);
+            hideKeyboard(UpdateEventActivity.this);
             CollapseAfterInput();
             searching = -1;
         }
@@ -677,7 +698,7 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
         // change up button icon
         actionBar.setHomeAsUpIndicator(R.drawable.ic_arrow_black); // the default arrow
         // change create option color
-        TextView create = findViewById(R.id.action_create);
+        TextView create = findViewById(R.id.action_update);
         create.setVisibility(View.GONE);
         // slide up the suggestions layout
         suggestions.setVisibility(View.VISIBLE);
@@ -720,7 +741,7 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
         // change up button icon
         actionBar.setHomeAsUpIndicator(R.drawable.ic_close); // the default arrow
         // change create option color
-        TextView create = findViewById(R.id.action_create);
+        TextView create = findViewById(R.id.action_update);
         create.setVisibility(View.VISIBLE);
         // slide down the suggestions layout
         DisplayMetrics displayMetrics = new DisplayMetrics();
@@ -732,7 +753,7 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
     // create an action bar button
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.create_menu, menu);
+        getMenuInflater().inflate(R.menu.update_menu, menu);
         menu.getItem(0).setEnabled(false);
         return super.onCreateOptionsMenu(menu);
     }
@@ -1073,7 +1094,7 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
                 ClipData clip = ClipData.newPlainText("Identifier", "Enter this identifier in Go-Together to join my Event!: " + eventUID);
                 clipboard.setPrimaryClip(clip);
                 // Confirm copy to user bia Toast
-                Toast.makeText(CreateEventActivity.this, "Identifier copied to clipboard!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(UpdateEventActivity.this, "Identifier copied to clipboard!", Toast.LENGTH_SHORT).show();
             }
         });
 
@@ -1133,10 +1154,8 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
 
         //Launch new activity
         // Create intent
-        Intent intent = new Intent(CreateEventActivity.this, MainActivity.class);
-        // TODO to show toast on main activity
-        intent.putExtra("created", "yes");
-        /*// Add event uid
+        Intent intent = new Intent(UpdateEventActivity.this, EventActivity.class);
+        // Add event uid
         intent.putExtra("eventUID", eventUID);
         // Title
         intent.putExtra("Title", title);
@@ -1156,7 +1175,7 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
             user = new User("Ricardo", start, startLatLng);
         }
         userBundle.putParcelable("User", user);
-        intent.putExtra("Participants", userBundle);*/
+        intent.putExtra("Participants", userBundle);
         // Start
         startActivity(intent);
         this.finish();
@@ -1331,15 +1350,15 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
 
     private boolean checkGPS() {
         boolean gpsEnabled = false;
-        final LocationManager manager = (LocationManager) CreateEventActivity.this.getSystemService(Context.LOCATION_SERVICE);
+        final LocationManager manager = (LocationManager) UpdateEventActivity.this.getSystemService(Context.LOCATION_SERVICE);
 
-        if (!hasGPSDevice(CreateEventActivity.this)) {
+        if (!hasGPSDevice(UpdateEventActivity.this)) {
             Log.e("GPS", "Gps not supported");
-            Toast.makeText(CreateEventActivity.this, "Gps not Supported", Toast.LENGTH_SHORT).show();
+            Toast.makeText(UpdateEventActivity.this, "Gps not Supported", Toast.LENGTH_SHORT).show();
             gpsEnabled = false;
         }
 
-        if (!manager.isProviderEnabled(LocationManager.GPS_PROVIDER) && hasGPSDevice(CreateEventActivity.this)) {
+        if (!manager.isProviderEnabled(LocationManager.GPS_PROVIDER) && hasGPSDevice(UpdateEventActivity.this)) {
             Log.e("GPS", "Gps not enabled");
             enableLoc();
             gpsEnabled = false;
@@ -1362,7 +1381,7 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
     }
 
     private void enableLoc() {
-        mGoogleApiClient = new GoogleApiClient.Builder(CreateEventActivity.this)
+        mGoogleApiClient = new GoogleApiClient.Builder(UpdateEventActivity.this)
                 .addApi(LocationServices.API)
                 .addConnectionCallbacks(new GoogleApiClient.ConnectionCallbacks() {
                     @Override
@@ -1408,7 +1427,7 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
                         try {
                             // Show the dialog by calling startResolutionForResult(),
                             // and check the result in onActivityResult().
-                            status.startResolutionForResult(CreateEventActivity.this, REQUEST_LOCATION);
+                            status.startResolutionForResult(UpdateEventActivity.this, REQUEST_LOCATION);
 
                             //finish();
                         } catch (IntentSender.SendIntentException e) {

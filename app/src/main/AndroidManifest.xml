@@ -71,7 +71,8 @@
             android:label="@string/title_activity_create_event"
             android:screenOrientation="portrait"
             android:windowSoftInputMode="stateAlwaysHidden"
-            android:theme="@style/GoTogether_Theme.DenseBar">
+            android:theme="@style/GoTogether_Theme.DenseBar"
+            android:noHistory="true">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="app.gotogether.MainActivity" />
@@ -100,7 +101,8 @@
             android:name=".JoinEventActivity"
             android:configChanges="orientation|keyboardHidden"
             android:label="@string/title_activity_join_event"
-            android:screenOrientation="portrait">
+            android:screenOrientation="portrait"
+            android:noHistory="true">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="app.gotogether.MainActivity" />
@@ -122,6 +124,18 @@
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="app.gotogether.MainActivity" />
+        </activity>
+        <activity
+            android:name=".UpdateEventActivity"
+            android:configChanges="orientation|keyboardHidden"
+            android:label="@string/title_activity_update_event"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="stateAlwaysHidden"
+            android:theme="@style/GoTogether_Theme.DenseBar"
+            android:noHistory="true">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="app.gotogether.EventActivity" />
         </activity>
         <activity
             android:name=".MainActivity"

@@ -56,7 +56,8 @@ public class GooglePlacesAutocompleteAdapter extends ArrayAdapter implements Fil
             StringBuilder sb = new StringBuilder(PLACES_API_BASE + TYPE_AUTOCOMPLETE + OUT_JSON);
             sb.append("?key=" + context.getResources().getString(R.string.google_maps_key));
             //sb.append("&components=country:pt");
-            sb.append("&locationbias=circle:367291.37@39.600995,-8.562731");
+            // sb.append("&locationbias=circle:367291.37@39.600995,-8.562731");
+            sb.append(("&radius="));
             sb.append("&input=" + URLEncoder.encode(input, "utf8"));
 
             URL url = new URL(sb.toString());

@@ -63,7 +63,7 @@ class EventArrayAdapter extends ArrayAdapter<Event> {
         title.setText(event.getTitle());
 
         //TODO
-        destination.setText((String)event.getstreet());
+        destination.setText((String)event.getDestination().get("street"));
 
         //TODO
         participantsView.setText(String.format("%s participants", Integer.toString(event.getParticipants())));
@@ -93,7 +93,7 @@ class EventArrayAdapter extends ArrayAdapter<Event> {
                 // add the title
                 intent.putExtra("Title", event.getTitle());
                 // add the destination
-                String destination = (String) event.getstreet();
+                String destination = (String) event.getDestination().get("street");
                 Bundle destinationBundle = new Bundle();
                 // TODO this LatLng should be in the event, and thus, qwwe should use the getter
                 LatLng destinationLatLng = getLocationFromAddress(context, destination);

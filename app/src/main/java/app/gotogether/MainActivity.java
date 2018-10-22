@@ -87,6 +87,10 @@ public class MainActivity extends  AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        // see if launched from other activity besides login
+        if(this.getIntent().getExtras() != null){
+            Toast.makeText(this, "Event Created",Toast.LENGTH_LONG).show();
+        }
         // initialize the authenticator
         auth = FirebaseAuth.getInstance();
         // initialize the db
@@ -154,10 +158,6 @@ public class MainActivity extends  AppCompatActivity {
                 }, 1500);
             }
         });
-
-        // Get event data from database
-        populate();
-
     }
 
     /** create an action bar button */
@@ -203,13 +203,13 @@ public class MainActivity extends  AppCompatActivity {
      * @param participants the participants of the event */
     private void LaunchEvent(Event event, ArrayList<User> participants) {
         Intent intent = new Intent(MainActivity.this, EventActivity.class);
-        // TODO refactor event class | add uid to intent
+        // TODO read from event
         // add the uid
         intent.putExtra("eventUID", event.getId());
         // add the title
         intent.putExtra("Title", event.getTitle());
         // add the destination
-        String destination = event.getstreet();
+        String destination = (String) event.getDestination().get("street");
         Bundle destinationBundle = new Bundle();
         LatLng destinationLatLng = getLocationFromAddress(getApplicationContext(), destination);
         destinationBundle.putParcelable("destinationLatLng", destinationLatLng);
@@ -253,48 +253,52 @@ public class MainActivity extends  AppCompatActivity {
     /** Method called to launch the JoinEventActivity */
     private void JoinEvent(String identifier) {
 
-        Intent intent = new Intent(MainActivity.this, JoinEventActivity.class);
-        intent.putExtra("eventUID", identifier);
-        // Get data from server
-        DocumentReference eventRef = db.collection("events").document(identifier);
-        eventRef.get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
-            @Override
-            public void onComplete(@NonNull Task<DocumentSnapshot> task) {
-                if (task.isSuccessful()) {
-                    DocumentSnapshot document = task.getResult();
-                    if (document.exists()) {
-                        Log.d(TAG, "DocumentSnapshot data: " + document.getData());
+        if (identifier.matches("")){
+            Toast.makeText(MainActivity.this, "The provided identifier is an invalid one. Please try again.", Toast.LENGTH_SHORT).show();
+        } else {
+            Intent intent = new Intent(MainActivity.this, JoinEventActivity.class);
+            intent.putExtra("eventUID", identifier);
+            // Get data from server
+            DocumentReference eventRef = db.collection("events").document(identifier);
+            eventRef.get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
+                @Override
+                public void onComplete(@NonNull Task<DocumentSnapshot> task) {
+                    if (task.isSuccessful()) {
+                        DocumentSnapshot document = task.getResult();
+                        if (document.exists()) {
+                            Log.d(TAG, "DocumentSnapshot data: " + document.getData());
 
-                        intent.putExtra("Title", (String) document.get("title"));
-                        intent.putExtra("Destination", createJoinActivityDestinationBundle(document) );
-                        db.collection("events")
-                                .document(document.getId())
-                                .collection("participants")
-                                .get()
-                                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
-                                    @Override
-                                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
-                                        if (task.isSuccessful()) {
-                                            intent.putExtra("Participants", createJoinActivityParticipantsBundle(task) );
-                                            // Drop the menu down
-                                            menuEvent.toggle(true);
-                                            // start the activity
-                                            startActivity(intent);
-                                        } else {
-                                            Log.d(TAG, "Error getting documents: ", task.getException());
+                            intent.putExtra("Title", (String) document.get("title"));
+                            intent.putExtra("Destination", createJoinActivityDestinationBundle(document));
+                            db.collection("events")
+                                    .document(document.getId())
+                                    .collection("participants")
+                                    .get()
+                                    .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+                                        @Override
+                                        public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                                            if (task.isSuccessful()) {
+                                                intent.putExtra("Participants", createJoinActivityParticipantsBundle(task));
+                                                // Drop the menu down
+                                                menuEvent.toggle(true);
+                                                // start the activity
+                                                startActivity(intent);
+                                            } else {
+                                                Log.d(TAG, "Error getting documents: ", task.getException());
+                                            }
                                         }
-                                    }
-                                });
+                                    });
+                        } else {
+                            Log.d(TAG, "No such document");
+                            // Show Toast to inform of incorrect identifier
+                            Toast.makeText(MainActivity.this, "The provided identifier is an invalid one. Please try again.", Toast.LENGTH_SHORT).show();
+                        }
                     } else {
-                        Log.d(TAG, "No such document");
-                        // Show Toast to inform of incorrect identifier
-                        Toast.makeText(MainActivity.this, "The provided identifier is an invalid one. Please try again.", Toast.LENGTH_SHORT).show();
+                        Log.d(TAG, "get failed with ", task.getException());
                     }
-                } else {
-                    Log.d(TAG, "get failed with ", task.getException());
                 }
-            }
-        });
+            });
+        }
     }
 
     private void createTest() {
@@ -402,7 +406,8 @@ public class MainActivity extends  AppCompatActivity {
 
     /** Request updates from the server and update eventList */
     private void fetchUpdates() {
-        adapter.clear();
+        if (adapter!=null)
+            adapter.clear();
         populate();
         //adapter.notifyDataSetChanged(); TODO is thi needded?
     }
@@ -636,4 +641,19 @@ public class MainActivity extends  AppCompatActivity {
         overlay.clear();
     }
 
+    /**
+     * On back pressed exits application
+     */
+    @Override
+    public void onBackPressed() {
+        moveTaskToBack(true);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        // Get event data from database
+        populate();
+    }
 }

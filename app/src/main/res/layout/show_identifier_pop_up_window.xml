@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/rl_custom_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="2dp"
+    android:background="#ffffff"
+    >
+    <ImageButton
+        android:id="@+id/ib_close"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/ic_close_red"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentRight="true"
+        android:background="@null"
+        />
+    <TextView
+        android:id="@+id/tv"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Your event's unique identifier:"
+        android:layout_centerInParent="true"
+        android:paddingLeft="25sp"
+        android:paddingRight="25sp"
+        android:layout_below="@id/ib_close"
+        />
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_centerInParent="true"
+        android:layout_below="@id/tv"
+        android:paddingBottom="25sp"
+        android:paddingLeft="25sp"
+        android:paddingRight="25sp"
+        android:paddingTop="18dp">
+        <TextView
+            android:id="@+id/id_tv"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="This is a sample popup window."
+            android:textIsSelectable="true"
+            />
+        <ImageButton
+            android:id="@+id/ib_copy"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_content_copy_black_24dp"
+            android:background="@null"
+            android:paddingStart="18dp"
+            />
+    </LinearLayout>
+</RelativeLayout>
