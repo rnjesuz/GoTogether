@@ -517,9 +517,9 @@ public class CreateEventOldActivity extends AppCompatActivity implements
         LatLng startLatLng = getLocationFromAddress(getApplicationContext(), start);
         User user;
         if (isDriver) {
-            user = new User("Ricardo", start, startLatLng, emptySeats);
+            user = new User("teste","Ricardo", start, startLatLng, emptySeats);
         } else {
-            user = new User("Ricardo", start, startLatLng);
+            user = new User("teste","Ricardo", start, startLatLng);
         }
         userBundle.putParcelable("User", user);
         intent.putExtra("Participants", userBundle);

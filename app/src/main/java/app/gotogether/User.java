@@ -9,14 +9,19 @@ import java.io.Serializable;
 
 public class User implements Parcelable, Serializable {
 
+    private String id;
     private String username;
     private String startAddress;
     private LatLng startLatLng = null;
     private boolean isDriver = false;
     private int seats = -1;
 
+    // empty constructor
+    public User() {
+    }
+
     // constructor with seats means seats != 0
-    public User(String username, String startAddress, LatLng startLatLng, int seats){
+    public User(String id, String username, String startAddress, LatLng startLatLng, int seats){
         this.username=username;
         this.startAddress=startAddress;
         this.startLatLng=startLatLng;
@@ -25,14 +30,14 @@ public class User implements Parcelable, Serializable {
     }
 
     // constructor with no seats means not a volunteering driver & no available seats
-    public User(String username, String startAddress, LatLng startLatLng){
+    public User(String id, String username, String startAddress, LatLng startLatLng){
         this.username=username;
         this.startAddress=startAddress;
         this.startLatLng=startLatLng;
     }
 
     // constructor to save driving user with no defined pickup point
-    public User(String username, String startAddress, int seats){
+    public User(String id, String username, String startAddress, int seats){
         this.username=username;
         this.startAddress=startAddress;
         if ( (this.seats = seats) != -1)
@@ -40,11 +45,10 @@ public class User implements Parcelable, Serializable {
     }
 
     // constructor to save non-driving user with no defined pickup point
-    public User(String username, String startAddress){
+    public User(String id, String username, String startAddress){
         this.username=username;
         this.startAddress=startAddress;
     }
-
 
     protected User(Parcel in) {
         username = in.readString();
@@ -115,6 +119,14 @@ public class User implements Parcelable, Serializable {
 
     public void setSeats(int seats) {
         this.seats = seats;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public String getId() {
+        return id;
     }
 
     public String getUsername() {

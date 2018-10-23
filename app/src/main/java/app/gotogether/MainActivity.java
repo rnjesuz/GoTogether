@@ -34,6 +34,7 @@ import android.widget.Toast;
 import com.firebase.ui.auth.AuthUI;
 import com.github.clans.fab.FloatingActionButton;
 import com.github.clans.fab.FloatingActionMenu;
+import com.google.android.gms.auth.api.Auth;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
@@ -204,37 +205,32 @@ public class MainActivity extends  AppCompatActivity {
     private void LaunchEvent(Event event, ArrayList<User> participants) {
         Intent intent = new Intent(MainActivity.this, EventActivity.class);
         // TODO read from event
+        String currentUserUID = auth.getUid();
         // add the uid
         intent.putExtra("eventUID", event.getId());
         // add the title
         intent.putExtra("Title", event.getTitle());
         // add the destination
         String destination = (String) event.getDestination().get("street");
+        GeoPoint destinatioGP = (GeoPoint) event.getDestination().get("LatLng");
+        LatLng destinationLatLng = new LatLng(destinatioGP.getLatitude(), destinatioGP.getLongitude());
         Bundle destinationBundle = new Bundle();
-        LatLng destinationLatLng = getLocationFromAddress(getApplicationContext(), destination);
         destinationBundle.putParcelable("destinationLatLng", destinationLatLng);
         destinationBundle.putString("destinationAddress", destination);
         intent.putExtra("Destination", destinationBundle);
+        // diferentiate current User from other participants
+        ArrayList<User> eventParticipants = new ArrayList<>();
+        User user = new User();
+        for(User u : participants){
+            if (u.getId().equals(currentUserUID)){
+                eventParticipants.remove(u);
+                user = u;
+            }
+        }
         // add the participants
         Bundle participantsBundle = new Bundle();
-        participantsBundle.putParcelableArrayList("Participants", participants);
+        participantsBundle.putParcelableArrayList("Participants", eventParticipants);
         // add the user
-        User user;
-        FirebaseUser fbUser = auth.getCurrentUser();
-        Random random = new Random();
-        String name = fbUser.getDisplayName();
-        Log.i("Participant Name",name);
-        String addr = pickup[random.nextInt(pickup.length)];
-        Log.i("Participant PickUp",addr);
-        boolean driver = random.nextBoolean();
-        int seats = 0;
-        if (driver) {
-            seats = ThreadLocalRandom.current().nextInt(1, 6+1);
-            user = new User(name , addr, getLocationFromAddress(context, addr), seats );
-        }
-        else {
-            user = new User(name, addr, getLocationFromAddress(context, addr));
-        }
         participantsBundle.putParcelable("User", user);
         intent.putExtra("Participants", participantsBundle);
         // start
@@ -442,8 +438,8 @@ public class MainActivity extends  AppCompatActivity {
                                                 Log.i(TAG, "DocumentSnapshot data: " + document.getData());
                                                 task.getResult();
                                                 Event newEvent = task.getResult().toObject(Event.class);
-                                                newEvent.setImage("ic_launcher_round");
                                                 newEvent.setId(eventID);
+                                                newEvent.setImage("ic_launcher_round");
                                                 Log.i(TAG, "new Event: " + newEvent.toString());
 
                                                 // the participants info
@@ -456,6 +452,7 @@ public class MainActivity extends  AppCompatActivity {
                                                                 if (task.isSuccessful()) {
                                                                     for (QueryDocumentSnapshot document : task.getResult()) {
                                                                         Log.d(TAG, document.getId() + " => " + document.getData());
+                                                                        String id = document.getId();
                                                                         String username = document.getString("username");
                                                                         Map<String, Object> start = (Map<String, Object>) document.get("start");
                                                                         String startAdress = (String) start.get("street");
@@ -464,7 +461,7 @@ public class MainActivity extends  AppCompatActivity {
                                                                         double longitude = geoPoint.getLongitude();
                                                                         LatLng startLatLng = new LatLng(latitude , longitude);
                                                                         int seats = document.getBoolean("driver") ? document.getDouble("seats").intValue() : -1;
-                                                                        participants.add(new User(username, startAdress, startLatLng, seats));
+                                                                        participants.add(new User(id, username, startAdress, startLatLng, seats));
                                                                         newEvent.setParticipants(participants.size());
                                                                         newEvent.setParticipantsList(participants);
                                                                     }
@@ -538,10 +535,10 @@ public class MainActivity extends  AppCompatActivity {
                 int seats = 0;
                 if (driver) {
                     seats = ThreadLocalRandom.current().nextInt(1, 6+1);
-                    participant = new User(name, addr, getLocationFromAddress(this, addr), seats );
+                    participant = new User("teste", name, addr, getLocationFromAddress(this, addr), seats );
                 }
                 else {
-                    participant = new User(names[random.nextInt(names.length)], addr, getLocationFromAddress(this, addr));
+                    participant = new User("teste", names[random.nextInt(names.length)], addr, getLocationFromAddress(this, addr));
                 }
                 participants.add(participant);
             }
@@ -581,6 +578,7 @@ public class MainActivity extends  AppCompatActivity {
         for (QueryDocumentSnapshot document : task.getResult()) {
             Log.d(TAG, document.getId() + " => " + document.getData());
             User participant;
+            String id = document.getId();
             String username = document.getString("username");
             Map<String, Object> start = (Map<String,Object>) document.get("start");
             String street = (String) start.get("street");
@@ -589,10 +587,10 @@ public class MainActivity extends  AppCompatActivity {
             Boolean isDriver = (Boolean) document.get("driver");
             if(isDriver) {
                 int seats = ((Long) document.get("seats")).intValue();
-                participant = new User(username, street, startLatLng, seats);
+                participant = new User(id, username, street, startLatLng, seats);
             }
             else
-                participant = new User(username, street, startLatLng);
+                participant = new User(id, username, street, startLatLng);
             participants.add(participant);
         }
 
