@@ -113,6 +113,7 @@ public class UpdateEventActivity extends AppCompatActivity implements OnMapReady
     private static String destination = null;
     private static String start = null;
     private String title = "";
+    private String eventUID;
     private int searching = -1; // >0 means searching. 1 is for destinations; 2 is for pick-up
     private boolean locationClick = false; // is location input being set through button?
     private ActionBar actionBar;
@@ -173,6 +174,7 @@ public class UpdateEventActivity extends AppCompatActivity implements OnMapReady
         titleET = findViewById(R.id.title_input);
 
         // Preset the layout views to the appropriate values
+        eventUID = getIntent().getStringExtra("eventUID");
         title = getIntent().getStringExtra("Title");
         destination = getIntent().getStringExtra("Destination");
         start = getIntent().getStringExtra("Start");
@@ -891,7 +893,7 @@ public class UpdateEventActivity extends AppCompatActivity implements OnMapReady
     }
 
     private void createConfirmationPopUpWindow() {
-        RelativeLayout cConstraintLayout = (RelativeLayout) findViewById(R.id.createEventLayout);
+        RelativeLayout cConstraintLayout = (RelativeLayout) findViewById(R.id.updateEventLayout);
         PopupWindow cPopupWindow;
         // Initialize a new instance of LayoutInflater service
         LayoutInflater inflater = (LayoutInflater) getApplicationContext().getSystemService(LAYOUT_INFLATER_SERVICE);
@@ -945,10 +947,9 @@ public class UpdateEventActivity extends AppCompatActivity implements OnMapReady
                 // Dismiss the popup window
                 cPopupWindow.dismiss();
                 // Write to database
-                String eventUID = databaseWrite();
-                // Show Event Identifier
-                showEventIdentifier(eventUID);
+                databaseWrite();
 
+                // TODO launch back to event activity
             }
         });
 
@@ -1186,7 +1187,7 @@ public class UpdateEventActivity extends AppCompatActivity implements OnMapReady
      * Adds the event and updates the user's events
      * @return returns the UID of the created event
      */
-    private String databaseWrite() {
+    private void databaseWrite() {
         // initialize the db
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         // required settings
@@ -1195,49 +1196,41 @@ public class UpdateEventActivity extends AppCompatActivity implements OnMapReady
                 .build();
         db.setFirestoreSettings(settings);
 
-        // Write the event document
-        DocumentReference eventDocRef = db.collection("events").document();
-        String eventUID = eventDocRef.getId();
-        EventForDB newEvent = new EventForDB();
-        newEvent.setTitle(title);
-        newEvent.setParticipants(1);
+        // Update the event document
+        DocumentReference eventDocRef = db.collection("events").document(eventUID);
+        eventDocRef.update(">Title", title);
+        Map<String, Object> eventDestination = new HashMap<>();
         LatLng latlng = getLocationFromAddress(this, destination);
         GeoPoint gp = new GeoPoint(latlng.latitude, latlng.longitude);
-        newEvent.setstreet(destination);
-        newEvent.setLatLng(gp);
-        newEvent.setCompleted(false);
-        eventDocRef.set(newEvent);
+        eventDestination.put("street", this.destination);
+        eventDestination.put("LatLng", gp);
+        eventDocRef.update("destination", eventDestination);
+
         DocumentReference userDocRef = db.collection("users").document(userUID);
         if (isDriver) {
+            // TODO does this add a duplicate?
             final Map<String, Object> addUserToArrayMap = new HashMap<>();
             addUserToArrayMap.put("drivers", FieldValue.arrayUnion(userDocRef));
             eventDocRef.update(addUserToArrayMap);
+        } else {
+            eventDocRef.update("drivers", FieldValue.arrayRemove("/users/"+userUID));
         }
-        eventDocRef.update("owner", userUID);
 
-        // Write the participants sub-collection
+        // Update the participants sub-collection
         DocumentReference participantRef = db
                 .collection("events").document(eventUID)
                 .collection("participants").document(userUID);
-        Map<String, Object> participant = new HashMap<>();
-        participant.put("username", displayName);
-        participantRef.set(participant);
         participantRef.update("driver", isDriver);
         if (isDriver) {
             participantRef.update("seats", emptySeats);
+        } else {
+            participantRef.update("seats", FieldValue.delete());
         }
         Map<String, Object> start = new HashMap<>();
         start.put("street", this.start);
         GeoPoint destinationGeoPoint = new GeoPoint(startLatLng.latitude, startLatLng.longitude);
         start.put("LatLng", destinationGeoPoint);
         participantRef.update("start", start);
-
-        // update user's events
-        final Map<String, Object> addEventToArrayMap = new HashMap<>();
-        addEventToArrayMap.put("events", FieldValue.arrayUnion(eventDocRef));
-        userDocRef.update(addEventToArrayMap);
-
-        return eventUID;
     }
 
     /** Get latitude and longitude from the address*/

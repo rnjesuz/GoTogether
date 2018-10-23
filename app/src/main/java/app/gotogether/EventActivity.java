@@ -263,6 +263,7 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
             case R.id.action_edit: {
                 // edit the event's original info
                 Intent intent = new Intent(EventActivity.this, UpdateEventActivity.class);
+                intent.putExtra("eventUID", eventUID);
                 intent.putExtra("Title", title);
                 intent.putExtra("Start", start);
                 intent.putExtra("Destination", destination);
