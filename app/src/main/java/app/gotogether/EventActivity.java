@@ -1,21 +1,19 @@
 package app.gotogether;
 
 import android.annotation.SuppressLint;
-import android.app.ActionBar;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
-import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
+import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomSheetBehavior;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.Html;
@@ -35,7 +33,6 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.PopupWindow;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -48,16 +45,19 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 
-import expandablelib.gotogether.ExpandCollapseListener;
-import expandablelib.gotogether.ExpandableParticipantLayout;
-import expandablelib.gotogether.Section;
+import io.opencensus.tags.Tag;
 
 public class EventActivity extends AppCompatActivity implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
 
+    private static final String TAG = "EventActivity";
     private String destination = null;
     private LatLng destinationLatLng = null;
     private String start = null;
@@ -69,6 +69,11 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
     private LatLngBounds bounds;
     private String title;
     private String eventUID;
+    private FirebaseAuth auth = FirebaseAuth.getInstance();
+    private FirebaseFirestore db = FirebaseFirestore.getInstance();
+    private String owner;
+    private Menu mOptionsMenu;
+    private boolean mHideMenu = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -77,6 +82,8 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
 
         // Get event's uid from intent
         eventUID = getIntent().getStringExtra("eventUID");
+        // Get the event owner from intent
+        owner = getIntent().getStringExtra("Owner");
         // Get title from Intent
         title = getIntent().getStringExtra("Title");
         getSupportActionBar().setTitle(title);
@@ -243,6 +250,13 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
         menu.add(0, 2, 2, menuIconWithText(getResources().getDrawable(R.drawable.ic_person_add_white_24dp), getResources().getString(R.string.show_identifier)));
         menu.add(0, 3, 3, menuIconWithText(getResources().getDrawable(R.drawable.ic_edit), getResources().getString(R.string.edit_event)));*/
 
+        // test for owner exclusive actions
+        if(!user.getId().equals(owner)) {
+            Log.d(TAG, "yo");
+                menu.getItem(1).setVisible(false);
+                menu.getItem(2).setVisible(false);
+        }
+
         android.support.v7.app.ActionBar bar = getSupportActionBar();
         bar.setBackgroundDrawable(new ColorDrawable(Color.parseColor("#43a047")));
         return true;
@@ -261,18 +275,24 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
                 break;
             }
             case R.id.action_edit: {
-                // edit the event's original info
-                Intent intent = new Intent(EventActivity.this, UpdateEventActivity.class);
-                intent.putExtra("eventUID", eventUID);
-                intent.putExtra("Title", title);
-                intent.putExtra("Start", start);
-                intent.putExtra("Destination", destination);
-                if(user.isDriver()){
-                    intent.putExtra("Driver", true);
-                    intent.putExtra("Seats", user.getSeats());
-                } else
-                    intent.putExtra("Driver", false);
-                startActivity(intent);
+                if(user.getId().equals(owner)) {
+                    // edit the event's original info
+                    Intent intent = new Intent(EventActivity.this, UpdateEventActivity.class);
+                    intent.putExtra("eventUID", eventUID);
+                    intent.putExtra("Owner", owner);
+                    intent.putExtra("Title", title);
+                    intent.putExtra("Start", start);
+                    intent.putExtra("Destination", destination);
+                    if (user.isDriver()) {
+                        intent.putExtra("Driver", true);
+                        intent.putExtra("Seats", user.getSeats());
+                    } else
+                        intent.putExtra("Driver", false);
+                    intent.putExtra("Participants", (Bundle) getIntent().getParcelableExtra("Participants"));
+                    startActivity(intent);
+                } else {
+                    editUserInputs();
+                }
             }
             default:
                 // If we got here, the user's action was not recognized.
@@ -322,6 +342,17 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
     /** launches activity for user to edit his inputs for the event */
     public void editUserInputs(View view) {
         Intent intent = new Intent(EventActivity.this, JoinEventActivity.class);
+        intent.putExtra("Owner", owner);
+        intent.putExtra("eventUID", eventUID);
+        intent.putExtra("Title", title);
+        intent.putExtra("Destination", getIntent().getBundleExtra("Destination"));
+        intent.putExtra("Participants", getIntent().getBundleExtra("Participants"));
+        startActivity(intent);
+    }
+    /** launches activity for user to edit his inputs for the event */
+    public void editUserInputs(){
+        Intent intent = new Intent(EventActivity.this, JoinEventActivity.class);
+        intent.putExtra("Owner", owner);
         intent.putExtra("eventUID", eventUID);
         intent.putExtra("Title", title);
         intent.putExtra("Destination", getIntent().getBundleExtra("Destination"));

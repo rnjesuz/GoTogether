@@ -21,6 +21,7 @@ import android.location.Location;
 import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.support.annotation.NonNull;
 import android.support.annotation.RequiresApi;
 import android.support.constraint.ConstraintLayout;
@@ -94,6 +95,7 @@ import com.google.firebase.firestore.FirebaseFirestoreSettings;
 import com.google.firebase.firestore.GeoPoint;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -101,7 +103,7 @@ import java.util.Map;
 
 public class UpdateEventActivity extends AppCompatActivity implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener, ActivityCompat.OnRequestPermissionsResultCallback {
 
-    private static final String TAG = "UpdateActivity";
+    private static final String TAG = "UpdateEventActivity";
     private static final int UP_BUTTON_ID = 16908332; // because R.id.home doesn't seem to work....
     private String parents = "Do you volunteer as a Driver?";
     private boolean isDriver = true;
@@ -144,6 +146,7 @@ public class UpdateEventActivity extends AppCompatActivity implements OnMapReady
     FirebaseAuth auth = FirebaseAuth.getInstance();
     private String userUID = auth.getCurrentUser().getUid();
     private String displayName = auth.getCurrentUser().getDisplayName();
+    private User user;
 
     @SuppressLint("ClickableViewAccessibility")
     @RequiresApi(api = Build.VERSION_CODES.O)
@@ -173,6 +176,7 @@ public class UpdateEventActivity extends AppCompatActivity implements OnMapReady
         startET = findViewById(R.id.start_autocomplete);
         titleET = findViewById(R.id.title_input);
 
+        user = ((Bundle) getIntent().getParcelableExtra("Participants")).getParcelable("User");
         // Preset the layout views to the appropriate values
         eventUID = getIntent().getStringExtra("eventUID");
         title = getIntent().getStringExtra("Title");
@@ -950,6 +954,33 @@ public class UpdateEventActivity extends AppCompatActivity implements OnMapReady
                 databaseWrite();
 
                 // TODO launch back to event activity
+                Intent intent = new Intent(UpdateEventActivity.this, EventActivity.class);
+                // add the uid
+                intent.putExtra("eventUID", eventUID);
+                // add the event owner
+                intent.putExtra("Owner", getIntent().getStringExtra("Owner"));
+                // add the title
+                intent.putExtra("Title", title);
+                // add the destination
+                Bundle destinationBundle = new Bundle();
+                destinationBundle.putParcelable("destinationLatLng", destinationLatLng);
+                destinationBundle.putString("destinationAddress", destination);
+                intent.putExtra("Destination", destinationBundle);
+                // add the participants
+                Bundle participantsBundle = new Bundle();
+                ArrayList<User> participants = ((Bundle) getIntent().getParcelableExtra("Participants")).getParcelableArrayList("Participants");
+                participantsBundle.putParcelableArrayList("Participants", participants);
+                // add the user
+                User newUser;
+                if (isDriver){
+                    newUser = new User(userUID, displayName, start, startLatLng, emptySeats);
+                } else {
+                    newUser = new User(userUID, displayName, start, startLatLng);
+                }
+                participantsBundle.putParcelable("User", newUser);
+                intent.putExtra("Participants", participantsBundle);
+                // start
+                startActivity(intent);
             }
         });
 
@@ -1171,9 +1202,9 @@ public class UpdateEventActivity extends AppCompatActivity implements OnMapReady
         LatLng startLatLng = getLocationFromAddress(getApplicationContext(), start);
         User user;
         if (isDriver) {
-            user = new User("Ricardo", start, startLatLng, emptySeats);
+            user = new User(userUID, "Ricardo", start, startLatLng, emptySeats);
         } else {
-            user = new User("Ricardo", start, startLatLng);
+            user = new User(userUID, "Ricardo", start, startLatLng);
         }
         userBundle.putParcelable("User", user);
         intent.putExtra("Participants", userBundle);
@@ -1198,7 +1229,7 @@ public class UpdateEventActivity extends AppCompatActivity implements OnMapReady
 
         // Update the event document
         DocumentReference eventDocRef = db.collection("events").document(eventUID);
-        eventDocRef.update(">Title", title);
+        eventDocRef.update("title", title);
         Map<String, Object> eventDestination = new HashMap<>();
         LatLng latlng = getLocationFromAddress(this, destination);
         GeoPoint gp = new GeoPoint(latlng.latitude, latlng.longitude);
@@ -1213,7 +1244,7 @@ public class UpdateEventActivity extends AppCompatActivity implements OnMapReady
             addUserToArrayMap.put("drivers", FieldValue.arrayUnion(userDocRef));
             eventDocRef.update(addUserToArrayMap);
         } else {
-            eventDocRef.update("drivers", FieldValue.arrayRemove("/users/"+userUID));
+            eventDocRef.update("drivers", FieldValue.arrayRemove(userDocRef));
         }
 
         // Update the participants sub-collection

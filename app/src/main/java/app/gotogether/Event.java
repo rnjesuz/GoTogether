@@ -11,6 +11,7 @@ import java.util.Map;
 class Event extends EventForDB implements Serializable {
 
     private String id;
+    private String owner;
     private ArrayList<User> participantsList = new ArrayList<User>();
 
     /** empty constructor
@@ -27,16 +28,16 @@ class Event extends EventForDB implements Serializable {
             super.setImage("ic_launcher_round");
     }
 
+    public String getOwner(){ return owner; }
+
     public String getId() {
         return id;
     }
 
-    public void setId(String id) {
-        this.id = id;
-    }
     public String getTitle() {
         return super.getTitle();
     }
+
 
     /*public String getstreet() {
         return super.getstreet();
@@ -45,7 +46,6 @@ class Event extends EventForDB implements Serializable {
     public GeoPoint getLatLng() {
         return super.getLatLng();
     }*/
-
     public int getParticipants() {
         return super.getParticipants();
     }
@@ -76,6 +76,12 @@ class Event extends EventForDB implements Serializable {
 
     public ArrayList<Map<Object, Object>> getCluster() {
         return super.getCluster();
+    }
+
+    public void setOwner(String owner){ this.owner = owner; }
+
+    public void setId(String id) {
+        this.id = id;
     }
 
     public void setTitle(String title) {

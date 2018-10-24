@@ -143,9 +143,10 @@
                 android:text="You"
                 android:textSize="16sp"
                 android:textStyle="bold"
-                app:layout_constraintEnd_toStartOf="@+id/editUser"
+                app:layout_constraintEnd_toStartOf="@+id/goUser"
                 app:layout_constraintStart_toStartOf="parent" />
-            <ImageButton
+
+            <!--<ImageButton
                 android:id="@+id/editUser"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -156,7 +157,7 @@
                 android:src="@drawable/baseline_edit_black_24"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toStartOf="@id/goUser"
-                app:layout_constraintTop_toTopOf="parent" />
+                app:layout_constraintTop_toTopOf="parent" />-->
 
             <ImageButton
                 android:id="@+id/goUser"

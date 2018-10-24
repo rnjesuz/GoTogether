@@ -553,9 +553,9 @@ public class JoinEventOldActivity extends AppCompatActivity implements OnMapRead
         LatLng startLatLng = getLocationFromAddress(getApplicationContext(), start);
         User user;
         if (isDriver) {
-            user = new User("Ricardo", start, startLatLng, emptySeats);
+            user = new User("teste", "Ricardo", start, startLatLng, emptySeats);
         } else {
-            user = new User("Ricardo", start, startLatLng);
+            user = new User("teste", "Ricardo", start, startLatLng);
         }
         return user;
     }

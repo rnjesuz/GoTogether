@@ -17,6 +17,8 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.google.android.gms.maps.model.LatLng;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.GeoPoint;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -84,45 +86,74 @@ class EventArrayAdapter extends ArrayAdapter<Event> {
         edit.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
-                // TODO criador? CreateEvent : JoinEvent
-
-                Intent intent = new Intent(context, JoinEventActivity.class);
-                // add the event UID
-                intent.putExtra("eventUID", event.getId());
-                // add the title
-                intent.putExtra("Title", event.getTitle());
-                // add the destination
-                String destination = (String) event.getDestination().get("street");
-                Bundle destinationBundle = new Bundle();
-                // TODO this LatLng should be in the event, and thus, qwwe should use the getter
-                LatLng destinationLatLng = getLocationFromAddress(context, destination);
-                destinationBundle.putParcelable("destinationLatLng", destinationLatLng);
-                destinationBundle.putString("destinationAddress", destination);
-                intent.putExtra("Destination", destinationBundle);
-                // add the participants
-                Bundle participantsBundle = new Bundle();
-                participantsBundle.putParcelableArrayList("Participants", event.getParticipantsList());
-                // add the user
-                User user;
-                Random random = new Random();
-                String name = names[random.nextInt(names.length)];
-                Log.i("Participant Name",name);
-                String addr = pickup[random.nextInt(pickup.length)];
-                Log.i("Participant PickUp",addr);
-                boolean driver = random.nextBoolean();
-                int seats = 0;
-                if (driver) {
-                    seats = ThreadLocalRandom.current().nextInt(1, 6+1);
-                    user = new User(name , addr, getLocationFromAddress(context, addr), seats );
+                FirebaseAuth auth = FirebaseAuth.getInstance();
+                ArrayList<User> eventParticipants = event.getParticipantsList();
+                User currentUser = null;
+                for (User user : eventParticipants){
+                    if (user.getId().equals(auth.getUid())){
+                        currentUser = user;
+                        eventParticipants.remove(user);
+                    }
                 }
-                else {
-                    user = new User(name, addr, getLocationFromAddress(context, addr));
+                if (event.getOwner().equals(auth.getUid())){
+                    // edit the event's original info
+                    Intent intent = new Intent(context, UpdateEventActivity.class);
+                    intent.putExtra("eventUID", event.getId());
+                    intent.putExtra("Owner", event.getOwner());
+                    intent.putExtra("Title", event.getTitle());
+                    intent.putExtra("Destination", (String) event.getDestination().get("street"));
+                    Bundle participantsBundle = new Bundle();
+                    participantsBundle.putParcelableArrayList("Participants", eventParticipants);
+                    intent.putExtra("Start", currentUser.getStartAddress());
+                    if (currentUser.isDriver()) {
+                        intent.putExtra("Driver", true);
+                        intent.putExtra("Seats", currentUser.getSeats());
+                    } else
+                        intent.putExtra("Driver", false);
+                    participantsBundle.putParcelable("User", currentUser);
+                    intent.putExtra("Participants", participantsBundle);
+                    context.startActivity(intent);
+                } else {
+                    // edit participation information
+                    Intent intent = new Intent(context, JoinEventActivity.class);
+                    // add the event UID
+                    intent.putExtra("eventUID", event.getId());
+                    // add the owner
+                    intent.putExtra("Owner", event.getOwner());
+                    // add the title
+                    intent.putExtra("Title", event.getTitle());
+                    // add the destination
+                    String destination = (String) event.getDestination().get("street");
+                    Bundle destinationBundle = new Bundle();
+                    GeoPoint destinationGP = (GeoPoint) event.getDestination().get("LatLng");
+                    LatLng destinationLatLng = new LatLng(destinationGP.getLatitude(), destinationGP.getLongitude());
+                    destinationBundle.putParcelable("destinationLatLng", destinationLatLng);
+                    destinationBundle.putString("destinationAddress", destination);
+                    intent.putExtra("Destination", destinationBundle);
+                    // add the participants
+                    Bundle participantsBundle = new Bundle();
+                    participantsBundle.putParcelableArrayList("Participants", eventParticipants);
+                    // add the user
+                    /*User user;
+                    Random random = new Random();
+                    String name = names[random.nextInt(names.length)];
+                    Log.i("Participant Name",name);
+                    String addr = pickup[random.nextInt(pickup.length)];
+                    Log.i("Participant PickUp",addr);
+                    boolean driver = random.nextBoolean();
+                    int seats = 0;
+                    if (driver) {
+                        seats = ThreadLocalRandom.current().nextInt(1, 6+1);
+                        user = new User(name , addr, getLocationFromAddress(context, addr), seats );
+                    }
+                    else {
+                        user = new User(name, addr, getLocationFromAddress(context, addr));
+                    }
+                    participantsBundle.putParcelable("User", user);*/
+                    intent.putExtra("Participants", participantsBundle);
+                    // start
+                    context.startActivity(intent);
                 }
-                participantsBundle.putParcelable("User", user);
-                intent.putExtra("Participants", participantsBundle);
-                // start
-                context.startActivity(intent);
             }
         });
 

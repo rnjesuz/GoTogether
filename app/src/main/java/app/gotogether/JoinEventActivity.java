@@ -914,6 +914,8 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
         Intent intent = new Intent(JoinEventActivity.this, EventActivity.class);
         // Event's UID
         intent.putExtra("eventUID", eventUID);
+        // add event owner
+        intent.putExtra("Owner", getIntent().getStringExtra("Owner"));
         // Title
         intent.putExtra("Title", title);
         // Destination
@@ -997,9 +999,9 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
         LatLng startLatLng = getLocationFromAddress(getApplicationContext(), start);
         User user;
         if (isDriver) {
-            user = new User("Ricardo", start, startLatLng, emptySeats);
+            user = new User(userUID, "Ricardo", start, startLatLng, emptySeats);
         } else {
-            user = new User("Ricardo", start, startLatLng);
+            user = new User(userUID, "Ricardo", start, startLatLng);
         }
         return user;
     }

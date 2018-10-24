@@ -181,11 +181,11 @@ public class MainMenuActivity extends AppCompatActivity
         Bundle participantsBundle = new Bundle();
         ArrayList<User> participants = new ArrayList<User>();
         // Dummy user 1
-        User participant1 = new User("Participant1", "Avenida da Républica, Lisboa, Portugal", getLocationFromAddress(getApplicationContext(), "Avenida da Républica, Lisboa, Portugal"), 6);
+        User participant1 = new User("Participant1", "Participant1", "Avenida da Républica, Lisboa, Portugal", getLocationFromAddress(getApplicationContext(), "Avenida da Républica, Lisboa, Portugal"), 6);
         // Dummy user 2
-        User participant2 = new User("Participant2", "Instituto Superior Técnico", getLocationFromAddress(getApplicationContext(), "Instituto Superior Técnico"), 1);
+        User participant2 = new User("Participant2", "Participant2", "Instituto Superior Técnico", getLocationFromAddress(getApplicationContext(), "Instituto Superior Técnico"), 1);
         // Dummy user 3
-        User participant3 = new User("Participant3", "Algualva-Cacém", getLocationFromAddress(getApplicationContext(), "Agualva-Cacém"), 10);
+        User participant3 = new User("Participant3", "Participant3", "Algualva-Cacém", getLocationFromAddress(getApplicationContext(), "Agualva-Cacém"), 10);
 
         participants.add(participant1);
         participants.add(participant2);

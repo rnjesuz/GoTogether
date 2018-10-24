@@ -5,12 +5,12 @@
     android:background="@color/green_normal">
 
     <item
-        android:id="@+id/action_conclude"
-        android:title="@string/conclude_event"
-        app:showAsAction="always"
-        android:orderInCategory="1"
+        android:id="@+id/action_edit"
+        app:showAsAction="ifRoom"
         android:textColor="@color/white"
-        android:icon="@drawable/ic_done_all_white_24dp"
+        android:title="@string/edit_event"
+        android:orderInCategory="1"
+        android:icon="@drawable/ic_edit"
         android:background="@color/green_normal"/>
     <item
         android:id="@+id/action_show_identifier"
@@ -21,11 +21,11 @@
         android:icon="@drawable/ic_person_add_white_24dp"
         android:background="@color/green_normal"/>
     <item
-        android:id="@+id/action_edit"
-        app:showAsAction="ifRoom"
-        android:textColor="@color/white"
-        android:title="@string/edit_event"
+        android:id="@+id/action_conclude"
+        android:title="@string/conclude_event"
+        app:showAsAction="always"
         android:orderInCategory="3"
-        android:icon="@drawable/ic_update_white_24dp"
+        android:textColor="@color/white"
+        android:icon="@drawable/ic_done_all_white_24dp"
         android:background="@color/green_normal"/>
 </menu>

@@ -22,6 +22,7 @@ public class User implements Parcelable, Serializable {
 
     // constructor with seats means seats != 0
     public User(String id, String username, String startAddress, LatLng startLatLng, int seats){
+        this.id=id;
         this.username=username;
         this.startAddress=startAddress;
         this.startLatLng=startLatLng;
@@ -31,6 +32,7 @@ public class User implements Parcelable, Serializable {
 
     // constructor with no seats means not a volunteering driver & no available seats
     public User(String id, String username, String startAddress, LatLng startLatLng){
+        this.id=id;
         this.username=username;
         this.startAddress=startAddress;
         this.startLatLng=startLatLng;
@@ -38,6 +40,7 @@ public class User implements Parcelable, Serializable {
 
     // constructor to save driving user with no defined pickup point
     public User(String id, String username, String startAddress, int seats){
+        this.id=id;
         this.username=username;
         this.startAddress=startAddress;
         if ( (this.seats = seats) != -1)
@@ -46,11 +49,13 @@ public class User implements Parcelable, Serializable {
 
     // constructor to save non-driving user with no defined pickup point
     public User(String id, String username, String startAddress){
+        this.id=id;
         this.username=username;
         this.startAddress=startAddress;
     }
 
     protected User(Parcel in) {
+        id = in.readString();
         username = in.readString();
         startAddress = in.readString();
         startLatLng = in.readParcelable(LatLng.class.getClassLoader());
@@ -94,6 +99,7 @@ public class User implements Parcelable, Serializable {
      */
     @Override
     public void writeToParcel(Parcel dest, int flags) {
+        dest.writeString(id);
         dest.writeString(username);
         dest.writeString(startAddress);
         dest.writeParcelable(startLatLng, flags);

@@ -99,6 +99,7 @@ public class MainActivity extends  AppCompatActivity {
         // required settings
         FirebaseFirestoreSettings settings = new FirebaseFirestoreSettings.Builder()
                 .setTimestampsInSnapshotsEnabled(true)
+                .setPersistenceEnabled(true)
                 .build();
         db.setFirestoreSettings(settings);
 
@@ -210,16 +211,18 @@ public class MainActivity extends  AppCompatActivity {
         intent.putExtra("eventUID", event.getId());
         // add the title
         intent.putExtra("Title", event.getTitle());
+        // add the event owner
+        intent.putExtra("Owner", event.getOwner());
         // add the destination
         String destination = (String) event.getDestination().get("street");
-        GeoPoint destinatioGP = (GeoPoint) event.getDestination().get("LatLng");
-        LatLng destinationLatLng = new LatLng(destinatioGP.getLatitude(), destinatioGP.getLongitude());
+        GeoPoint destinationGP = (GeoPoint) event.getDestination().get("LatLng");
+        LatLng destinationLatLng = new LatLng(destinationGP.getLatitude(), destinationGP.getLongitude());
         Bundle destinationBundle = new Bundle();
         destinationBundle.putParcelable("destinationLatLng", destinationLatLng);
         destinationBundle.putString("destinationAddress", destination);
         intent.putExtra("Destination", destinationBundle);
-        // diferentiate current User from other participants
-        ArrayList<User> eventParticipants = new ArrayList<>();
+        // differentiate current User from other participants
+        ArrayList<User> eventParticipants = participants;
         User user = new User();
         for(User u : participants){
             if (u.getId().equals(currentUserUID)){
@@ -264,7 +267,8 @@ public class MainActivity extends  AppCompatActivity {
                         if (document.exists()) {
                             Log.d(TAG, "DocumentSnapshot data: " + document.getData());
 
-                            intent.putExtra("Title", (String) document.get("title"));
+                            intent.putExtra("Title", document.getString("title"));
+                            intent.putExtra("Owner", document.getString("owner"));
                             intent.putExtra("Destination", createJoinActivityDestinationBundle(document));
                             db.collection("events")
                                     .document(document.getId())
@@ -405,7 +409,7 @@ public class MainActivity extends  AppCompatActivity {
         if (adapter!=null)
             adapter.clear();
         populate();
-        //adapter.notifyDataSetChanged(); TODO is thi needded?
+        //adapter.notifyDataSetChanged(); TODO is this needed?
     }
 
     /** Method to populate the Activity ListView with the user's events*/
@@ -439,6 +443,7 @@ public class MainActivity extends  AppCompatActivity {
                                                 task.getResult();
                                                 Event newEvent = task.getResult().toObject(Event.class);
                                                 newEvent.setId(eventID);
+                                                newEvent.setOwner(document.getString("owner"));
                                                 newEvent.setImage("ic_launcher_round");
                                                 Log.i(TAG, "new Event: " + newEvent.toString());
 
@@ -452,6 +457,7 @@ public class MainActivity extends  AppCompatActivity {
                                                                 if (task.isSuccessful()) {
                                                                     for (QueryDocumentSnapshot document : task.getResult()) {
                                                                         Log.d(TAG, document.getId() + " => " + document.getData());
+
                                                                         String id = document.getId();
                                                                         String username = document.getString("username");
                                                                         Map<String, Object> start = (Map<String, Object>) document.get("start");
@@ -460,8 +466,11 @@ public class MainActivity extends  AppCompatActivity {
                                                                         double latitude = geoPoint.getLatitude();
                                                                         double longitude = geoPoint.getLongitude();
                                                                         LatLng startLatLng = new LatLng(latitude , longitude);
-                                                                        int seats = document.getBoolean("driver") ? document.getDouble("seats").intValue() : -1;
-                                                                        participants.add(new User(id, username, startAdress, startLatLng, seats));
+                                                                        if (document.getBoolean("driver") ){
+                                                                            participants.add(new User(id, username, startAdress, startLatLng, document.getDouble("seats").intValue()));
+                                                                        } else {
+                                                                            participants.add(new User(id, username, startAdress, startLatLng));
+                                                                        }
                                                                         newEvent.setParticipants(participants.size());
                                                                         newEvent.setParticipantsList(participants);
                                                                     }

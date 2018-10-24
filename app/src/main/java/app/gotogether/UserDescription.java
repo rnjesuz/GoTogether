@@ -10,7 +10,7 @@ public class UserDescription extends User{
     private int seats = -1;
 
     public UserDescription(String name, String destination, int seats){
-        super(name, destination, seats);
+        //super(name, destination, seats);
         this.name = name;
         this.destination = destination;
         if (seats > -1) {
