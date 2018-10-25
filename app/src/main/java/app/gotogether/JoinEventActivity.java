@@ -938,13 +938,15 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
                 .build();
         db.setFirestoreSettings(settings);
 
-        // update the event document if driver
+        // update the event document for driver or notdriver
         DocumentReference eventDocRef = db.collection("events").document(eventUID);
         DocumentReference userDocRef = db.collection("users").document(userUID);
         if (isDriver) {
             final Map<String, Object> addUserToArrayMap = new HashMap<>();
             addUserToArrayMap.put("drivers", FieldValue.arrayUnion(userDocRef));
             eventDocRef.update(addUserToArrayMap);
+        } else {
+            eventDocRef.update("drivers", FieldValue.arrayRemove(userDocRef));
         }
 
         // Write to the participants subcollection
