@@ -110,6 +110,7 @@ import static app.gotogether.CreateEventActivity.hideKeyboard;
 
 public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener, ActivityCompat.OnRequestPermissionsResultCallback {
 
+    private static final String TAG = "JoinEventActivity";
     /** Id to identify a location permission request. */
     private static final int REQUEST_LOCATION = 0;
     /** Permissions required to use device location. */
@@ -158,6 +159,7 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
+        start = null; // reset start
         // Get event's uid from intent
         eventUID = getIntent().getStringExtra("eventUID");
         // Get user's UID from intent
@@ -171,7 +173,7 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
         destinationLatLng = destinationBundle.getParcelable("destinationLatLng");
         // Get participants from Intent
         Bundle participantsBundle = getIntent().getParcelableExtra("Participants");
-        participants = participantsBundle.getParcelableArrayList("Participants");;
+        participants = participantsBundle.getParcelableArrayList("Participants");
 
         // Set location service provider
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
@@ -187,6 +189,14 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
         // get references to some layout views
         placeSuggestions =  findViewById(R.id.places_suggestions);
         startET = findViewById(R.id.start_autocomplete);
+        // get start from intent - if available
+        String possibleStart = getIntent().getStringExtra("Start");
+        Log.d(TAG, "Start location from intent? "+possibleStart);
+        if (possibleStart != null ){
+            start = possibleStart;
+            startET.setText(start);
+            startET.setCompoundDrawablesWithIntrinsicBounds(0,0, R.drawable.ic_close_red,0);
+        }
 
         // Assign adapter to ListView
         placeSuggestions.setAdapter(dataAdapter);
@@ -196,7 +206,7 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
         placeSuggestions.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int ClickedPosition, long id) {
-                // reseting info
+                // resetting info
                 if(mStart!=null) {
                     mStart.remove();
                     mStart = null;
@@ -406,6 +416,8 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
                 .zIndex(2));
         mDestination.showInfoWindow();
 
+        if (start != null)
+            addMapMarker("Start");
         moveCamera();
     }
 
@@ -1001,9 +1013,9 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
         LatLng startLatLng = getLocationFromAddress(getApplicationContext(), start);
         User user;
         if (isDriver) {
-            user = new User(userUID, "Ricardo", start, startLatLng, emptySeats);
+            user = new User(userUID, auth.getCurrentUser().getDisplayName(), start, startLatLng, emptySeats);
         } else {
-            user = new User(userUID, "Ricardo", start, startLatLng);
+            user = new User(userUID, auth.getCurrentUser().getDisplayName(), start, startLatLng);
         }
         return user;
     }

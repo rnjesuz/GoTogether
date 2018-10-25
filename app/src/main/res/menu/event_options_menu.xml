@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/option_show_identifier"
+        app:showAsAction="ifRoom"
+        android:textColor="@color/white"
+        android:title="@string/show_identifier"
+        android:orderInCategory="2"
+        android:icon="@drawable/ic_person_add_white_24dp"
+        android:background="@color/green_normal"/>
+    <item
+        android:id="@+id/option_conclude"
+        android:title="@string/conclude_event"
+        app:showAsAction="always"
+        android:orderInCategory="3"
+        android:textColor="@color/white"
+        android:icon="@drawable/ic_done_all_white_24dp"
+        android:background="@color/green_normal"/>
+</menu>

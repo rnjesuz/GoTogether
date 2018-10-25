@@ -33,6 +33,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_toEndOf="@id/eventImg"
+        android:layout_toStartOf="@id/options"
         android:orientation="vertical"
         android:layout_marginTop="10dp"
         android:layout_marginStart="10dp"
@@ -77,6 +78,19 @@
             android:focusableInTouchMode="false"/>
     </LinearLayout>
 
+    <ImageButton
+        android:id="@+id/options"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignTop="@+id/eventImg"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentTop="true"
+        android:backgroundTint="@color/white"
+        android:contentDescription="@string/options"
+        android:drawableStart="@drawable/ic_more_vert_black_24dp"
+        android:src="@drawable/ic_more_vert_black_24dp"
+        android:stateListAnimator="@null" />
+
     <View
         android:id="@+id/dividerView"
         android:layout_width="match_parent"
@@ -107,7 +121,7 @@
 
         <TextView
             android:id="@+id/participantsView"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_weight=".70"
             android:layout_height="wrap_content"
             android:layout_marginStart="15dp"
