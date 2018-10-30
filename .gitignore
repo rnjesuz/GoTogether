@@ -1,5 +1,6 @@
 *.iml
 .gradle
+/.idea
 /local.properties
 /.idea/libraries
 /.idea/modules.xml
@@ -9,5 +10,8 @@
 /captures
 .externalNativeBuild
 
-/server/python-functions/env
 /app/release
+/server/servlet
+/server/python-functions/env
+/server/python-functions/.idea
+/server/python-functions/ServiceAccountKey.json
