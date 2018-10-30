@@ -1,9 +1,5 @@
 
-import firebase_admin
-import google.cloud
-import requests
-import json
-import googlemaps
+import firebase_admin, google.cloud, googlemaps, operator
 from firebase_admin import credentials, firestore
 from google.cloud import exceptions
 
@@ -13,11 +9,12 @@ db = firestore.client()
 gmaps = googlemaps.Client(key='AIzaSyDSyIfDZVr7DMspukdJG00gzZUnPCCqguE')
 
 drivers = []
-driversDistance = {}
 driversDirections = {}
+driversDistance = {}
+
 riders = []
-ridersDistance = {}
 ridersDirections = {}
+ridersDistance = {}
 participants = []
 
 
@@ -55,13 +52,13 @@ def main(driversDistance=None):
         #print(distance_results)
         #print(destination + ' to ' + source + ': ' + distance_results.get(u'rows')[0].get(u'elements')[0].get(u'distance').get(u'value'))
 
-    driversDistance = order(driversDistance)
-    ridersDistance = order(ridersDistance)
+    driversDistance = sorted(driversDistance.items(), key=lambda kv: kv[1])
+    ridersDistance = sorted(ridersDistance.items(), key=lambda kv: kv[1])
 
 
 ######################
 # Merge Sort
-def order(alist):
+def mergeSort(alist):
     print("Splitting ",alist)
     if len(alist)>1:
         mid = len(alist)//2
@@ -93,6 +90,7 @@ def order(alist):
             j=j+1
             k=k+1
     print("Merging ",alist)
+
 
 #######################
 class Participant(object):
