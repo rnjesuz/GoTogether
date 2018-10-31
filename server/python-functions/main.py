@@ -1,5 +1,7 @@
 
-import firebase_admin, google.cloud, googlemaps, operator
+import firebase_admin, google.cloud, googlemaps, operator, sortedcontainers, sortedcollections
+from sortedcontainers import SortedDict
+from sortedcollections import ValueSortedDict
 from firebase_admin import credentials, firestore
 from google.cloud import exceptions
 
@@ -10,20 +12,26 @@ gmaps = googlemaps.Client(key='AIzaSyDSyIfDZVr7DMspukdJG00gzZUnPCCqguE')
 
 drivers = []
 driversDirections = {}
-driversDistance = {}
+driversDistance = ValueSortedDict()
 
 riders = []
 ridersDirections = {}
-ridersDistance = {}
+ridersDistance = ValueSortedDict()
+
+RtoDRouteShare = {}
+
 participants = []
+
+cluster = {}
 
 
 ######################
-def main(driversDistance=None):
+def main():
+    global drivers, driversDistance, driversDirections, riders, ridersDistance, ridersDirections
     # eventRef = db.collection(u'events').document(u'reference.eventUID')
-    eventRef = db.collection(u'events').document(u'SxMNyI4fqaMjNko7OXF9')
+    eventRef = db.collection(u'events').document(u'SBgh4MKtplFEbYXLvmMY')
     # participantsRef = db.collection(u'events').document(reference.eventUID).collection(u'participants')
-    participantsRef = db.collection(u'events').document(u'SxMNyI4fqaMjNko7OXF9').collection(u'participants')
+    participantsRef = db.collection(u'events').document(u'SBgh4MKtplFEbYXLvmMY').collection(u'participants')
     try:
         event = Event(**eventRef.get().to_dict())
         eventParticipants = participantsRef.get()
@@ -40,20 +48,65 @@ def main(driversDistance=None):
         direction_results = gmaps.directions(source, destination) # TODO this may probably also return ZERO_RESULTS
         if p.isDriver():
             drivers.append(p)
-            driversDistance[p.id] = distance_results
+            #driversDistance[p.id] = distance_results
+            #driversDistance.__setitem__(p.id, distance_results.get(u'rows')[0].get(u'elements')[0].get(u'distance').get(u'value'))
+            driversDistance[p.id] = distance_results.get(u'rows')[0].get(u'elements')[0].get(u'distance').get(u'value')
             driversDirections[p.id] = direction_results
+            cluster[p.id] = []
         else:
             riders.append(p)
-            ridersDistance[p.id] = distance_results
+            #ridersDistance[p.id] = distance_results
+            ridersDistance[p.id] = distance_results.get(u'rows')[0].get(u'elements')[0].get(u'distance').get(u'value')
             ridersDirections[p.id] = direction_results
         participants.append(p)
 
         #print('source: '+source)
         #print(distance_results)
-        #print(destination + ' to ' + source + ': ' + distance_results.get(u'rows')[0].get(u'elements')[0].get(u'distance').get(u'value'))
+        #print(destination + ' to ' + source + ': ' + str(distance_results.get(u'rows')[0].get(u'elements')[0].get(u'distance').get(u'value')))
 
-    driversDistance = sorted(driversDistance.items(), key=lambda kv: kv[1])
-    ridersDistance = sorted(ridersDistance.items(), key=lambda kv: kv[1])
+    #driversDistance = sorted(driversDistance.items(), key=lambda item: (item[1], item[0]))
+    #ridersDistance = sorted(ridersDistance.items(), key=lambda item: (item[1], item[0]))
+
+    for rider, rdistance in ridersDistance.items():
+        for driver, ddistance in driversDistance.items():
+            RtoDRouteShare[rider] = {}
+            RtoDRouteShare[rider][driver] = getSharedPath(rider, driver)
+
+    groupBestMatch()
+    groupCells()
+    #return cluster
+
+
+##########################
+def getSharedPath(rider, driver):
+    share = 0
+    rDirections = ridersDirections.get(rider)[0].get('legs')[0].get('steps')
+    dDirections = driversDirections.get(driver)[0].get('legs')[0].get('steps')
+    ridersDirections_range = len(rDirections)
+    driversDirections_range = len(dDirections)
+    for rsteps in range(ridersDirections_range):
+        for dsteps in range(driversDirections_range):
+            if (rDirections[rsteps].get('start_location') == dDirections[dsteps].get('start_location')) and (rDirections[rsteps].get('end_location') == dDirections[dsteps].get('end_location')):
+                share = share+1
+    return share
+
+
+######################
+def groupBestMatch():
+    for rider in RtoDRouteShare:
+        best_route = 0
+        best_match = None
+        # TODO do a while(match == False)
+        for driver in RtoDRouteShare[rider]:
+            if RtoDRouteShare[rider][driver] > best_route:
+                best_match = driver
+        # TODO test for available space
+        cluster[best_match].append(rider)
+
+
+#########################
+def groupCells():
+    pass
 
 
 ######################
