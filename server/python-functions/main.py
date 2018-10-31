@@ -73,6 +73,7 @@ def main():
             RtoDRouteShare[rider][driver] = getSharedPath(rider, driver)
 
     groupBestMatch()
+    print(cluster)
     groupCells()
     #return cluster
 
@@ -96,12 +97,16 @@ def groupBestMatch():
     for rider in RtoDRouteShare:
         best_route = 0
         best_match = None
-        # TODO do a while(match == False)
-        for driver in RtoDRouteShare[rider]:
-            if RtoDRouteShare[rider][driver] > best_route:
-                best_match = driver
-        # TODO test for available space
-        cluster[best_match].append(rider)
+        match = False
+        while match == False:
+            for driver in RtoDRouteShare[rider]:
+                if RtoDRouteShare[rider][driver] > best_route:
+                    best_match = driver
+            if best_match.seats <= len(cluster[best_match]): # TODO do i have to define len outide if?
+                cluster[best_match].append(rider)
+                match = True
+            else:
+                del RtoDRouteShare[rider][driver]
 
 
 #########################
