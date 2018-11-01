@@ -20,14 +20,14 @@ ridersDistance = ValueSortedDict()
 
 RtoDRouteShare = {}
 
-participants = []
+participants = {}
 
 cluster = {}
 
 
 ######################
 def main():
-    global drivers, driversDistance, driversDirections, riders, ridersDistance, ridersDirections
+    global drivers, driversDistance, driversDirections, riders, ridersDistance, ridersDirections, participants, RtoDRouteShare, cluster
     # eventRef = db.collection(u'events').document(u'reference.eventUID')
     eventRef = db.collection(u'events').document(u'SBgh4MKtplFEbYXLvmMY')
     # participantsRef = db.collection(u'events').document(reference.eventUID).collection(u'participants')
@@ -48,8 +48,8 @@ def main():
         direction_results = gmaps.directions(source, destination) # TODO this may probably also return ZERO_RESULTS
         if p.isDriver():
             drivers.append(p)
-            #driversDistance[p.id] = distance_results
-            #driversDistance.__setitem__(p.id, distance_results.get(u'rows')[0].get(u'elements')[0].get(u'distance').get(u'value'))
+            # driversDistance[p.id] = distance_results
+            # driversDistance.__setitem__(p.id, distance_results.get(u'rows')[0].get(u'elements')[0].get(u'distance').get(u'value'))
             driversDistance[p.id] = distance_results.get(u'rows')[0].get(u'elements')[0].get(u'distance').get(u'value')
             driversDirections[p.id] = direction_results
             cluster[p.id] = []
@@ -58,7 +58,7 @@ def main():
             #ridersDistance[p.id] = distance_results
             ridersDistance[p.id] = distance_results.get(u'rows')[0].get(u'elements')[0].get(u'distance').get(u'value')
             ridersDirections[p.id] = direction_results
-        participants.append(p)
+        participants[p.id] = p
 
         #print('source: '+source)
         #print(distance_results)
@@ -67,42 +67,52 @@ def main():
     #driversDistance = sorted(driversDistance.items(), key=lambda item: (item[1], item[0]))
     #ridersDistance = sorted(ridersDistance.items(), key=lambda item: (item[1], item[0]))
 
-    for rider, rdistance in ridersDistance.items():
-        for driver, ddistance in driversDistance.items():
+    for rider in ridersDistance.keys():
+        for driver in driversDistance.keys():
             RtoDRouteShare[rider] = {}
             RtoDRouteShare[rider][driver] = getSharedPath(rider, driver)
 
     groupBestMatch()
-    print(cluster)
     groupCells()
+    print(cluster)
     #return cluster
 
 
 ##########################
 def getSharedPath(rider, driver):
     share = 0
-    rDirections = ridersDirections.get(rider)[0].get('legs')[0].get('steps')
-    dDirections = driversDirections.get(driver)[0].get('legs')[0].get('steps')
-    ridersDirections_range = len(rDirections)
-    driversDirections_range = len(dDirections)
-    for rsteps in range(ridersDirections_range):
-        for dsteps in range(driversDirections_range):
-            if (rDirections[rsteps].get('start_location') == dDirections[dsteps].get('start_location')) and (rDirections[rsteps].get('end_location') == dDirections[dsteps].get('end_location')):
+    r_directions = ridersDirections.get(rider)[0].get('legs')[0].get('steps')
+    d_directions = driversDirections.get(driver)[0].get('legs')[0].get('steps')
+    riders_directions_range = len(r_directions)
+    drivers_directions_range = len(d_directions)
+    for rsteps in range(riders_directions_range):
+        for dsteps in range(drivers_directions_range):
+            if (r_directions[rsteps].get('start_location') == d_directions[dsteps].get('start_location')) and (r_directions[rsteps].get('end_location') == d_directions[dsteps].get('end_location')):
                 share = share+1
     return share
 
 
 ######################
 def groupBestMatch():
+    global participants
+
     for rider in RtoDRouteShare:
-        best_route = 0
-        best_match = None
         match = False
-        while match == False:
+        while not match:
+            best_route = 0
+            best_match = None
+            # TODO if no driver left in list then return exception
             for driver in RtoDRouteShare[rider]:
+                # TODO use a percentage calculation? best_route / nº nodes
                 if RtoDRouteShare[rider][driver] > best_route:
                     best_match = driver
-            if best_match.seats <= len(cluster[best_match]): # TODO do i have to define len outide if?
+            if cluster.get(best_match):
+                cluster_length = len(cluster.get(best_match))
+            else:
+                cluster_length = 0
+            participant = participants.get(best_match)
+            seats = participant.getSeats()
+            if seats >= cluster_length:
                 cluster[best_match].append(rider)
                 match = True
             else:
@@ -111,49 +121,24 @@ def groupBestMatch():
 
 #########################
 def groupCells():
-    pass
-
-
-######################
-# Merge Sort
-def mergeSort(alist):
-    print("Splitting ",alist)
-    if len(alist)>1:
-        mid = len(alist)//2
-        lefthalf = alist[:mid]
-        righthalf = alist[mid:]
-
-        mergeSort(lefthalf)
-        mergeSort(righthalf)
-
-        i=0
-        j=0
-        k=0
-        while i < len(lefthalf) and j < len(righthalf):
-            if lefthalf[i] < righthalf[j]:
-                alist[k]=lefthalf[i]
-                i=i+1
+    # TODO try to match full cars (2 empty + 2, instead of 2 empty +1)
+    for driver in driversDistance.keys():
+        for next_driver in driversDistance.keys():
+            if next_driver == driver:
+                continue
             else:
-                alist[k]=righthalf[j]
-                j=j+1
-            k=k+1
 
-        while i < len(lefthalf):
-            alist[k]=lefthalf[i]
-            i=i+1
-            k=k+1
+                pass
+        pass
 
-        while j < len(righthalf):
-            alist[k]=righthalf[j]
-            j=j+1
-            k=k+1
-    print("Merging ",alist)
+    pass
 
 
 #######################
 class Participant(object):
 
-    id = None;
+    id = None
+    seats = 0
 
     def __init__(self, **fields):
         self.__dict__.update(fields)
@@ -181,7 +166,13 @@ class Participant(object):
             return False
 
     def setId(self, id):
-        self.id = id;
+        self.id = id
+
+    def setSeats(self, seats):
+        self.seats = seats
+
+    def getSeats(self):
+        return self.seats
 
 
 #######################
