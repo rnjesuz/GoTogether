@@ -52,6 +52,7 @@ import com.google.firebase.firestore.QuerySnapshot;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -224,12 +225,19 @@ public class MainActivity extends  AppCompatActivity {
         // differentiate current User from other participants
         ArrayList<User> eventParticipants = participants;
         User user = new User();
-        for(User u : participants){
+        for (Iterator<User> iterator= eventParticipants.iterator(); ((Iterator) iterator).hasNext(); ){
+            User u = iterator.next();
+            if (u.getId().equals(currentUserUID)){
+                iterator.remove();
+                user = u;
+            }
+        }
+        /*for(User u : participants){
             if (u.getId().equals(currentUserUID)){
                 eventParticipants.remove(u);
                 user = u;
             }
-        }
+        }*/
         // add the participants
         Bundle participantsBundle = new Bundle();
         participantsBundle.putParcelableArrayList("Participants", eventParticipants);
@@ -406,14 +414,14 @@ public class MainActivity extends  AppCompatActivity {
 
     /** Request updates from the server and update eventList */
     private void fetchUpdates() {
-        if (adapter!=null)
-            adapter.clear();
         populate();
         //adapter.notifyDataSetChanged(); TODO is this needed?
     }
 
     /** Method to populate the Activity ListView with the user's events*/
     private void populate() {
+        if (adapter!=null)
+            adapter.clear();
         // get the user and its uniqueidentifier
         FirebaseUser fbUser = auth.getCurrentUser();
         String uid = fbUser.getUid();

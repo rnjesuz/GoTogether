@@ -34,6 +34,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.GeoPoint;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
@@ -102,12 +103,19 @@ class EventArrayAdapter extends ArrayAdapter<Event> {
         edit.setOnClickListener(v -> {
             ArrayList<User> eventParticipants = event.getParticipantsList();
             User currentUser = null;
-            for (User user : eventParticipants){
+            for (Iterator<User> iterator = eventParticipants.iterator(); ((Iterator) iterator).hasNext(); ){
+                User u = iterator.next();
+                if (u.getId().equals(auth.getUid())){
+                    currentUser = u;
+                    iterator.remove();
+                }
+            }
+            /*for (User user : eventParticipants){
                 if (user.getId().equals(auth.getUid())){
                     currentUser = user;
                     eventParticipants.remove(user);
                 }
-            }
+            }*/
             if (event.getOwner().equals(auth.getUid())){
                 // edit the event's original info
                 Intent intent = new Intent(context, UpdateEventActivity.class);
