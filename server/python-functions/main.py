@@ -1,6 +1,7 @@
 
-import firebase_admin, google.cloud, googlemaps, operator, sortedcontainers, sortedcollections
-from sortedcontainers import SortedDict
+import firebase_admin
+import google.cloud
+import googlemaps
 from sortedcollections import ValueSortedDict
 from firebase_admin import credentials, firestore
 from google.cloud import exceptions
@@ -8,7 +9,9 @@ from google.cloud import exceptions
 cred = credentials.Certificate("./ServiceAccountKey.json")
 default_app = firebase_admin.initialize_app(cred)
 db = firestore.client()
-gmaps = googlemaps.Client(key='AIzaSyDSyIfDZVr7DMspukdJG00gzZUnPCCqguE')
+google_maps = googlemaps.Client(key='AIzaSyDSyIfDZVr7DMspukdJG00gzZUnPCCqguE')
+
+event_ref = None
 
 drivers = []
 driversDirections = {}
@@ -26,76 +29,70 @@ cluster = {}
 
 
 ######################
-def main():
-    global drivers, driversDistance, driversDirections, riders, ridersDistance, ridersDirections, participants, RtoDRouteShare, cluster
-    # eventRef = db.collection(u'events').document(u'reference.eventUID')
-    eventRef = db.collection(u'events').document(u'SBgh4MKtplFEbYXLvmMY')
-    # participantsRef = db.collection(u'events').document(reference.eventUID).collection(u'participants')
-    participantsRef = db.collection(u'events').document(u'SBgh4MKtplFEbYXLvmMY').collection(u'participants')
+def cluster_distance_route(reference):
+    global event_ref
+    global drivers, driversDistance, driversDirections
+    global riders, ridersDistance, ridersDirections
+    global participants, RtoDRouteShare, cluster
+    event_uid = reference.eventUID
+    event_ref = db.collection(u'events').document(event_uid)
+    participants_ref = db.collection(u'events').document(event_uid).collection(u'participants')
+    print(u'Completed event: {}'.format(event_uid))
     try:
-        event = Event(**eventRef.get().to_dict())
-        eventParticipants = participantsRef.get()
+        event = Event(**event_ref.get().to_dict())
+        event_participants = participants_ref.get()
     except google.cloud.exceptions.NotFound:
         print(u'No such document')
+        return False
 
     destination = event.destination.get(u'street')
-    #print('destination: '+destination)
-    for participant in eventParticipants:
+    for participant in event_participants:
         p = Participant(**participant.to_dict())
-        p.setId(participant.id)
+        p.set_id(participant.id)
         source = p.start.get(u'street')
-        distance_results = gmaps.distance_matrix(source, destination) # TODO this can result ZERO_RESULTS
-        direction_results = gmaps.directions(source, destination) # TODO this may probably also return ZERO_RESULTS
-        if p.isDriver():
+        distance_results = google_maps.distance_matrix(source, destination)  # TODO this can result ZERO_RESULTS
+        direction_results = google_maps.directions(source, destination)  # TODO this may probably also return ZERO_RESULTS
+        if p.is_driver():
             drivers.append(p)
-            # driversDistance[p.id] = distance_results
-            # driversDistance.__setitem__(p.id, distance_results.get(u'rows')[0].get(u'elements')[0].get(u'distance').get(u'value'))
             driversDistance[p.id] = distance_results.get(u'rows')[0].get(u'elements')[0].get(u'distance').get(u'value')
             driversDirections[p.id] = direction_results
             cluster[p.id] = []
         else:
             riders.append(p)
-            #ridersDistance[p.id] = distance_results
             ridersDistance[p.id] = distance_results.get(u'rows')[0].get(u'elements')[0].get(u'distance').get(u'value')
             ridersDirections[p.id] = direction_results
         participants[p.id] = p
 
-        #print('source: '+source)
-        #print(distance_results)
-        #print(destination + ' to ' + source + ': ' + str(distance_results.get(u'rows')[0].get(u'elements')[0].get(u'distance').get(u'value')))
-
-    #driversDistance = sorted(driversDistance.items(), key=lambda item: (item[1], item[0]))
-    #ridersDistance = sorted(ridersDistance.items(), key=lambda item: (item[1], item[0]))
-
     for rider in ridersDistance.keys():
+        RtoDRouteShare[rider] = {}
         for driver in driversDistance.keys():
-            RtoDRouteShare[rider] = {}
-            RtoDRouteShare[rider][driver] = getSharedPath(rider, driver)
+            RtoDRouteShare[rider][driver] = get_shared_path(rider, driver)
 
-    groupBestMatch()
-    groupCells()
+    group_best_match()
+    group_cells()
     print(cluster)
-    #return cluster
+    update_database()
+    # TODO create the directions and store in db? - too much data to save/load probably
+    return True
 
 
-##########################
-def getSharedPath(rider, driver):
+###########################
+def get_shared_path(rider, driver):
     share = 0
     r_directions = ridersDirections.get(rider)[0].get('legs')[0].get('steps')
     d_directions = driversDirections.get(driver)[0].get('legs')[0].get('steps')
     riders_directions_range = len(r_directions)
     drivers_directions_range = len(d_directions)
-    for rsteps in range(riders_directions_range):
-        for dsteps in range(drivers_directions_range):
-            if (r_directions[rsteps].get('start_location') == d_directions[dsteps].get('start_location')) and (r_directions[rsteps].get('end_location') == d_directions[dsteps].get('end_location')):
+    for r_steps in range(riders_directions_range):
+        for d_steps in range(drivers_directions_range):
+            if (r_directions[r_steps].get('start_location') == d_directions[d_steps].get('start_location')) and (r_directions[r_steps].get('end_location') == d_directions[d_steps].get('end_location')):
                 share = share+1
     return share
 
 
-######################
-def groupBestMatch():
+##########################
+def group_best_match():
     global participants
-
     for rider in RtoDRouteShare:
         match = False
         while not match:
@@ -105,33 +102,70 @@ def groupBestMatch():
             for driver in RtoDRouteShare[rider]:
                 # TODO use a percentage calculation? best_route / nº nodes
                 if RtoDRouteShare[rider][driver] > best_route:
+                    best_route = RtoDRouteShare[rider][driver]
                     best_match = driver
             if cluster.get(best_match):
                 cluster_length = len(cluster.get(best_match))
             else:
                 cluster_length = 0
             participant = participants.get(best_match)
-            seats = participant.getSeats()
+            seats = participant.get_seats()
             if seats >= cluster_length:
                 cluster[best_match].append(rider)
                 match = True
             else:
-                del RtoDRouteShare[rider][driver]
+                del RtoDRouteShare[rider][best_match]
+
+
+######################
+def group_cells():
+    reset = True
+    # TODO try to match full cars (2 empty + 2, instead of 2 empty +1)
+    while reset:
+        for driver in driversDistance.keys():
+            if cluster.get(driver):
+                change = False
+                for next_driver in driversDistance.keys():
+                    if cluster.get(next_driver):
+                        cluster_list = cluster.get(next_driver)
+                        cluster_list_length = len(cluster_list)
+                        # spiderman meme pointing at himself
+                        if participants.get(next_driver) == participants.get(driver):
+                            reset = False
+                            continue
+                        # driver already has a full car
+                        elif participants.get(next_driver).get_seats() <= cluster_list_length:
+                            reset = False
+                            continue
+                        # driver has available seats
+                        elif (len(cluster.get(driver)))+1 <= (participants.get(next_driver).get_seats() - cluster_list_length):
+                            # TODO match full car
+                            # TODO only match if round trip isn't bigger than separate trip
+                            # join cars
+                            for rider in cluster.get(driver):
+                                cluster[next_driver].append(rider)
+                            cluster[next_driver].append(driver)
+                            # remove old car from available clusters
+                            del cluster[driver]
+                            # improvement was possible, so lets reset to search for more
+                            change = True
+                            reset = True
+                        else:  # any other limit conditions?
+                            # nothing was done so no more improvements were possible
+                            reset = False
+                if change:
+                    break
 
 
 #########################
-def groupCells():
-    # TODO try to match full cars (2 empty + 2, instead of 2 empty +1)
-    for driver in driversDistance.keys():
-        for next_driver in driversDistance.keys():
-            if next_driver == driver:
-                continue
-            else:
-
-                pass
-        pass
-
-    pass
+def update_database():
+    event_ref.update({u'completed': True})
+    for driver in cluster.keys():
+        cluster_riders = []
+        for rider in cluster.get(driver):
+            rider_ref = db.collection(u'users').document(rider)
+            cluster_riders.append(rider_ref)
+        event_ref.update({u'cluster.'+driver: cluster_riders})
 
 
 #######################
@@ -143,15 +177,6 @@ class Participant(object):
     def __init__(self, **fields):
         self.__dict__.update(fields)
 
-    #def __init__(self, username, start, seats):
-    #    self.username = username
-    #    self.start = start
-    #    if seats == -1:
-    #        self.driver = False
-    #    else:
-    #        self.driver = True
-    #        self.seats = seats
-
     def to_dict(self):
         if not self.driver:
             dictionary = {u'username': self.username, u'start': self.start, u'driver': False}
@@ -159,20 +184,20 @@ class Participant(object):
             dictionary = {u'username': self.username, u'start': self.start, u'driver': True, u'seats': self.seats}
         return dictionary
 
-    def isDriver(self):
+    def is_driver(self):
         if self.driver:
             return True
         else:
             return False
 
-    def setId(self, id):
+    def set_id(self, id):
         self.id = id
 
-    def setSeats(self, seats):
+    def set_seats(self, seats):
         self.seats = seats
 
-    def getSeats(self):
-        return self.seats
+    def get_seats(self):
+        return int(self.seats)
 
 
 #######################
@@ -181,5 +206,6 @@ class Event(object):
         self.__dict__.update(fields)
 
 
+#######################
 if __name__ == '__main__':
-    main()
+    cluster_distance_route()
