@@ -9,7 +9,6 @@
 
     <!-- this is a dummy layout to agro focu from the edittext -->
     <LinearLayout
-        android:id="@+id/dummy_focusable"
         android:layout_width="0px"
         android:layout_height="0px"
         android:focusable="true"
@@ -94,7 +93,6 @@
                     map:layout_constraintTop_toBottomOf="@id/square_drawable" />
 
                 <ImageView
-                    android:id="@+id/circle_drawable"
                     android:layout_width="5dp"
                     android:layout_height="5dp"
                     android:layout_marginStart="10dp"
@@ -180,7 +178,6 @@
                     map:layout_constraintTop_toTopOf="parent" />
 
                 <LinearLayout
-                    android:id="@+id/driverInfo"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="16dp"
@@ -192,7 +189,6 @@
                     map:layout_constraintTop_toTopOf="parent">
 
                     <TextView
-                        android:id="@+id/seatNumberText"
                         android:layout_width="0dp"
                         android:layout_height="match_parent"
                         android:layout_weight="0.70"
@@ -220,7 +216,6 @@
             </android.support.constraint.ConstraintLayout>
 
             <android.support.constraint.ConstraintLayout
-                android:id="@+id/driver_question"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="@color/white_background_dark">

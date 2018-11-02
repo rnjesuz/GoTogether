@@ -11,7 +11,6 @@
 .externalNativeBuild
 
 /app/release
-app/src/main/res
 /server/servlet
 /server/python-functions/env
 /server/python-functions/.idea
