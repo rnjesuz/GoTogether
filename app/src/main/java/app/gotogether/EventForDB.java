@@ -5,6 +5,7 @@ import com.google.firebase.firestore.GeoPoint;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 class EventForDB implements Serializable {
@@ -14,7 +15,7 @@ class EventForDB implements Serializable {
     private Map<String, Object> destination = new HashMap<>();
     private ArrayList<Object> drivers;
 
-    private ArrayList<Map<Object, Object>> cluster;
+    private Map<String, List<Object>> cluster;
     private int participants;
     private String image = "ic_launcher_round";
 
@@ -64,7 +65,7 @@ class EventForDB implements Serializable {
         return drivers;
     }
 
-    public ArrayList<Map<Object, Object>> getCluster() {
+    public Map<String, List<Object>> getCluster() {
         return cluster;
     }
 
@@ -92,7 +93,7 @@ class EventForDB implements Serializable {
         this.drivers = drivers;
     }
 
-    public void setCluster(ArrayList<Map<Object, Object>> cluster) {
+    public void setCluster(Map<String, List<Object>> cluster) {
         this.cluster = cluster;
     }
 

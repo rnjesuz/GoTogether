@@ -44,6 +44,7 @@ import static app.gotogether.MainActivity.getLocationFromAddress;
 import static app.gotogether.MainActivity.names;
 import static app.gotogether.MainActivity.pickup;
 import static app.gotogether.R.layout.event_layout;
+import static app.gotogether.R.layout.fui_idp_button_facebook;
 import static com.firebase.ui.auth.AuthUI.getApplicationContext;
 
 class EventArrayAdapter extends ArrayAdapter<Event> {
@@ -71,12 +72,24 @@ class EventArrayAdapter extends ArrayAdapter<Event> {
         assert inflater != null;
         View view = inflater.inflate(event_layout, null);
 
+
         TextView title = (TextView) view.findViewById(R.id.titleView);
         TextView destination = (TextView) view.findViewById(R.id.destinationView);
         TextView participantsView = (TextView) view.findViewById(R.id.participantsView);
         ImageView image = (ImageView) view.findViewById(R.id.eventImg);
         Button edit = (Button) view.findViewById(R.id.editButton);
         ImageButton options = (ImageButton) view.findViewById(R.id.options);
+
+        if (event.isCompleted()){
+            view.setBackgroundColor(context.getResources().getColor(R.color.green_normal_85transparent));
+            title.setTextColor(context.getColor(R.color.white));
+            title.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_title_white_24dp, 0, 0, 0);
+            destination.setTextColor(context.getColor(R.color.white));
+            destination.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_location_on_white_24dp, 0, 0, 0);
+            participantsView.setTextColor(context.getColor(R.color.white));
+            participantsView.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_group_white_24dp, 0, 0, 0);
+            view.findViewById(R.id.dividerView).setBackgroundColor(context.getColor(R.color.white));
+        }
 
         //TODO
         title.setText(event.getTitle());
@@ -100,87 +113,91 @@ class EventArrayAdapter extends ArrayAdapter<Event> {
         int imageID = context.getResources().getIdentifier(event.getImage(), "mipmap", context.getPackageName());
         image.setImageResource(imageID);
 
-        edit.setOnClickListener(v -> {
-            ArrayList<User> eventParticipants = event.getParticipantsList();
-            User currentUser = null;
-            for (Iterator<User> iterator = eventParticipants.iterator(); ((Iterator) iterator).hasNext(); ){
-                User u = iterator.next();
-                if (u.getId().equals(auth.getUid())){
-                    currentUser = u;
-                    iterator.remove();
+        if (event.isCompleted()){
+            edit.setVisibility(View.GONE);
+        } else {
+            edit.setOnClickListener(v -> {
+                ArrayList<User> eventParticipants = event.getParticipantsList();
+                User currentUser = null;
+                for (Iterator<User> iterator = eventParticipants.iterator(); ((Iterator) iterator).hasNext(); ){
+                    User u = iterator.next();
+                    if (u.getId().equals(auth.getUid())){
+                        currentUser = u;
+                        iterator.remove();
+                    }
                 }
-            }
-            /*for (User user : eventParticipants){
-                if (user.getId().equals(auth.getUid())){
-                    currentUser = user;
-                    eventParticipants.remove(user);
-                }
-            }*/
-            if (event.getOwner().equals(auth.getUid())){
-                // edit the event's original info
-                Intent intent = new Intent(context, UpdateEventActivity.class);
-                intent.putExtra("eventUID", event.getId());
-                intent.putExtra("Owner", event.getOwner());
-                intent.putExtra("Title", event.getTitle());
-                intent.putExtra("Destination", (String) event.getDestination().get("street"));
-                Bundle participantsBundle = new Bundle();
-                participantsBundle.putParcelableArrayList("Participants", eventParticipants);
-                intent.putExtra("Start", currentUser.getStartAddress());
-                if (currentUser.isDriver()) {
-                    intent.putExtra("Driver", true);
-                    intent.putExtra("Seats", currentUser.getSeats());
+                /*for (User user : eventParticipants){
+                    if (user.getId().equals(auth.getUid())){
+                        currentUser = user;
+                        eventParticipants.remove(user);
+                    }
+                }*/
+                if (event.getOwner().equals(auth.getUid())){
+                    // edit the event's original info
+                    Intent intent = new Intent(context, UpdateEventActivity.class);
+                    intent.putExtra("eventUID", event.getId());
+                    intent.putExtra("Owner", event.getOwner());
+                    intent.putExtra("Title", event.getTitle());
+                    intent.putExtra("Destination", (String) event.getDestination().get("street"));
+                    Bundle participantsBundle = new Bundle();
+                    participantsBundle.putParcelableArrayList("Participants", eventParticipants);
+                    intent.putExtra("Start", currentUser.getStartAddress());
+                    if (currentUser.isDriver()) {
+                        intent.putExtra("Driver", true);
+                        intent.putExtra("Seats", currentUser.getSeats());
+                    } else {
+                        intent.putExtra("Driver", false);
+                    }
+                    participantsBundle.putParcelable("User", currentUser);
+                    intent.putExtra("Participants", participantsBundle);
+                    context.startActivity(intent);
                 } else {
-                    intent.putExtra("Driver", false);
+                    // edit participation information
+                    Intent intent = new Intent(context, JoinEventActivity.class);
+                    // add the event UID
+                    intent.putExtra("eventUID", event.getId());
+                    // add the owner
+                    intent.putExtra("Owner", event.getOwner());
+                    // add the title
+                    intent.putExtra("Title", event.getTitle());
+                    // add the known start
+                    intent.putExtra("Start", currentUser.getStartAddress());
+                    // add the destination
+                    String destination1 = (String) event.getDestination().get("street");
+                    Bundle destinationBundle = new Bundle();
+                    GeoPoint destinationGP = (GeoPoint) event.getDestination().get("LatLng");
+                    LatLng destinationLatLng = new LatLng(destinationGP.getLatitude(), destinationGP.getLongitude());
+                    destinationBundle.putParcelable("destinationLatLng", destinationLatLng);
+                    destinationBundle.putString("destinationAddress", destination1);
+                    intent.putExtra("Destination", destinationBundle);
+                    // add the participants
+                    Bundle participantsBundle = new Bundle();
+                    participantsBundle.putParcelableArrayList("Participants", eventParticipants);
+                    // add the user
+                    /*User user;
+                    Random random = new Random();
+                    String name = names[random.nextInt(names.length)];
+                    Log.i("Participant Name",name);
+                    String addr = pickup[random.nextInt(pickup.length)];
+                    Log.i("Participant PickUp",addr);
+                    boolean driver = random.nextBoolean();
+                    int seats = 0;
+                    if (driver) {
+                        seats = ThreadLocalRandom.current().nextInt(1, 6+1);
+                        user = new User(name , addr, getLocationFromAddress(context, addr), seats );
+                    }
+                    else {
+                        user = new User(name, addr, getLocationFromAddress(context, addr));
+                    }
+                    participantsBundle.putParcelable("User", user);*/
+                    intent.putExtra("Participants", participantsBundle);
+                    // start
+                    context.startActivity(intent);
                 }
-                participantsBundle.putParcelable("User", currentUser);
-                intent.putExtra("Participants", participantsBundle);
-                context.startActivity(intent);
-            } else {
-                // edit participation information
-                Intent intent = new Intent(context, JoinEventActivity.class);
-                // add the event UID
-                intent.putExtra("eventUID", event.getId());
-                // add the owner
-                intent.putExtra("Owner", event.getOwner());
-                // add the title
-                intent.putExtra("Title", event.getTitle());
-                // add the known start
-                intent.putExtra("Start", currentUser.getStartAddress());
-                // add the destination
-                String destination1 = (String) event.getDestination().get("street");
-                Bundle destinationBundle = new Bundle();
-                GeoPoint destinationGP = (GeoPoint) event.getDestination().get("LatLng");
-                LatLng destinationLatLng = new LatLng(destinationGP.getLatitude(), destinationGP.getLongitude());
-                destinationBundle.putParcelable("destinationLatLng", destinationLatLng);
-                destinationBundle.putString("destinationAddress", destination1);
-                intent.putExtra("Destination", destinationBundle);
-                // add the participants
-                Bundle participantsBundle = new Bundle();
-                participantsBundle.putParcelableArrayList("Participants", eventParticipants);
-                // add the user
-                /*User user;
-                Random random = new Random();
-                String name = names[random.nextInt(names.length)];
-                Log.i("Participant Name",name);
-                String addr = pickup[random.nextInt(pickup.length)];
-                Log.i("Participant PickUp",addr);
-                boolean driver = random.nextBoolean();
-                int seats = 0;
-                if (driver) {
-                    seats = ThreadLocalRandom.current().nextInt(1, 6+1);
-                    user = new User(name , addr, getLocationFromAddress(context, addr), seats );
-                }
-                else {
-                    user = new User(name, addr, getLocationFromAddress(context, addr));
-                }
-                participantsBundle.putParcelable("User", user);*/
-                intent.putExtra("Participants", participantsBundle);
-                // start
-                context.startActivity(intent);
-            }
-        });
+            });
+        }
 
-        if (!event.getOwner().equals(auth.getUid())){
+        if (!event.getOwner().equals(auth.getUid()) || event.isCompleted()){
             options.setVisibility(View.GONE);
         } else {
             options.setOnClickListener(v -> {

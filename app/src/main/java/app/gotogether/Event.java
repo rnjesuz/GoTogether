@@ -1,11 +1,10 @@
 package app.gotogether;
 
-import com.google.android.gms.maps.model.LatLng;
 import com.google.firebase.firestore.GeoPoint;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 class Event extends EventForDB implements Serializable {
@@ -74,7 +73,7 @@ class Event extends EventForDB implements Serializable {
         return super.getDrivers();
     }
 
-    public ArrayList<Map<Object, Object>> getCluster() {
+    public Map<String, List<Object>> getCluster() {
         return super.getCluster();
     }
 
@@ -108,7 +107,7 @@ class Event extends EventForDB implements Serializable {
         super.setDrivers(drivers);
     }
 
-    public void setCluster(ArrayList<Map<Object, Object>> cluster) {
+    public void setCluster(Map<String, List<Object>> cluster) {
         super.setCluster(cluster);
     }
 

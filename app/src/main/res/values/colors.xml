@@ -14,6 +14,7 @@
     <color name="pink_pressed">#ec407a</color>
     <color name="blue_semi_transparent">#805677fc</color>
     <color name="blue_semi_transparent_pressed">#80738ffe</color>
+    <color name="green_normal_85transparent">#D543a047</color>
     <color name="green_normal">#43a047</color>
     <color name="green_pressed">#2e7d32</color>
     <color name="green_rippled">#1b5e20</color>

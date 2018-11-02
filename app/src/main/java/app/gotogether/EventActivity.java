@@ -72,6 +72,7 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
     private FirebaseAuth auth = FirebaseAuth.getInstance();
     private FirebaseFirestore db = FirebaseFirestore.getInstance();
     private String owner;
+    private Boolean complete = false;
     private Menu mOptionsMenu;
     private boolean mHideMenu = false;
 
@@ -96,16 +97,20 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
         participants = participantsBundle.getParcelableArrayList("Participants");
         // Get user from Intent
         user = participantsBundle.getParcelable("User");
-        //Get user pick-up location
+        // Get user pick-up location
         start = user.getStartAddress();
         startLatLng = user.getStartLatLng();
+        // Is the event complete? - get from intent if yes
+        Boolean possibleComplete = getIntent().getBooleanExtra("Completed", false);
+        Log.d(TAG, "Event complete? "+possibleComplete);
+        complete = possibleComplete;
 
         // Set up the map fragment
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map_event);
         mapFragment.getMapAsync(this);
 
-        CoordinatorLayout eevntLayout = (CoordinatorLayout) findViewById(R.id.eventLayout);
+        CoordinatorLayout eventLayout = (CoordinatorLayout) findViewById(R.id.eventLayout);
         LinearLayout bottomSheetFrame = (LinearLayout) findViewById(R.id.bottom_sheet_frame);
         ImageView bottomSheetImage = (ImageView) findViewById(R.id.bottom_sheet_image);
         // the event part
@@ -245,20 +250,22 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.event_menu, menu);
-        /*menu.add(0, 1, 1, menuIconWithText(getResources().getDrawable(R.drawable.ic_done_all_white_24dp), getResources().getString(R.string.conclude_event)));
-        menu.add(0, 2, 2, menuIconWithText(getResources().getDrawable(R.drawable.ic_person_add_white_24dp), getResources().getString(R.string.show_identifier)));
-        menu.add(0, 3, 3, menuIconWithText(getResources().getDrawable(R.drawable.ic_edit), getResources().getString(R.string.edit_event)));*/
+        if (!complete){
+            getMenuInflater().inflate(R.menu.event_menu, menu);
+            /*menu.add(0, 1, 1, menuIconWithText(getResources().getDrawable(R.drawable.ic_done_all_white_24dp), getResources().getString(R.string.conclude_event)));
+            menu.add(0, 2, 2, menuIconWithText(getResources().getDrawable(R.drawable.ic_person_add_white_24dp), getResources().getString(R.string.show_identifier)));
+            menu.add(0, 3, 3, menuIconWithText(getResources().getDrawable(R.drawable.ic_edit), getResources().getString(R.string.edit_event)));*/
 
-        // test for owner exclusive actions
-        if(!user.getId().equals(owner)) {
-            Log.d(TAG, "yo");
+            // test for owner exclusive actions
+            if(!user.getId().equals(owner)) {
+                Log.d(TAG, "yo");
                 menu.getItem(1).setVisible(false);
                 menu.getItem(2).setVisible(false);
-        }
+            }
 
-        android.support.v7.app.ActionBar bar = getSupportActionBar();
-        bar.setBackgroundDrawable(new ColorDrawable(Color.parseColor("#43a047")));
+            android.support.v7.app.ActionBar bar = getSupportActionBar();
+            bar.setBackgroundDrawable(new ColorDrawable(Color.parseColor("#43a047")));
+        }
         return true;
     }
 
@@ -288,7 +295,7 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
                         intent.putExtra("Seats", user.getSeats());
                     } else
                         intent.putExtra("Driver", false);
-                    intent.putExtra("Participants", (Bundle) getIntent().getParcelableExtra("Participants"));
+                    intent.putExtra("Participants", getIntent().getBundleExtra("Participants"));
                     startActivity(intent);
                 } else {
                     editUserInputs();
@@ -355,7 +362,8 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
         intent.putExtra("Owner", owner);
         intent.putExtra("eventUID", eventUID);
         intent.putExtra("Title", title);
-        intent.putExtra("Destination", getIntent().getBundleExtra("Destination"));
+        intent.putExtra("Start", start);
+        intent.putExtra("Destination", destination);
         intent.putExtra("Participants", getIntent().getBundleExtra("Participants"));
         startActivity(intent);
     }

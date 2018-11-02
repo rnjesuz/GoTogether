@@ -214,6 +214,11 @@ public class MainActivity extends  AppCompatActivity {
         intent.putExtra("Title", event.getTitle());
         // add the event owner
         intent.putExtra("Owner", event.getOwner());
+        // is event completed?
+        boolean completed = event.isCompleted();
+        if (completed){
+            intent.putExtra("Completed", completed);
+        }
         // add the destination
         String destination = (String) event.getDestination().get("street");
         GeoPoint destinationGP = (GeoPoint) event.getDestination().get("LatLng");
