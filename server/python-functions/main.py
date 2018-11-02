@@ -34,7 +34,7 @@ def cluster_distance_route(reference):
     global drivers, driversDistance, driversDirections
     global riders, ridersDistance, ridersDirections
     global participants, RtoDRouteShare, cluster
-    event_uid = reference.eventUID
+    event_uid = reference.get('eventUID')
     event_ref = db.collection(u'events').document(event_uid)
     participants_ref = db.collection(u'events').document(event_uid).collection(u'participants')
     print(u'Completed event: {}'.format(event_uid))
@@ -50,16 +50,15 @@ def cluster_distance_route(reference):
         p = Participant(**participant.to_dict())
         p.set_id(participant.id)
         source = p.start.get(u'street')
-        distance_results = google_maps.distance_matrix(source, destination)  # TODO this can result ZERO_RESULTS
-        direction_results = google_maps.directions(source, destination)  # TODO this may probably also return ZERO_RESULTS
+        direction_results = google_maps.directions(source, destination)  # TODO this may probably return ZERO_RESULTS
         if p.is_driver():
             drivers.append(p)
-            driversDistance[p.id] = distance_results.get(u'rows')[0].get(u'elements')[0].get(u'distance').get(u'value')
+            driversDistance[p.id] = direction_results[0].get(u'legs')[0].get(u'distance').get(u'value')
             driversDirections[p.id] = direction_results
             cluster[p.id] = []
         else:
             riders.append(p)
-            ridersDistance[p.id] = distance_results.get(u'rows')[0].get(u'elements')[0].get(u'distance').get(u'value')
+            ridersDistance[p.id] = direction_results[0].get(u'legs')[0].get(u'distance').get(u'value')
             ridersDirections[p.id] = direction_results
         participants[p.id] = p
 
@@ -85,7 +84,8 @@ def get_shared_path(rider, driver):
     drivers_directions_range = len(d_directions)
     for r_steps in range(riders_directions_range):
         for d_steps in range(drivers_directions_range):
-            if (r_directions[r_steps].get('start_location') == d_directions[d_steps].get('start_location')) and (r_directions[r_steps].get('end_location') == d_directions[d_steps].get('end_location')):
+            if (r_directions[r_steps].get('start_location') == d_directions[d_steps].get('start_location')) and \
+                    (r_directions[r_steps].get('end_location') == d_directions[d_steps].get('end_location')):
                 share = share+1
     return share
 
@@ -208,4 +208,4 @@ class Event(object):
 
 #######################
 if __name__ == '__main__':
-    cluster_distance_route()
+    cluster_distance_route(reference={'eventUID': 'SBgh4MKtplFEbYXLvmMY'})
