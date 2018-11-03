@@ -205,7 +205,7 @@ public class MainActivity extends  AppCompatActivity {
      * @param event the event to be launched
      * @param participants the participants of the event */
     private void LaunchEvent(Event event, ArrayList<User> participants) {
-        Intent intent = new Intent(MainActivity.this, EventActivity.class);
+        Intent intent = new Intent(MainActivity.this, NewEventActivity.class);
         // TODO read from event
         String currentUserUID = auth.getUid();
         // add the uid

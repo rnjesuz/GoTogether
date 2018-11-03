@@ -22,6 +22,7 @@ android {
     }
     repositories {
         maven { url 'https://jitpack.io' }
+        maven { url "https://raw.github.com/laenger/maven-releases/master/releases" }
     }
 }
 
@@ -39,12 +40,13 @@ dependencies {
     api 'com.google.android.gms:play-services-location:16.0.0'
     api 'com.google.android.gms:play-services-maps:16.0.0'
     implementation 'com.android.support:cardview-v7:27.1.1'
-    api 'com.github.iammert:ExpandableLayout:1.4.1'
-    api 'com.github.clans:fab:1.6.4'
-    implementation 'com.google.firebase:firebase-core:16.0.4'
-    implementation 'com.google.firebase:firebase-firestore:17.1.1'
-    implementation 'com.google.firebase:firebase-auth:16.0.5'
-    implementation 'com.firebaseui:firebase-ui-auth:4.2.0'
+    implementation 'com.github.iammert:ExpandableLayout:1.4.1'
+    implementation 'com.github.clans:fab:1.6.4'
+    implementation 'biz.laenger.android:vpbs:0.0.5'
+    api 'com.google.firebase:firebase-core:16.0.4'
+    api 'com.google.firebase:firebase-firestore:17.1.2'
+    api 'com.google.firebase:firebase-auth:16.0.5'
+    api 'com.firebaseui:firebase-ui-auth:4.2.0'
 }
 
 apply plugin: 'com.google.gms.google-services'

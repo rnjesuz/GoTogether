@@ -124,6 +124,14 @@
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="app.gotogether.MainActivity" />
+        </activity><activity
+            android:name=".NewEventActivity"
+            android:configChanges="orientation|keyboardHidden"
+            android:label="@string/title_activity_event"
+            android:screenOrientation="portrait">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="app.gotogether.MainActivity" />
         </activity>
         <activity
             android:name=".UpdateEventActivity"
