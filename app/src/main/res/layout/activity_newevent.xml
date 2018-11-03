@@ -44,7 +44,9 @@
         android:elevation="16dp"
         android:orientation="vertical"
         app:behavior_peekHeight="?attr/actionBarSize"
-        app:layout_behavior="@string/view_pager_bottom_sheet_behavior">
+        app:layout_behavior="android.support.design.widget.BottomSheetBehavior" >
+        <!-- app:layout_behavior="@string/view_pager_bottom_sheet_behavior"
+        > -->
 
         <android.support.design.widget.AppBarLayout
             android:id="@+id/bottom_sheet_appbar"

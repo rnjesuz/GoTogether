@@ -194,11 +194,31 @@ public class NewEventActivity extends AppCompatActivity implements OnMapReadyCal
 
         // NestedScrollFragment fragment = (NestedScrollFragment) ((PagerAdapter) bottomSheetViewPager.getAdapter()).getItem(0);
         NestedScrollFragment fragment = sectionsPagerAdapter.getFragment();
-        if (fragment == null)
+        if (fragment == null) {
             Log.d("yoooooo", "fragmernt null");
+        }
         View inflatedView = fragment.getInflatedView();
-        if (inflatedView == null)
+        if (inflatedView == null) {
             Log.d("yoooooo", "view null");
+        }
+
+        // The View with the BottomSheetBehavior
+        bottomSheetBehavior = BottomSheetBehavior.from(bottomSheetFrame);
+        bottomSheetBehavior.setBottomSheetCallback(new BottomSheetBehavior.BottomSheetCallback() {
+            @Override
+            public void onStateChanged(@NonNull View bottomSheet, int newState) {
+                // React to state change
+                Log.i("onStateChanged", "onStateChanged:" + newState);
+            }
+
+            @Override
+            public void onSlide(@NonNull View bottomSheet, float slideOffset) {
+                // React to dragging events
+                Log.i("onSlide", "onSlide");
+            }
+        });
+        bottomSheetBehavior.setPeekHeight(100);
+
         // the event part
         TextView eventTitle = inflatedView.findViewById(R.id.titleView);
         eventTitle.setText(new SpannableString(Html.fromHtml("<b>Title: </b>"+ title)));
@@ -231,10 +251,6 @@ public class NewEventActivity extends AppCompatActivity implements OnMapReadyCal
         // Set the layout manager
         bottomSheet.setLayoutManager(new LinearLayoutManager(this));
 
-        // The View with the BottomSheetBehavior
-        //bottomSheetBehavior = BottomSheetBehavior.from((View) inflatedView);
-
-        //bottomSheetBehavior.setPeekHeight(100);
     }
 
     @Override
