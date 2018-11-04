@@ -6,6 +6,7 @@
     <color name="black">#000000</color>
     <color name="white">#fafafa</color>
     <color name="green_normal_85transparent">#D543a047</color>
+    <color name="green_normal_15transparent">#2643a047</color>
     <color name="green_normal">#43a047</color>
     <color name="green_pressed">#2e7d32</color>
     <color name="green_rippled">#1b5e20</color>

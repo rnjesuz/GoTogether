@@ -1,18 +1,58 @@
 <?xml version="1.0" encoding="utf-8"?>
-
 <android.support.design.widget.CoordinatorLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
+    tools:context=".OldEventActivity"
     android:layout_height="match_parent"
-    android:scrollbars="vertical"
-    tools:context=".NewEventActivity" >
+    android:layout_width="match_parent"
+    android:id="@+id/eventLayout">
 
-    <LinearLayout
+    <fragment xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:map="http://schemas.android.com/apk/res-auto"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:id="@+id/map_event"
+        android:name="com.google.android.gms.maps.SupportMapFragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical">
+        map:layout_constraintTop_toTopOf="parent"
+        map:uiRotateGestures="true"
+        map:uiZoomControls="false"
+        map:uiZoomGestures="true"
+        tools:context=".OldEventActivity"
+        />
+
+    <com.github.clans.fab.FloatingActionButton
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:fab_size="mini"
+        android:src="@drawable/baseline_filter_center_focus_black_24"
+        app:fab_colorNormal="@color/white"
+        app:fab_colorPressed="@color/white_background"
+        app:fab_colorRipple="@color/white_background_dark"
+        android:layout_gravity="bottom|end"
+        android:layout_marginBottom="48dp"
+        android:layout_marginEnd="16dp"
+        android:onClick="centerMap"
+        />
+
+    <LinearLayout
+        android:id="@+id/bottom_sheet_frame"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_behavior="android.support.design.widget.BottomSheetBehavior"
+        android:background="@drawable/top_roundcorners_noborder"
+        android:elevation="10dp">
+
+        <ImageView
+            android:id="@+id/bottom_sheet_image"
+            android:layout_width="25dp"
+            android:layout_height="4dp"
+            android:background="@drawable/grey_rectangle_roundcorners_noborder"
+            android:layout_gravity="center"
+            android:layout_marginTop="8sp"
+            android:layout_marginBottom="24sp"/>
 
         <android.support.constraint.ConstraintLayout
             android:layout_width="match_parent"
@@ -129,7 +169,7 @@
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
-        </android.support.constraint.ConstraintLayout>
+    </android.support.constraint.ConstraintLayout>
 
         <TextView
             android:id="@+id/pickupView"
@@ -202,7 +242,5 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             />
-
     </LinearLayout>
-
 </android.support.design.widget.CoordinatorLayout>

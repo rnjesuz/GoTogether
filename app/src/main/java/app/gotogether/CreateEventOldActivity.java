@@ -505,7 +505,7 @@ public class CreateEventOldActivity extends AppCompatActivity implements
 
         //Launch new activity
         // TODO do split? if finalized : if not finalized - different activities based on each
-        Intent intent = new Intent(CreateEventOldActivity.this, EventActivity.class);
+        Intent intent = new Intent(CreateEventOldActivity.this, OldEventActivity.class);
         // Destination Bundle
         Bundle destinationBundle = new Bundle();
         LatLng destinationLatLng = getLocationFromAddress(getApplicationContext(), destination);

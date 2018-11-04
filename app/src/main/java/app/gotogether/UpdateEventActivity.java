@@ -5,7 +5,6 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.app.TaskStackBuilder;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
@@ -21,14 +20,12 @@ import android.location.Location;
 import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Parcelable;
 import android.support.annotation.NonNull;
 import android.support.annotation.RequiresApi;
 import android.support.constraint.ConstraintLayout;
 import android.support.design.widget.Snackbar;
 import android.support.design.widget.TextInputLayout;
 import android.support.v4.app.ActivityCompat;
-import android.support.v4.app.NavUtils;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.text.Editable;
@@ -954,7 +951,7 @@ public class UpdateEventActivity extends AppCompatActivity implements OnMapReady
                 databaseWrite();
 
                 // TODO launch back to event activity
-                Intent intent = new Intent(UpdateEventActivity.this, EventActivity.class);
+                Intent intent = new Intent(UpdateEventActivity.this, OldEventActivity.class);
                 // add the uid
                 intent.putExtra("eventUID", eventUID);
                 // add the event owner
@@ -1186,7 +1183,7 @@ public class UpdateEventActivity extends AppCompatActivity implements OnMapReady
 
         //Launch new activity
         // Create intent
-        Intent intent = new Intent(UpdateEventActivity.this, EventActivity.class);
+        Intent intent = new Intent(UpdateEventActivity.this, OldEventActivity.class);
         // Add event uid
         intent.putExtra("eventUID", eventUID);
         // Title

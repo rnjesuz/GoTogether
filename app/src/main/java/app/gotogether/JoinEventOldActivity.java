@@ -516,7 +516,7 @@ public class JoinEventOldActivity extends AppCompatActivity implements OnMapRead
         /*Bundle args = new Bundle();
         LatLng destinationLatLng = getLocationFromAddress(getApplicationContext(), destination);
         args.putParcelable("destinationLatLng", destinationLatLng);*/
-        Intent intent = new Intent(JoinEventOldActivity.this, EventActivity.class);
+        Intent intent = new Intent(JoinEventOldActivity.this, OldEventActivity.class);
         intent.putExtra("Destination", (Bundle) getIntent().getParcelableExtra("Destination"));
         Bundle participantsBundle = getIntent().getParcelableExtra("Participants");
         participantsBundle.putParcelable("User", createUser());

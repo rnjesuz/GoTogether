@@ -1,28 +1,25 @@
 package app.gotogether.fragments;
 
 import android.content.Context;
-import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-
 import app.gotogether.R;
 
-public class NestedScrollFragment extends Fragment {
+public class ClusterListFragment extends Fragment {
 
-    public static interface OnCompleteListener {
-        public abstract void onComplete();
+    public  interface OnCompleteListener {
+        void onClusterListFragmentComplete();
     }
 
-    private OnCompleteListener mListener;
-
     private View inflatedView;
+
+    private OnCompleteListener mListener;
 
     @Override
     public void onAttach(Context context) {
@@ -37,13 +34,8 @@ public class NestedScrollFragment extends Fragment {
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        Log.d("suuuuuup", "yoooooooo");
-        inflatedView = inflater.inflate(R.layout.fragment_nested_scroll, container, false);
-        if (inflatedView == null)
-            Log.d("yoooooo", "null");
-        else
-            Log.d("yoooooo", "not null");
-        mListener.onComplete();
+        inflatedView = inflater.inflate(R.layout.fragment_cluster, container, false);
+        mListener.onClusterListFragmentComplete();
         return inflatedView;
     }
 

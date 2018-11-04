@@ -34,13 +34,11 @@ import android.widget.Toast;
 import com.firebase.ui.auth.AuthUI;
 import com.github.clans.fab.FloatingActionButton;
 import com.github.clans.fab.FloatingActionMenu;
-import com.google.android.gms.auth.api.Auth;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -57,8 +55,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
-
-import static app.gotogether.CreateEventActivity.hideKeyboard;
 
 public class MainActivity extends  AppCompatActivity {
 
@@ -205,7 +201,7 @@ public class MainActivity extends  AppCompatActivity {
      * @param event the event to be launched
      * @param participants the participants of the event */
     private void LaunchEvent(Event event, ArrayList<User> participants) {
-        Intent intent = new Intent(MainActivity.this, NewEventActivity.class);
+        Intent intent = new Intent(MainActivity.this, EventActivity.class);
         // TODO read from event
         String currentUserUID = auth.getUid();
         // add the uid

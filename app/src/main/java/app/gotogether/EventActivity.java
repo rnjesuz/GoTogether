@@ -11,11 +11,15 @@ import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.annotation.RequiresApi;
 import android.support.design.widget.BottomSheetBehavior;
 import android.support.design.widget.CoordinatorLayout;
+import android.support.design.widget.TabLayout;
+import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.Toolbar;
 import android.text.Html;
 import android.text.Spannable;
 import android.text.SpannableString;
@@ -30,12 +34,19 @@ import android.view.ViewGroup;
 import android.view.ViewGroupOverlay;
 import android.view.ViewTreeObserver;
 import android.widget.ImageButton;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.PopupWindow;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.akexorcist.googledirection.DirectionCallback;
+import com.akexorcist.googledirection.GoogleDirection;
+import com.akexorcist.googledirection.constant.TransportMode;
+import com.akexorcist.googledirection.model.Direction;
+import com.akexorcist.googledirection.model.Leg;
+import com.akexorcist.googledirection.model.Route;
+import com.akexorcist.googledirection.model.Step;
+import com.akexorcist.googledirection.util.DirectionConverter;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -45,19 +56,29 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.PolylineOptions;
+import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
-import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.QuerySnapshot;
 
+import app.gotogether.PagerAdapter.TabItem;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-import io.opencensus.tags.Tag;
+import app.gotogether.fragments.ClusterListFragment;
+import app.gotogether.fragments.ParticipantsListFragment;
+import biz.laenger.android.vpbs.BottomSheetUtils;
 
-public class EventActivity extends AppCompatActivity implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
+public class EventActivity extends AppCompatActivity implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener, ParticipantsListFragment.OnCompleteListener, ClusterListFragment.OnCompleteListener {
 
-    private static final String TAG = "EventActivity";
+    private static final String TAG = "OldEventActivity";
     private String destination = null;
     private LatLng destinationLatLng = null;
     private String start = null;
@@ -65,16 +86,17 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
     protected static GoogleMap mMap;
     private User user;
     private ArrayList<User> participants;
-    private static BottomSheetBehavior bottomSheetBehavior;
+    private static BottomSheetBehavior<View> bottomSheetBehavior;
     private LatLngBounds bounds;
     private String title;
     private String eventUID;
-    private FirebaseAuth auth = FirebaseAuth.getInstance();
-    private FirebaseFirestore db = FirebaseFirestore.getInstance();
     private String owner;
     private Boolean complete = false;
-    private Menu mOptionsMenu;
-    private boolean mHideMenu = false;
+    private Toolbar bottomSheetToolbar;
+    private TabLayout bottomSheetTabLayout;
+    private ViewPager bottomSheetViewPager;
+    private PagerAdapter sectionsPagerAdapter;
+    private ArrayList<String> myRouteCluster = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -102,7 +124,7 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
         startLatLng = user.getStartLatLng();
         // Is the event complete? - get from intent if yes
         Boolean possibleComplete = getIntent().getBooleanExtra("Completed", false);
-        Log.d(TAG, "Event complete? "+possibleComplete);
+        Log.i(TAG, "Event complete? "+possibleComplete);
         complete = possibleComplete;
 
         // Set up the map fragment
@@ -110,19 +132,114 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
                 .findFragmentById(R.id.map_event);
         mapFragment.getMapAsync(this);
 
-        CoordinatorLayout eventLayout = (CoordinatorLayout) findViewById(R.id.eventLayout);
-        LinearLayout bottomSheetFrame = (LinearLayout) findViewById(R.id.bottom_sheet_frame);
-        ImageView bottomSheetImage = (ImageView) findViewById(R.id.bottom_sheet_image);
+        setupBottomSheet();
+    }
+
+    private void setupBottomSheet() {
+        bottomSheetViewPager = findViewById(R.id.bottom_sheet_viewpager);
+        // bottomSheetToolbar = findViewById(R.id.bottom_sheet_toolbar);
+        bottomSheetTabLayout = findViewById(R.id.bottom_sheet_tabs);
+
+        // bottomSheetToolbar.setTitle(R.string.bottom_sheet_title);
+        if (complete){
+            sectionsPagerAdapter = new PagerAdapter(getSupportFragmentManager(), this, TabItem.PARTICIPANTS, TabItem.CLUSTER);
+        }
+        else {
+            sectionsPagerAdapter = new PagerAdapter(getSupportFragmentManager(), this, TabItem.PARTICIPANTS);
+        }
+        bottomSheetViewPager.setOffscreenPageLimit(1);
+        bottomSheetViewPager.setAdapter(sectionsPagerAdapter);
+        bottomSheetTabLayout.setupWithViewPager(bottomSheetViewPager);
+        BottomSheetUtils.setupViewPager(bottomSheetViewPager);
+        // The View with the BottomSheetBehavior
+        LinearLayout bottomSheetFrame = findViewById(R.id.bottom_sheet);
+        bottomSheetBehavior = BottomSheetBehavior.from(bottomSheetFrame);
+        bottomSheetBehavior.setBottomSheetCallback(new BottomSheetBehavior.BottomSheetCallback() {
+            @Override
+            public void onStateChanged(@NonNull View bottomSheet, int newState) {
+                // React to state change
+                Log.i(TAG, "onStateChanged:" + newState);
+            }
+
+            @Override
+            public void onSlide(@NonNull View bottomSheet, float slideOffset) {
+                // React to dragging events
+                Log.i(TAG, "onSlide");
+            }
+        });
+        bottomSheetBehavior.setPeekHeight(150);
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.N)
+    private void drawRoute() {
+        List<LatLng> waypoints = new ArrayList<>();
+        LatLng routeStartLatLng = null;
+
+        for (int i=0; i<myRouteCluster.size(); i++){
+            int counter = i;
+            String uid = myRouteCluster.get(i);
+            User u = participants.stream().filter(user -> uid.equals(user.getId())).findAny().orElse(null);
+            if (u ==null){
+                u =user;
+            }
+            if(i==0){
+                routeStartLatLng = u.getStartLatLng();
+            } else {
+                waypoints.add(u.getStartLatLng());
+            }
+        }
+
+        GoogleDirection.withServerKey(getResources().getString(R.string.google_api_key))
+                .from(routeStartLatLng)
+                .and(waypoints)
+                .to(destinationLatLng)
+                .transportMode(TransportMode.DRIVING)
+                .execute(new DirectionCallback() {
+                    @Override
+                    public void onDirectionSuccess(Direction direction, String rawBody) {
+                        if(direction.isOK()) {
+                            Route route = direction.getRouteList().get(0);
+                            int legCount = route.getLegList().size();
+                            for (int index = 0; index < legCount; index++) {
+                                Leg leg = route.getLegList().get(index);
+                                List<Step> stepList = leg.getStepList();
+                                ArrayList<PolylineOptions> polylineOptionList = DirectionConverter.createTransitPolyline(EventActivity.this, stepList, 5, getResources().getColor(R.color.green_complementary), 3, Color.BLUE);
+                                for (PolylineOptions polylineOption : polylineOptionList) {
+                                    mMap.addPolyline(polylineOption);
+                                }
+                            }
+                            setCameraWithCoordinationBounds(route);
+                        }
+                    }
+
+                    @Override
+                    public void onDirectionFailure(Throwable t) {
+                        // Do something
+                    }
+                });
+    }
+
+    private void setCameraWithCoordinationBounds(Route route) {
+        LatLng southwest = route.getBound().getSouthwestCoordination().getCoordination();
+        LatLng northeast = route.getBound().getNortheastCoordination().getCoordination();
+        LatLngBounds bounds = new LatLngBounds(southwest, northeast);
+        mMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 100));
+    }
+
+    public void onParticipantsListFragmentComplete() {
+        ParticipantsListFragment fragment = (ParticipantsListFragment) sectionsPagerAdapter.getFragment(0);
+        View inflatedView = fragment.getInflatedView();
+
         // the event part
-        TextView eventTitle = findViewById(R.id.titleView);
+        TextView eventTitle = inflatedView.findViewById(R.id.titleView);
         eventTitle.setText(new SpannableString(Html.fromHtml("<b>Title: </b>"+ title)));
-        TextView eventDestination = findViewById(R.id.destinationView);
+        TextView eventDestination = inflatedView.findViewById(R.id.destinationView);
         eventDestination.setText(new SpannableString(Html.fromHtml("<b>Destination: </b>"+ destination)));
         // the user part
-        TextView userPickup = findViewById(R.id.pickupView);
+        TextView userPickup = inflatedView.findViewById(R.id.pickupView);
         userPickup.setText(new SpannableString(Html.fromHtml("<b>Pickup: </b>"+ start)));
-        TextView userDriver = findViewById(R.id.driverView);
-        TextView userSeats = findViewById(R.id.seatsView);
+        TextView userDriver = inflatedView.findViewById(R.id.driverView);
+        TextView userSeats = inflatedView.findViewById(R.id.seatsView);
         if(user.isDriver()){
             userDriver.setText(new SpannableString(Html.fromHtml("<b>Driver: </b>Available")));
             userSeats.setText(new SpannableString(Html.fromHtml("<b>Empty seats: </b>"+ user.getSeats())));
@@ -131,37 +248,101 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
             userSeats.setVisibility(View.GONE);
         }
         // the participants part
-        RecyclerView bottomSheet = findViewById(R.id.bottom_sheet_participants);
-        // Create bottom sheet items
-        ArrayList<User> items = null;
-        if(participants != null) {
-            items = new ArrayList<>(participants);
+        if(!participants.isEmpty()) {
+            RecyclerView bottomSheet = inflatedView.findViewById(R.id.bottom_sheet_participants);
+            // Create bottom sheet items
+            ArrayList<User> items =  new ArrayList<>(participants);
+
+            // Instantiate adapter
+            UserInEventAdapter userDescriptionAdapter = new UserInEventAdapter(items, null);
+            bottomSheet.setAdapter(userDescriptionAdapter);
+
+            // Set the layout manager
+            bottomSheet.setLayoutManager(new LinearLayoutManager(EventActivity.this));
+        } else {
+            Log.i(TAG, "no participants - removing participants Text view");
+            TextView participantsView = inflatedView.findViewById(R.id.participantsView);
+            RecyclerView participantsList = inflatedView.findViewById(R.id.bottom_sheet_participants);
+            participantsView.setVisibility(View.GONE);
+            participantsList.setVisibility(View.GONE);
         }
+    }
 
-        // Instantiate adapter
-        UserInEventAdapter userDescriptionAdapter = new UserInEventAdapter(items, null);
-        bottomSheet.setAdapter(userDescriptionAdapter);
-
-        // Set the layout manager
-        bottomSheet.setLayoutManager(new LinearLayoutManager(this));
-
-        // The View with the BottomSheetBehavior
-        bottomSheetBehavior = BottomSheetBehavior.from(bottomSheetFrame);
-        bottomSheetBehavior.setBottomSheetCallback(new BottomSheetBehavior.BottomSheetCallback() {
+    public void onClusterListFragmentComplete() {
+        ClusterListFragment fragment = (ClusterListFragment) sectionsPagerAdapter.getFragment(1);
+        View inflatedView = fragment.getInflatedView();
+        // initialize the db 
+        FirebaseFirestore db = FirebaseFirestore.getInstance(); 
+        // Grab cluster from db
+        DocumentReference eventRef = db.collection("events").document(eventUID);
+        eventRef.get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
             @Override
-            public void onStateChanged(@NonNull View bottomSheet, int newState) {
-                // React to state change
-                Log.i("onStateChanged", "onStateChanged:" + newState);
-            }
+            public void onComplete(@NonNull Task<DocumentSnapshot> task) {
+                if (task.isSuccessful()){
+                    DocumentSnapshot document = task.getResult();
+                    Map<String, ArrayList<DocumentReference>> cluster = (HashMap<String, ArrayList<DocumentReference>>) document.get("cluster");
+                    Query participantsRefs = db.collection("users").whereArrayContains("events", eventRef);
+                    participantsRefs.get().addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+                        @Override
+                        public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                            if (task.isSuccessful()){
+                                // Get the username of all the participants
+                                HashMap<String, String> participantsUID = new HashMap<>();
+                                for (QueryDocumentSnapshot participant: task.getResult()){
+                                    participantsUID.put(participant.getId(), participant.getString("username"));
+                                }
+                                // Compare who are the drivers and who are the riders
+                                ArrayList<String> drivers = new ArrayList<>();
+                                ArrayList<ArrayList<String>> riders = new ArrayList<>();
+                                // Get all the drivers
+                                for (String driverUID: cluster.keySet()){
+                                    ArrayList<String> ridersUsername = new ArrayList<>();
+                                    Boolean isUserRoute = false;
 
-            @Override
-            public void onSlide(@NonNull View bottomSheet, float slideOffset) {
-                // React to dragging events
-                Log.i("onSlide", "onSlide");
+                                    ArrayList<DocumentReference> ridersRef = cluster.get(driverUID);
+                                    drivers.add(participantsUID.get(driverUID));
+                                    if (driverUID.equals(user.getId())){
+                                        myRouteCluster.add(driverUID);
+                                        isUserRoute = true;
+                                    }
+                                    // Get username of riders of said driver
+                                    ArrayList<String> riderUID = new ArrayList<>();
+                                    for (DocumentReference riderRef: ridersRef){
+                                        String uid = riderRef.getId();
+                                        riderUID.add(uid);
+                                        ridersUsername.add(participantsUID.get(uid));
+                                        if (isUserRoute){
+                                            myRouteCluster.add(riderRef.getId());
+                                        }
+                                        if (riderRef.getId().equals(user.getId())){
+                                            myRouteCluster.add(driverUID);
+                                            myRouteCluster.addAll(riderUID);
+                                            isUserRoute = true;
+                                        }
+                                    }
+                                    riders.add(ridersUsername);
+                                }
+                                // Instantiate adapter
+                                RecyclerView clustersList = inflatedView.findViewById(R.id.bottom_sheet_drivers);
+                                DriverInEventAdapter driverDescriptionAdapter = new DriverInEventAdapter(drivers, riders, null, EventActivity.this);
+                                clustersList.setAdapter(driverDescriptionAdapter);
+                                // Set the layout manager
+                                clustersList.setLayoutManager(new LinearLayoutManager(EventActivity.this));
+
+                                // Draw the user Route on the map
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) { // needs api N
+                                    drawRoute();
+                                }
+                            } else {
+                                Log.d(TAG, "Query failed with ", task.getException());
+                            }
+                        }
+                    });
+                } else {
+                    Log.d(TAG, "Event get failed with ", task.getException());
+                }
             }
         });
-
-        bottomSheetBehavior.setPeekHeight(100);
     }
 
     @Override
@@ -258,7 +439,6 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
 
             // test for owner exclusive actions
             if(!user.getId().equals(owner)) {
-                Log.d(TAG, "yo");
                 menu.getItem(1).setVisible(false);
                 menu.getItem(2).setVisible(false);
             }
@@ -334,7 +514,7 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
 
     /** Center map on a participant marker
      * Initiated by a button in the bottom sheet
-     * @param participant the participant we each to center on */
+     * @param participant the participant to center on */
     public static void goMarkerParticipant(User participant){
         bottomSheetBehavior.setState(4); // collapse the sheet
         mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(participant.getStartLatLng(), 15));
@@ -344,7 +524,6 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
     public void centerMap(View view) {
         mMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 200));
     }
-
 
     /** launches activity for user to edit his inputs for the event */
     public void editUserInputs(View view) {
@@ -356,6 +535,7 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
         intent.putExtra("Participants", getIntent().getBundleExtra("Participants"));
         startActivity(intent);
     }
+
     /** launches activity for user to edit his inputs for the event */
     public void editUserInputs(){
         Intent intent = new Intent(EventActivity.this, JoinEventActivity.class);
@@ -368,7 +548,7 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
         startActivity(intent);
     }
 
-    // shows text alongside the icon
+    /** shows text alongside the icon */
     private CharSequence menuIconWithText(Drawable r, String title) {
 
         r.setBounds(0, 0, r.getIntrinsicWidth(), r.getIntrinsicHeight());

@@ -13,13 +13,9 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomSheetBehavior;
 import android.support.design.widget.CoordinatorLayout;
-import android.support.design.widget.TabLayout;
-import android.support.v4.app.Fragment;
-import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.Toolbar;
 import android.text.Html;
 import android.text.Spannable;
 import android.text.SpannableString;
@@ -52,16 +48,11 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 
-import app.gotogether.PagerAdapter.TabItem;
 import java.util.ArrayList;
 
-import app.gotogether.fragments.NestedScrollFragment;
-import biz.laenger.android.vpbs.BottomSheetUtils;
-import biz.laenger.android.vpbs.ViewPagerBottomSheetBehavior;
+public class OldEventActivity extends AppCompatActivity implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
 
-public class NewEventActivity extends AppCompatActivity implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener, NestedScrollFragment.OnCompleteListener {
-
-    private static final String TAG = "EventActivity";
+    private static final String TAG = "OldEventActivity";
     private String destination = null;
     private LatLng destinationLatLng = null;
     private String start = null;
@@ -69,7 +60,7 @@ public class NewEventActivity extends AppCompatActivity implements OnMapReadyCal
     protected static GoogleMap mMap;
     private User user;
     private ArrayList<User> participants;
-    private static BottomSheetBehavior<View> bottomSheetBehavior;
+    private static BottomSheetBehavior bottomSheetBehavior;
     private LatLngBounds bounds;
     private String title;
     private String eventUID;
@@ -79,15 +70,11 @@ public class NewEventActivity extends AppCompatActivity implements OnMapReadyCal
     private Boolean complete = false;
     private Menu mOptionsMenu;
     private boolean mHideMenu = false;
-    private Toolbar bottomSheetToolbar;
-    private TabLayout bottomSheetTabLayout;
-    private ViewPager bottomSheetViewPager;
-    private PagerAdapter sectionsPagerAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_newevent);
+        setContentView(R.layout.activity_event_old);
 
         // Get event's uid from intent
         eventUID = getIntent().getStringExtra("eventUID");
@@ -119,10 +106,7 @@ public class NewEventActivity extends AppCompatActivity implements OnMapReadyCal
         mapFragment.getMapAsync(this);
 
         CoordinatorLayout eventLayout = (CoordinatorLayout) findViewById(R.id.eventLayout);
-        LinearLayout bottomSheetFrame = (LinearLayout) findViewById(R.id.bottom_sheet);
-        setupBottomSheet();
-
-        /*
+        LinearLayout bottomSheetFrame = (LinearLayout) findViewById(R.id.bottom_sheet_frame);
         ImageView bottomSheetImage = (ImageView) findViewById(R.id.bottom_sheet_image);
         // the event part
         TextView eventTitle = findViewById(R.id.titleView);
@@ -173,84 +157,6 @@ public class NewEventActivity extends AppCompatActivity implements OnMapReadyCal
         });
 
         bottomSheetBehavior.setPeekHeight(100);
-        */
-    }
-
-    private void setupBottomSheet() {
-        bottomSheetToolbar = findViewById(R.id.bottom_sheet_toolbar);
-        bottomSheetTabLayout = findViewById(R.id.bottom_sheet_tabs);
-        bottomSheetViewPager = findViewById(R.id.bottom_sheet_viewpager);
-
-        // bottomSheetToolbar.setTitle(R.string.bottom_sheet_title);
-        sectionsPagerAdapter = new PagerAdapter(getSupportFragmentManager(), this, getIntent(), TabItem.NESTED_SCROLL);
-        bottomSheetViewPager.setOffscreenPageLimit(1);
-        bottomSheetViewPager.setAdapter(sectionsPagerAdapter);
-        bottomSheetTabLayout.setupWithViewPager(bottomSheetViewPager);
-        BottomSheetUtils.setupViewPager(bottomSheetViewPager);
-    }
-
-    public void onComplete() {
-        LinearLayout bottomSheetFrame = findViewById(R.id.bottom_sheet);
-
-        // NestedScrollFragment fragment = (NestedScrollFragment) ((PagerAdapter) bottomSheetViewPager.getAdapter()).getItem(0);
-        NestedScrollFragment fragment = sectionsPagerAdapter.getFragment();
-        if (fragment == null) {
-            Log.d("yoooooo", "fragmernt null");
-        }
-        View inflatedView = fragment.getInflatedView();
-        if (inflatedView == null) {
-            Log.d("yoooooo", "view null");
-        }
-
-        // The View with the BottomSheetBehavior
-        bottomSheetBehavior = BottomSheetBehavior.from(bottomSheetFrame);
-        bottomSheetBehavior.setBottomSheetCallback(new BottomSheetBehavior.BottomSheetCallback() {
-            @Override
-            public void onStateChanged(@NonNull View bottomSheet, int newState) {
-                // React to state change
-                Log.i("onStateChanged", "onStateChanged:" + newState);
-            }
-
-            @Override
-            public void onSlide(@NonNull View bottomSheet, float slideOffset) {
-                // React to dragging events
-                Log.i("onSlide", "onSlide");
-            }
-        });
-        bottomSheetBehavior.setPeekHeight(100);
-
-        // the event part
-        TextView eventTitle = inflatedView.findViewById(R.id.titleView);
-        eventTitle.setText(new SpannableString(Html.fromHtml("<b>Title: </b>"+ title)));
-        TextView eventDestination = inflatedView.findViewById(R.id.destinationView);
-        eventDestination.setText(new SpannableString(Html.fromHtml("<b>Destination: </b>"+ destination)));
-        // the user part
-        TextView userPickup = inflatedView.findViewById(R.id.pickupView);
-        userPickup.setText(new SpannableString(Html.fromHtml("<b>Pickup: </b>"+ start)));
-        TextView userDriver = inflatedView.findViewById(R.id.driverView);
-        TextView userSeats = inflatedView.findViewById(R.id.seatsView);
-        if(user.isDriver()){
-            userDriver.setText(new SpannableString(Html.fromHtml("<b>Driver: </b>Available")));
-            userSeats.setText(new SpannableString(Html.fromHtml("<b>Empty seats: </b>"+ user.getSeats())));
-        } else {
-            userDriver.setText(new SpannableString(Html.fromHtml("<b>Driver: </b>Not available")));
-            userSeats.setVisibility(View.GONE);
-        }
-        // the participants part
-        RecyclerView bottomSheet = inflatedView.findViewById(R.id.bottom_sheet_participants);
-        // Create bottom sheet items
-        ArrayList<User> items = null;
-        if(participants != null) {
-            items = new ArrayList<>(participants);
-        }
-
-        // Instantiate adapter
-        UserInEventAdapter userDescriptionAdapter = new UserInEventAdapter(items, null);
-        bottomSheet.setAdapter(userDescriptionAdapter);
-
-        // Set the layout manager
-        bottomSheet.setLayoutManager(new LinearLayoutManager(this));
-
     }
 
     @Override
@@ -373,7 +279,7 @@ public class NewEventActivity extends AppCompatActivity implements OnMapReadyCal
             case R.id.action_edit: {
                 if(user.getId().equals(owner)) {
                     // edit the event's original info
-                    Intent intent = new Intent(NewEventActivity.this, UpdateEventActivity.class);
+                    Intent intent = new Intent(OldEventActivity.this, UpdateEventActivity.class);
                     intent.putExtra("eventUID", eventUID);
                     intent.putExtra("Owner", owner);
                     intent.putExtra("Title", title);
@@ -437,7 +343,7 @@ public class NewEventActivity extends AppCompatActivity implements OnMapReadyCal
 
     /** launches activity for user to edit his inputs for the event */
     public void editUserInputs(View view) {
-        Intent intent = new Intent(NewEventActivity.this, JoinEventActivity.class);
+        Intent intent = new Intent(OldEventActivity.this, JoinEventActivity.class);
         intent.putExtra("Owner", owner);
         intent.putExtra("eventUID", eventUID);
         intent.putExtra("Title", title);
@@ -447,7 +353,7 @@ public class NewEventActivity extends AppCompatActivity implements OnMapReadyCal
     }
     /** launches activity for user to edit his inputs for the event */
     public void editUserInputs(){
-        Intent intent = new Intent(NewEventActivity.this, JoinEventActivity.class);
+        Intent intent = new Intent(OldEventActivity.this, JoinEventActivity.class);
         intent.putExtra("Owner", owner);
         intent.putExtra("eventUID", eventUID);
         intent.putExtra("Title", title);
@@ -512,7 +418,7 @@ public class NewEventActivity extends AppCompatActivity implements OnMapReadyCal
                 ClipData clip = ClipData.newPlainText("Identifier", "Enter this identifier in Go-Together to join my Event!: " + eventUID);
                 clipboard.setPrimaryClip(clip);
                 // Confirm copy to user bia Toast
-                Toast.makeText(NewEventActivity.this, "Identifier copied to clipboard!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(OldEventActivity.this, "Identifier copied to clipboard!", Toast.LENGTH_SHORT).show();
             }
         });
 
