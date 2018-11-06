@@ -1,6 +1,7 @@
 package app.gotogether;
 
 import android.annotation.SuppressLint;
+import android.app.ActionBar;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
@@ -14,6 +15,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.RequiresApi;
 import android.support.design.widget.BottomSheetBehavior;
 import android.support.design.widget.CoordinatorLayout;
+import android.support.design.widget.Snackbar;
 import android.support.design.widget.TabLayout;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
@@ -57,6 +59,7 @@ import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
+import com.google.android.gms.tasks.Continuation;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.firestore.DocumentReference;
@@ -65,20 +68,38 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.functions.FirebaseFunctions;
+import com.google.firebase.functions.FirebaseFunctionsException;
+import com.google.firebase.functions.HttpsCallableResult;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import app.gotogether.PagerAdapter.TabItem;
+
+import java.io.BufferedInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 import app.gotogether.fragments.ClusterListFragment;
 import app.gotogether.fragments.ParticipantsListFragment;
 import biz.laenger.android.vpbs.BottomSheetUtils;
 
-public class EventActivity extends AppCompatActivity implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener, ParticipantsListFragment.OnCompleteListener, ClusterListFragment.OnCompleteListener {
+public class EventActivity extends AppCompatActivity implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener, ParticipantsListFragment.OnCompleteListener, ClusterListFragment.OnCompleteListener, ThreadCompleteListener {
 
-    private static final String TAG = "OldEventActivity";
+    private static final String TAG = "EventActivity";
     private String destination = null;
     private LatLng destinationLatLng = null;
     private String start = null;
@@ -97,11 +118,15 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
     private ViewPager bottomSheetViewPager;
     private PagerAdapter sectionsPagerAdapter;
     private ArrayList<String> myRouteCluster = new ArrayList<>();
+    private FirebaseFunctions mFunctions;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_event);
+
+        // initialize functions instance
+        mFunctions = FirebaseFunctions.getInstance();
 
         // Get event's uid from intent
         eventUID = getIntent().getStringExtra("eventUID");
@@ -136,16 +161,21 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
     }
 
     private void setupBottomSheet() {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
         bottomSheetViewPager = findViewById(R.id.bottom_sheet_viewpager);
         // bottomSheetToolbar = findViewById(R.id.bottom_sheet_toolbar);
         bottomSheetTabLayout = findViewById(R.id.bottom_sheet_tabs);
 
         // bottomSheetToolbar.setTitle(R.string.bottom_sheet_title);
         if (complete){
-            sectionsPagerAdapter = new PagerAdapter(getSupportFragmentManager(), this, TabItem.PARTICIPANTS, TabItem.CLUSTER);
+            Log.d(TAG, "complete");
+            sectionsPagerAdapter = new PagerAdapter(getSupportFragmentManager(), EventActivity.this, TabItem.PARTICIPANTS, TabItem.CLUSTER);
         }
         else {
-            sectionsPagerAdapter = new PagerAdapter(getSupportFragmentManager(), this, TabItem.PARTICIPANTS);
+            Log.d(TAG, "not complete");
+            sectionsPagerAdapter = new PagerAdapter(getSupportFragmentManager(), EventActivity.this, TabItem.PARTICIPANTS);
         }
         bottomSheetViewPager.setOffscreenPageLimit(1);
         bottomSheetViewPager.setAdapter(sectionsPagerAdapter);
@@ -168,6 +198,9 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
             }
         });
         bottomSheetBehavior.setPeekHeight(150);
+
+            }
+        });
     }
 
     @RequiresApi(api = Build.VERSION_CODES.N)
@@ -227,7 +260,8 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
     }
 
     public void onParticipantsListFragmentComplete() {
-        ParticipantsListFragment fragment = (ParticipantsListFragment) sectionsPagerAdapter.getFragment(0);
+        // ParticipantsListFragment fragment = (ParticipantsListFragment) sectionsPagerAdapter.getFragment(0);
+        ParticipantsListFragment fragment = sectionsPagerAdapter.getpFragment();
         View inflatedView = fragment.getInflatedView();
 
         // the event part
@@ -269,7 +303,8 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
     }
 
     public void onClusterListFragmentComplete() {
-        ClusterListFragment fragment = (ClusterListFragment) sectionsPagerAdapter.getFragment(1);
+        // ClusterListFragment fragment = (ClusterListFragment) sectionsPagerAdapter.getFragment(1);
+        ClusterListFragment fragment = sectionsPagerAdapter.getcFragment();
         View inflatedView = fragment.getInflatedView();
         // initialize the db 
         FirebaseFirestore db = FirebaseFirestore.getInstance(); 
@@ -341,6 +376,16 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
                 } else {
                     Log.d(TAG, "Event get failed with ", task.getException());
                 }
+            }
+        });
+    }
+
+    private void addTab(TabItem item) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                bottomSheetTabLayout.addTab(bottomSheetTabLayout.newTab());
+                sectionsPagerAdapter.addTabPage(item);
             }
         });
     }
@@ -453,7 +498,8 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.action_conclude: {
-                concludeEvent();
+                concludeEvent2();
+                //tryHello();
                 break;
             }
             case R.id.action_show_identifier: {
@@ -491,11 +537,138 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
 
     /**
      * Concludes the event
-     * updates the database as a completed event
-     * sends an http request to calculate clusters
+     * sends an http request to server
      * TODO redraw the event? launch new activity? Update the adapter?
      */
+    private void tryHello(){
+        askHello()
+                .addOnCompleteListener(new OnCompleteListener<String>() {
+                    @Override
+                    public void onComplete(@NonNull Task<String> task) {
+                        if (!task.isSuccessful()) {
+                            Exception e = task.getException();
+                            if (e instanceof FirebaseFunctionsException) {
+                                FirebaseFunctionsException ffe = (FirebaseFunctionsException) e;
+                                FirebaseFunctionsException.Code code = ffe.getCode();
+                                Object details = ffe.getDetails();
+                            }
+
+                            Log.w(TAG, "calculateCluster:OnFailure", e);
+                            Snackbar.make(findViewById(android.R.id.content), "An error occurred.", Snackbar.LENGTH_SHORT).show();
+                            return;
+
+                        } else { // Successful
+                            String result = task.getResult();
+                            Snackbar.make(findViewById(android.R.id.content), "Success:" + result, Snackbar.LENGTH_SHORT).show();
+                        }
+                    }
+                });
+    }
+
+    private Task<String> askHello() {
+        return mFunctions
+                .getHttpsCallable("hello-world")
+                .call()
+                .continueWith(new Continuation<HttpsCallableResult, String>() {
+                    @Override
+                    public String then(@NonNull Task<HttpsCallableResult> task) throws Exception {
+                        // This continuation runs on either success or failure, but if the task
+                        // has failed then getResult() will throw an Exception which will be
+                        // propagated down.
+                        String result = (String) task.getResult().getData();
+                        return result;
+                    }
+                });
+    }
+
+
     private void concludeEvent() {
+        HashMap<String, Object> data = new HashMap<>();
+        data.put("eventUID", eventUID);
+
+        mFunctions.getHttpsCallable("cluster_distance_route")
+                .call(data)
+                .continueWith(new Continuation<HttpsCallableResult, Void>() {
+                    @Override
+                    public Void then(@NonNull Task<HttpsCallableResult> task) throws Exception {
+                        // This continuation runs on either success or failure, but if the task
+                        // has failed then getResult() will throw an Exception which will be
+                        // propagated down.
+                        Log.d("-----TEST-----", "BEGIN000");
+                        //Object result =  task.getResult().getData();
+                        Log.d("-----TEST-----", "SUCCESS");
+                        //return (String) result;
+                        return null;
+                    }
+                }).addOnCompleteListener(new OnCompleteListener<Void>() {
+            @Override
+            public void onComplete(@NonNull Task<Void> task) {
+                if (!task.isSuccessful()) { // not successful
+                    Exception e = task.getException();
+                    if (e instanceof FirebaseFunctionsException) {
+                        FirebaseFunctionsException ffe = (FirebaseFunctionsException) e;
+                        FirebaseFunctionsException.Code code = ffe.getCode();
+                        Object details = ffe.getDetails();
+                    }
+                    Log.w(TAG, "calculateCluster:OnFailure", e);
+                    Snackbar.make(findViewById(android.R.id.content), "An error occurred.", Snackbar.LENGTH_SHORT).show();
+                    return;
+
+                } else { // Successful
+                    Snackbar.make(findViewById(android.R.id.content), "Success: ", Snackbar.LENGTH_SHORT).show();
+                    //setupBottomSheet();
+                }
+                // String result = (String) task.getResult();
+                Log.d("-----TEST-----", "SUCCESS1");
+            }
+        });
+    }
+
+    private void concludeEvent2(){
+        Thread thread = new NotifyingThread() {
+            @Override
+            public void doRun() {
+                HttpURLConnection conn = null;
+                try {
+                    URL url = new URL("https://europe-west1-graphic-theory-211215.cloudfunctions.net/cluster_distance_route");
+                    conn = (HttpURLConnection) url.openConnection();
+                    conn = (HttpURLConnection) url.openConnection();
+                    conn.setRequestMethod("POST");
+                    conn.setRequestProperty("Content-Type", "application/json");
+                    conn.setRequestProperty("Accept", "application/json");
+                    conn.setDoOutput(true);
+                    conn.setDoInput(true);
+                    conn.connect();
+                    String jsonParam = new JSONObject()
+                            .put("eventUID", eventUID)
+                            .toString();
+                    DataOutputStream os = new DataOutputStream(conn.getOutputStream());
+                    os.writeBytes(jsonParam);
+
+                    os.flush();
+                    os.close();
+
+                    Log.i("STATUS", String.valueOf(conn.getResponseCode()));
+                    Log.i("MSG", conn.getResponseMessage());
+                } catch (MalformedURLException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                } finally {
+                    conn.disconnect();
+                }
+            }
+        };
+        ((NotifyingThread) thread).addListener(this);
+        thread.start();
+    }
+    @Override
+    public void notifyOfThreadComplete(Thread thread) {
+        complete = true;
+        //setupBottomSheet();
+        addTab(TabItem.CLUSTER);
     }
 
     /** Center map on the user marker
@@ -653,4 +826,33 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
         ViewGroupOverlay overlay = parent.getOverlay();
         overlay.clear();
     }
+}
+
+interface ThreadCompleteListener {
+    void notifyOfThreadComplete(final Thread thread);
+}
+
+abstract class NotifyingThread extends Thread {
+    private final Set<ThreadCompleteListener> listeners
+            = new CopyOnWriteArraySet<ThreadCompleteListener>();
+    public final void addListener(final ThreadCompleteListener listener) {
+        listeners.add(listener);
+    }
+    public final void removeListener(final ThreadCompleteListener listener) {
+        listeners.remove(listener);
+    }
+    private final void notifyListeners() {
+        for (ThreadCompleteListener listener : listeners) {
+            listener.notifyOfThreadComplete(this);
+        }
+    }
+    @Override
+    public final void run() {
+        try {
+            doRun();
+        } finally {
+            notifyListeners();
+        }
+    }
+    public abstract void doRun();
 }
