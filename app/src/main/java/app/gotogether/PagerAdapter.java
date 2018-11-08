@@ -33,18 +33,12 @@ public class PagerAdapter extends FragmentPagerAdapter {
             this.titleResId = titleResId;
         }
     }
-
-    //private final TabItem[] tabItems;
-    private ArrayList<TabItem> tabItemsArray = new ArrayList<>();
+    private ArrayList<TabItem> tabItemsArray;
     private final Context context;
-
     private ArrayList<Fragment> fragments = new ArrayList<>();
     private ParticipantsListFragment pFragment;
-
     private ClusterListFragment cFragment;
-
     // configure icons for each tab
-
     private int[] imageResId = {
             R.drawable.ic_group_black_24dp,
             R.drawable.ic_directions_car_black_24dp
@@ -52,13 +46,11 @@ public class PagerAdapter extends FragmentPagerAdapter {
     public PagerAdapter(FragmentManager fragmentManager, Context context, TabItem... tabItems) {
         super(fragmentManager);
         this.context = context;
-        //this.tabItems = tabItems;
         this.tabItemsArray = new ArrayList<TabItem>(Arrays.asList(tabItems));
     }
 
     @Override
     public Fragment getItem(int position) {
-        //return newInstance(tabItems[position].fragmentClass);
         return newInstance(tabItemsArray.get(position).fragmentClass);
     }
 
@@ -79,19 +71,16 @@ public class PagerAdapter extends FragmentPagerAdapter {
     @Override
     public CharSequence getPageTitle(int position) {
         // Generate title based on item position
-        // return tabTitles[position];
         Drawable image = context.getResources().getDrawable(imageResId[position]);
         image.setBounds(0, 0, image.getIntrinsicWidth(), image.getIntrinsicHeight());
         SpannableString sb = new SpannableString(" ");
         ImageSpan imageSpan = new ImageSpan(image, ImageSpan.ALIGN_BOTTOM);
         sb.setSpan(imageSpan, 0, 1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
         return sb;
-        // return context.getString(tabItems[position].titleResId);
     }
 
     @Override
     public int getCount() {
-        //return tabItems.length;
         return tabItemsArray.size();
     }
 
@@ -108,7 +97,6 @@ public class PagerAdapter extends FragmentPagerAdapter {
     }
 
     public void addTabPage(TabItem item) {
-        //tabItems[tabItems.length] = item;
         tabItemsArray.add(item);
         notifyDataSetChanged();
     }

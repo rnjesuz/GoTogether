@@ -48,6 +48,7 @@ dependencies {
     api 'com.google.firebase:firebase-firestore:17.1.2'
     api 'com.google.firebase:firebase-auth:16.0.5'
     api 'com.firebaseui:firebase-ui-auth:4.2.0'
+    implementation 'com.google.firebase:firebase-functions:16.1.2'
 }
 
 apply plugin: 'com.google.gms.google-services'

@@ -38,6 +38,7 @@ import android.view.ViewTreeObserver;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.PopupWindow;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -119,6 +120,7 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
     private PagerAdapter sectionsPagerAdapter;
     private ArrayList<String> myRouteCluster = new ArrayList<>();
     private FirebaseFunctions mFunctions;
+    private ProgressBar pgsBar;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -260,8 +262,8 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
     }
 
     public void onParticipantsListFragmentComplete() {
-        // ParticipantsListFragment fragment = (ParticipantsListFragment) sectionsPagerAdapter.getFragment(0);
-        ParticipantsListFragment fragment = sectionsPagerAdapter.getpFragment();
+        ParticipantsListFragment fragment = (ParticipantsListFragment) sectionsPagerAdapter.getFragment(0);
+        // ParticipantsListFragment fragment = sectionsPagerAdapter.getpFragment();
         View inflatedView = fragment.getInflatedView();
 
         // the event part
@@ -303,8 +305,8 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
     }
 
     public void onClusterListFragmentComplete() {
-        // ClusterListFragment fragment = (ClusterListFragment) sectionsPagerAdapter.getFragment(1);
-        ClusterListFragment fragment = sectionsPagerAdapter.getcFragment();
+        ClusterListFragment fragment = (ClusterListFragment) sectionsPagerAdapter.getFragment(1);
+        //ClusterListFragment fragment = sectionsPagerAdapter.getcFragment();
         View inflatedView = fragment.getInflatedView();
         // initialize the db 
         FirebaseFirestore db = FirebaseFirestore.getInstance(); 
@@ -381,12 +383,9 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
     }
 
     private void addTab(TabItem item) {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                bottomSheetTabLayout.addTab(bottomSheetTabLayout.newTab());
-                sectionsPagerAdapter.addTabPage(item);
-            }
+        runOnUiThread(() -> {
+            bottomSheetTabLayout.addTab(bottomSheetTabLayout.newTab());
+            sectionsPagerAdapter.addTabPage(item);
         });
     }
 
@@ -498,8 +497,8 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.action_conclude: {
-                concludeEvent2();
-                //tryHello();
+                // send server trigger to conclude the event
+                concludeEvent();
                 break;
             }
             case R.id.action_show_identifier: {
@@ -538,51 +537,8 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
     /**
      * Concludes the event
      * sends an http request to server
-     * TODO redraw the event? launch new activity? Update the adapter?
      */
-    private void tryHello(){
-        askHello()
-                .addOnCompleteListener(new OnCompleteListener<String>() {
-                    @Override
-                    public void onComplete(@NonNull Task<String> task) {
-                        if (!task.isSuccessful()) {
-                            Exception e = task.getException();
-                            if (e instanceof FirebaseFunctionsException) {
-                                FirebaseFunctionsException ffe = (FirebaseFunctionsException) e;
-                                FirebaseFunctionsException.Code code = ffe.getCode();
-                                Object details = ffe.getDetails();
-                            }
-
-                            Log.w(TAG, "calculateCluster:OnFailure", e);
-                            Snackbar.make(findViewById(android.R.id.content), "An error occurred.", Snackbar.LENGTH_SHORT).show();
-                            return;
-
-                        } else { // Successful
-                            String result = task.getResult();
-                            Snackbar.make(findViewById(android.R.id.content), "Success:" + result, Snackbar.LENGTH_SHORT).show();
-                        }
-                    }
-                });
-    }
-
-    private Task<String> askHello() {
-        return mFunctions
-                .getHttpsCallable("hello-world")
-                .call()
-                .continueWith(new Continuation<HttpsCallableResult, String>() {
-                    @Override
-                    public String then(@NonNull Task<HttpsCallableResult> task) throws Exception {
-                        // This continuation runs on either success or failure, but if the task
-                        // has failed then getResult() will throw an Exception which will be
-                        // propagated down.
-                        String result = (String) task.getResult().getData();
-                        return result;
-                    }
-                });
-    }
-
-
-    private void concludeEvent() {
+    private void concludeEvent2() {
         HashMap<String, Object> data = new HashMap<>();
         data.put("eventUID", eventUID);
 
@@ -624,13 +580,13 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
         });
     }
 
-    private void concludeEvent2(){
+    private void concludeEvent(){
         Thread thread = new NotifyingThread() {
             @Override
             public void doRun() {
                 HttpURLConnection conn = null;
                 try {
-                    URL url = new URL("https://europe-west1-graphic-theory-211215.cloudfunctions.net/cluster_distance_route");
+                    URL url = new URL("https://europe-west1-graphic-theory-211215.cloudfunctions.net/cluster_route");
                     conn = (HttpURLConnection) url.openConnection();
                     conn = (HttpURLConnection) url.openConnection();
                     conn.setRequestMethod("POST");
@@ -663,12 +619,37 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
         };
         ((NotifyingThread) thread).addListener(this);
         thread.start();
+        // TODO loading wheel animation
+        // Initialize a new instance of LayoutInflater service
+        LayoutInflater inflater = (LayoutInflater) getApplicationContext().getSystemService(LAYOUT_INFLATER_SERVICE);
+
+        // Inflate the custom layout/view
+        View progressCircleView = inflater.inflate(R.layout.progress_circle, null);
+
+        // Initialize a new instance of popup window
+        PopupWindow pBarPW = new PopupWindow(
+                progressCircleView,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                true
+        );
+
+        pgsBar = (ProgressBar) progressCircleView.findViewById(R.id.progress_circle);
+        pgsBar.setVisibility(View.VISIBLE);
+        // Dim the activity
+        ViewGroup root = (ViewGroup) getWindow().getDecorView().getRootView();
+        applyDim(root, 0.8f);
     }
     @Override
     public void notifyOfThreadComplete(Thread thread) {
         complete = true;
-        //setupBottomSheet();
         addTab(TabItem.CLUSTER);
+        invalidateOptionsMenu();
+        pgsBar.setVisibility(View.GONE);
+        // Dim the activity
+        ViewGroup root = (ViewGroup) getWindow().getDecorView().getRootView();
+        clearDim(root);
+
     }
 
     /** Center map on the user marker
