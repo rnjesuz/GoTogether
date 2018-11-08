@@ -1,7 +1,6 @@
 package app.gotogether;
 
 import android.annotation.SuppressLint;
-import android.app.ActionBar;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
@@ -38,7 +37,7 @@ import android.view.ViewTreeObserver;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.PopupWindow;
-import android.widget.ProgressBar;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -78,15 +77,11 @@ import org.json.JSONObject;
 
 import app.gotogether.PagerAdapter.TabItem;
 
-import java.io.BufferedInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -120,7 +115,7 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
     private PagerAdapter sectionsPagerAdapter;
     private ArrayList<String> myRouteCluster = new ArrayList<>();
     private FirebaseFunctions mFunctions;
-    private ProgressBar pgsBar;
+    private RelativeLayout progressBar;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -619,37 +614,24 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
         };
         ((NotifyingThread) thread).addListener(this);
         thread.start();
-        // TODO loading wheel animation
-        // Initialize a new instance of LayoutInflater service
-        LayoutInflater inflater = (LayoutInflater) getApplicationContext().getSystemService(LAYOUT_INFLATER_SERVICE);
 
-        // Inflate the custom layout/view
-        View progressCircleView = inflater.inflate(R.layout.progress_circle, null);
-
-        // Initialize a new instance of popup window
-        PopupWindow pBarPW = new PopupWindow(
-                progressCircleView,
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                true
-        );
-
-        pgsBar = (ProgressBar) progressCircleView.findViewById(R.id.progress_circle);
-        pgsBar.setVisibility(View.VISIBLE);
-        // Dim the activity
-        ViewGroup root = (ViewGroup) getWindow().getDecorView().getRootView();
-        applyDim(root, 0.8f);
+        // Start progress bar for undetermined time
+        progressBar = findViewById(R.id.progress_circle);
+        progressBar.setVisibility(View.VISIBLE);
     }
+
     @Override
     public void notifyOfThreadComplete(Thread thread) {
         complete = true;
-        addTab(TabItem.CLUSTER);
         invalidateOptionsMenu();
-        pgsBar.setVisibility(View.GONE);
-        // Dim the activity
-        ViewGroup root = (ViewGroup) getWindow().getDecorView().getRootView();
-        clearDim(root);
-
+        addTab(TabItem.CLUSTER);
+        // Stop progress bar
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                progressBar.setVisibility(View.GONE);
+            }
+        });
     }
 
     /** Center map on the user marker
