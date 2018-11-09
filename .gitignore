@@ -12,7 +12,13 @@
 
 /app/release
 /server/servlet
-/server/python-functions/env
-/server/python-functions/.idea
-/server/python-functions/ServiceAccountKey.json
+/server/python-functions/cluster_distance_voronoi/env
+/server/python-functions/cluster_distance_voronoi/.idea
+/server/python-functions/cluster_distance_voronoi/ServiceAccountKey.json
+/server/python-functions/cluster_distance_radius/env
+/server/python-functions/cluster_distance_radius/.idea
+/server/python-functions/cluster_distance_radius/ServiceAccountKey.json
+/server/python-functions/cluster_route/env
+/server/python-functions/cluster_route/.idea
+/server/python-functions/cluster_route/ServiceAccountKey.json
 app/google-services.json

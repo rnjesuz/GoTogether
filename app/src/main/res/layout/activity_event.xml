@@ -6,7 +6,8 @@
     tools:context=".EventActivity"
     android:layout_height="match_parent"
     android:layout_width="match_parent"
-    android:id="@+id/eventLayout">
+    android:id="@+id/eventLayout"
+    android:background="@color/white_background">
 
     <fragment xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:map="http://schemas.android.com/apk/res-auto"
@@ -22,22 +23,17 @@
         tools:context=".EventActivity"
         />
 
-    <RelativeLayout
+
+    <ProgressBar
+        style="?android:attr/progressBarStyleLarge"
         android:id="@+id/progress_circle"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="#80000000"
-        android:visibility="gone">
-        <ProgressBar
-            style="?android:attr/progressBarStyleLarge"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_centerInParent="true"
-            android:padding="24dp"
-            android:layout_gravity="center"
-            android:background="@color/white_background"
-            />
-    </RelativeLayout>
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:padding="24dp"
+        android:layout_gravity="center"
+        android:visibility="gone"
+        />
 
     <com.github.clans.fab.FloatingActionButton
         android:layout_width="wrap_content"

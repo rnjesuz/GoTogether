@@ -37,6 +37,7 @@ import android.view.ViewTreeObserver;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.PopupWindow;
+import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -115,7 +116,8 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
     private PagerAdapter sectionsPagerAdapter;
     private ArrayList<String> myRouteCluster = new ArrayList<>();
     private FirebaseFunctions mFunctions;
-    private RelativeLayout progressBar;
+    private ProgressBar progressBar;
+    private SupportMapFragment mapFragment;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -150,7 +152,7 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
         complete = possibleComplete;
 
         // Set up the map fragment
-        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
+        mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map_event);
         mapFragment.getMapAsync(this);
 
@@ -441,7 +443,7 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
         mMap.setPadding(0, screenHeight / 2, 0, 0);*/
 
         // Center map between pick-up and destination
-        final View mapView = getSupportFragmentManager().findFragmentById(R.id.map_event).getView();
+        final View mapView = getSupportFragmentManager().findFragmentById(R.id.map_event).getView(); //TODO remove? already a field in the activity
         if (mapView.getViewTreeObserver().isAlive()) {
             mapView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
                 @SuppressLint("NewApi") // We check which build version we are using.
@@ -616,6 +618,7 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
         thread.start();
 
         // Start progress bar for undetermined time
+        mapFragment.getView().setVisibility(View.INVISIBLE);
         progressBar = findViewById(R.id.progress_circle);
         progressBar.setVisibility(View.VISIBLE);
     }
@@ -630,6 +633,7 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
             @Override
             public void run() {
                 progressBar.setVisibility(View.GONE);
+                mapFragment.getView().setVisibility(View.VISIBLE);
             }
         });
     }
@@ -679,7 +683,7 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
         intent.putExtra("eventUID", eventUID);
         intent.putExtra("Title", title);
         intent.putExtra("Start", start);
-        intent.putExtra("Destination", destination);
+        intent.putExtra("Destination", getIntent().getBundleExtra("Destination"));
         intent.putExtra("Participants", getIntent().getBundleExtra("Participants"));
         startActivity(intent);
     }
