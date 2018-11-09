@@ -1,7 +1,6 @@
+import sys
 
-import firebase_admin
-import google.cloud
-import googlemaps
+import firebase_admin, google.cloud, googlemaps, json
 from sortedcollections import ValueSortedDict
 from firebase_admin import credentials, firestore
 from google.cloud import exceptions
@@ -9,7 +8,7 @@ from google.cloud import exceptions
 cred = credentials.Certificate("./ServiceAccountKey.json")
 default_app = firebase_admin.initialize_app(cred)
 db = firestore.client()
-google_maps = googlemaps.Client(key='AIzaSyDSyIfDZVr7DMspukdJG00gzZUnPCCqguE')
+gmaps = googlemaps.Client(key='AIzaSyDSyIfDZVr7DMspukdJG00gzZUnPCCqguE')
 
 event_ref = None
 
@@ -29,12 +28,15 @@ cluster = {}
 
 
 ######################
-def cluster_distance_route(reference):
+def cluster_distance_route(request):
     global event_ref
     global drivers, driversDistance, driversDirections
     global riders, ridersDistance, ridersDirections
     global participants, RtoDRouteShare, cluster
-    event_uid = reference.get('eventUID')
+
+    event_uid = 'SBgh4MKtplFEbYXLvmMY'
+    # if event_uid is None:
+    # 	event_uid = u'SBgh4MKtplFEbYXLvmMY'
     event_ref = db.collection(u'events').document(event_uid)
     participants_ref = db.collection(u'events').document(event_uid).collection(u'participants')
     print(u'Completed event: {}'.format(event_uid))
@@ -43,22 +45,23 @@ def cluster_distance_route(reference):
         event_participants = participants_ref.get()
     except google.cloud.exceptions.NotFound:
         print(u'No such document')
-        return False
+        return
 
     destination = event.destination.get(u'street')
     for participant in event_participants:
         p = Participant(**participant.to_dict())
         p.set_id(participant.id)
         source = p.start.get(u'street')
-        direction_results = google_maps.directions(source, destination)  # TODO this may probably return ZERO_RESULTS
+        distance_results = gmaps.distance_matrix(source, destination)  # TODO this can result ZERO_RESULTS
+        direction_results = gmaps.directions(source, destination)  # TODO this may probably also return ZERO_RESULTS
         if p.is_driver():
             drivers.append(p)
-            driversDistance[p.id] = direction_results[0].get(u'legs')[0].get(u'distance').get(u'value')
+            driversDistance[p.id] = distance_results.get(u'rows')[0].get(u'elements')[0].get(u'distance').get(u'value')
             driversDirections[p.id] = direction_results
             cluster[p.id] = []
         else:
             riders.append(p)
-            ridersDistance[p.id] = direction_results[0].get(u'legs')[0].get(u'distance').get(u'value')
+            ridersDistance[p.id] = distance_results.get(u'rows')[0].get(u'elements')[0].get(u'distance').get(u'value')
             ridersDirections[p.id] = direction_results
         participants[p.id] = p
 
@@ -67,12 +70,16 @@ def cluster_distance_route(reference):
         for driver in driversDistance.keys():
             RtoDRouteShare[rider][driver] = get_shared_path(rider, driver)
 
+    print("Routes: {}".format(RtoDRouteShare))
     group_best_match()
+    print("Route cluster: {}".format(cluster))
     group_cells()
-    print(cluster)
+    print(u'Created cluster: {}'.format(cluster))
     update_database()
-    # TODO create the directions and store in db? - too much data to save/load probably
-    return True
+    # return cluster
+    # return 'OK'
+    # data = {'response': 'OK'}
+    # return json.dumps(data)
 
 
 ###########################
@@ -84,8 +91,7 @@ def get_shared_path(rider, driver):
     drivers_directions_range = len(d_directions)
     for r_steps in range(riders_directions_range):
         for d_steps in range(drivers_directions_range):
-            if (r_directions[r_steps].get('start_location') == d_directions[d_steps].get('start_location')) and \
-                    (r_directions[r_steps].get('end_location') == d_directions[d_steps].get('end_location')):
+            if (r_directions[r_steps].get('start_location') == d_directions[d_steps].get('start_location')) and (r_directions[r_steps].get('end_location') == d_directions[d_steps].get('end_location')):
                 share = share+1
     return share
 
@@ -205,7 +211,6 @@ class Event(object):
     def __init__(self, **fields):
         self.__dict__.update(fields)
 
-
 #######################
 if __name__ == '__main__':
-    cluster_distance_route(reference={'eventUID': 'SBgh4MKtplFEbYXLvmMY'})
+    cluster_distance_route('SBgh4MKtplFEbYXLvmMY')

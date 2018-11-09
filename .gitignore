@@ -21,4 +21,5 @@
 /server/python-functions/cluster_route/env
 /server/python-functions/cluster_route/.idea
 /server/python-functions/cluster_route/ServiceAccountKey.json
-app/google-services.json
+/server/python-functions/cluster_route/request.json
+/app/google-services.json
