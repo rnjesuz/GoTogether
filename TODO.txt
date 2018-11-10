@@ -1,3 +1,4 @@
+[0] Melhorar o cluster_route !!!! remover API callls desnecesarias, etc
 [1] TODOs nos cluster - improvements
 [2] EvenAdapter - fazer new EventAdapter { onChanged(){ adicionar novo elemento aos Eventos } }
 	Para impedir de apagar todos os eventols velhos e colocar novos

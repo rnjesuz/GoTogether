@@ -2,6 +2,8 @@ import firebase_admin, google.cloud, googlemaps, json
 from sortedcollections import ValueSortedDict
 from firebase_admin import credentials, firestore
 from google.cloud import exceptions
+from haversine import haversine
+from math import radians, cos, sin, asin, sqrt
 
 cred = credentials.Certificate("./ServiceAccountKey.json")
 default_app = firebase_admin.initialize_app(cred)
@@ -22,18 +24,33 @@ RtoDRouteShare = {}
 
 participants = {}
 
-cluster = {}
+cluster
 
 
 ######################
-def cluster_distance_route(request):
+def cluster_distance_radius(request):
     global event_ref
     global drivers, driversDistance, driversDirections
     global riders, ridersDistance, ridersDirections
     global participants, RtoDRouteShare, cluster
 
-    # if event_uid is None:
-    # 	event_uid = u'SBgh4MKtplFEbYXLvmMY'
+    drivers = []
+    driversDirections = {}
+    driversDistance = ValueSortedDict()
+
+    riders = []
+    ridersDirections = {}
+    ridersDistance = ValueSortedDict()
+
+    RtoDRouteShare = {}
+
+    participants = {}
+
+    cluster = {}
+
+    # request_json = request.get_json()
+    # event_uid = request_json['eventUID']
+    # event_uid = request['eventUID']
     event_uid = 'SBgh4MKtplFEbYXLvmMY'
     event_ref = db.collection(u'events').document(event_uid)
     participants_ref = db.collection(u'events').document(event_uid).collection(u'participants')
@@ -51,76 +68,84 @@ def cluster_distance_route(request):
         p.set_id(participant.id)
         source = p.start.get(u'street')
         distance_results = gmaps.distance_matrix(source, destination)  # TODO this can result ZERO_RESULTS
-        direction_results = gmaps.directions(source, destination)  # TODO this may probably also return ZERO_RESULTS
         if p.is_driver():
-            drivers.append(p)
+            drivers.append(p.id)
             driversDistance[p.id] = distance_results.get(u'rows')[0].get(u'elements')[0].get(u'distance').get(u'value')
-            driversDirections[p.id] = direction_results
             cluster[p.id] = []
         else:
-            riders.append(p)
+            riders.append(p.id)
             ridersDistance[p.id] = distance_results.get(u'rows')[0].get(u'elements')[0].get(u'distance').get(u'value')
-            ridersDirections[p.id] = direction_results
         participants[p.id] = p
 
-    print(ridersDistance.keys())
-    for rider in ridersDistance.keys():
-        print(rider)
-        RtoDRouteShare[rider] = {}
-        for driver in driversDistance.keys():
-            RtoDRouteShare[rider][driver] = get_shared_path(rider, driver)
+    radius = 10  # Kilometers
 
-    print("Routes: {}".format(RtoDRouteShare))
-    group_best_match()
-    print("Route cluster: {}".format(cluster))
-    group_cells()
-    print(u'Created cluster: {}'.format(cluster))
-    update_database()
-    # return cluster
-    # return 'OK'
-    # data = {'response': 'OK'}
-    # return json.dumps(data)
-
-
-###########################
-def get_shared_path(rider, driver):
-    share = 0
-    r_directions = ridersDirections.get(rider)[0].get('legs')[0].get('steps')
-    d_directions = driversDirections.get(driver)[0].get('legs')[0].get('steps')
-    riders_directions_range = len(r_directions)
-    drivers_directions_range = len(d_directions)
-    for r_steps in range(riders_directions_range):
-        for d_steps in range(drivers_directions_range):
-            if (r_directions[r_steps].get('start_location') == d_directions[d_steps].get('start_location')) and (r_directions[r_steps].get('end_location') == d_directions[d_steps].get('end_location')):
-                share = share+1
-    return share
-
-
-##########################
-def group_best_match():
-    global participants
-    for rider in RtoDRouteShare:
-        match = False
-        while not match:
-            best_route = 0
-            best_match = None
-            # TODO if no driver left in list then return exception
-            for driver in RtoDRouteShare[rider]:
-                # TODO use a percentage calculation? best_route / nº nodes
-                if RtoDRouteShare[rider][driver] > best_route:
-                    best_route = RtoDRouteShare[rider][driver]
-                    best_match = driver
-            if cluster.get(best_match):
-                cluster_length = len(cluster.get(best_match))
-            else:
-                cluster_length = 0
-            participant = participants.get(best_match)
+    matches = 0
+    while len(ridersDistance.keys()) > matches:
+        for driver in driversDistance:
+            participant = participants.get(driver)
             seats = participant.get_seats()
-            if seats >= cluster_length:
-                cluster[best_match].append(rider)
-                match = True
-            else:
-                del RtoDRouteShare[rider][best_match]
+            possible_riders = riders.copy()
+            riders_range = len(possible_riders)
+            for i in range(riders_range):
+                driver_cluster_len = len(cluster.get(driver))
+                if driver_cluster_len < seats:
+                    if is_inside_radius(participants.get(driver).start.get(u'street'), participants.get(possible_riders[i]).start.get(u'street'), radius):
+                        print(u'Group! rider {} grouped with driver {}.'.format(possible_riders[i], driver))
+                        cluster[driver].append(possible_riders[i])
+                        riders.remove(possible_riders[i])
+                        matches += 1
+                    else:
+                        print(u'NO Group! rider {} not grouped with driver {}.'.format(possible_riders[i], driver))
+        print('Grouped: {}'.format(cluster))
+        print('Remaining riders: {}'.format(riders))
+        radius = radius + 2  # increase radius by 2 Km and repeat
+
+    print(u'Initial grouping: {}'.format(cluster))
+    group_cells()
+    print(u'Created clusters: {}'.format(cluster))
+    update_database()
+    #  return cluster
+    #  return 'OK'
+    #  data = {'response': 'OK'}
+    #  return json.dumps(data)
+
+
+######################
+def is_inside_radius(driver_source, rider_source, radius):
+    driver_geocode_results = gmaps.geocode(driver_source)
+    rider_geocode_results = gmaps.geocode(rider_source)
+    # haversine_distance = haversine_formula(driver_geocode_results[0].get(u'geometry').get(u'location').get(u'lat'),
+    #                               driver_geocode_results[0].get(u'geometry').get(u'location').get(u'lng'),
+    #                               rider_geocode_results[0].get(u'geometry').get(u'location').get(u'lat'),
+    #                               rider_geocode_results[0].get(u'geometry').get(u'location').get(u'lng'))
+    haversine_distance = haversine((driver_geocode_results[0].get(u'geometry').get(u'location').get(u'lat'),
+                                  driver_geocode_results[0].get(u'geometry').get(u'location').get(u'lng')),
+                                  (rider_geocode_results[0].get(u'geometry').get(u'location').get(u'lat'),
+                                  rider_geocode_results[0].get(u'geometry').get(u'location').get(u'lng')))
+    if radius >= haversine_distance:
+        print(u'Radius of {} larger than Haversine distance of {}.'.format(radius, haversine_distance))
+        return True
+    else:
+        print(u'Radius of {} smaller than Haversine distance of {}.'.format(radius, haversine_distance))
+        return False
+
+
+######################
+def haversine_formula(lon1, lat1, lon2, lat2):
+    """
+    Calculate the great circle distance between two points
+    on the earth (specified in decimal degrees)
+    """
+    # convert decimal degrees to radians
+    lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
+
+    # haversine formula
+    dlon = lon2 - lon1
+    dlat = lat2 - lat1
+    a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
+    c = 2 * asin(sqrt(a))
+    r = 6371  # Radius of earth in kilometers. Use 3956 for miles
+    return c * r
 
 
 ######################
@@ -212,5 +237,14 @@ class Event(object):
         self.__dict__.update(fields)
 
 #######################
+def read_json(file):
+    try:
+        print('Reading from input')
+        with open(file, 'r') as f:
+            return json.load(f)
+    finally:
+        print('Done reading')
+
 if __name__ == '__main__':
-    cluster_distance_route('SBgh4MKtplFEbYXLvmMY')
+    return_dict = read_json("request.json")
+    cluster_distance_radius(return_dict)
