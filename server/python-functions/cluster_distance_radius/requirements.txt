@@ -4,3 +4,4 @@ firebase_admin
 google.cloud
 googlemaps
 sortedcollections
+haversine

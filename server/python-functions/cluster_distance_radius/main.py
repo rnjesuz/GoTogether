@@ -50,8 +50,9 @@ def cluster_distance_radius(request):
 
     # request_json = request.get_json()
     # event_uid = request_json['eventUID']
-    # event_uid = request['eventUID']
-    event_uid = 'SBgh4MKtplFEbYXLvmMY'
+    # if event_uid is None:
+    # 	event_uid = u'SBgh4MKtplFEbYXLvmMY'
+    event_uid = request['eventUID']
     event_ref = db.collection(u'events').document(event_uid)
     participants_ref = db.collection(u'events').document(event_uid).collection(u'participants')
     print(u'Completed event: {}'.format(event_uid))
