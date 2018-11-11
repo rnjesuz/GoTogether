@@ -24,7 +24,7 @@ RtoDRouteShare = {}
 
 participants = {}
 
-cluster
+cluster = {}
 
 
 ######################

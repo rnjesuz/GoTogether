@@ -26,12 +26,14 @@ cluster = {}
 
 
 ######################
-def cluster_distance_route(request):
+def cluster_route(request):
     global event_ref
     global drivers, driversDistance, driversDirections
     global riders, ridersDistance, ridersDirections
     global participants, RtoDRouteShare, cluster
 
+    # request_json = request.get_json()
+    # event_uid = request_json['eventUID']
     # if event_uid is None:
     # 	event_uid = u'SBgh4MKtplFEbYXLvmMY'
     event_uid = 'SBgh4MKtplFEbYXLvmMY'
@@ -63,9 +65,7 @@ def cluster_distance_route(request):
             ridersDirections[p.id] = direction_results
         participants[p.id] = p
 
-    print(ridersDistance.keys())
     for rider in ridersDistance.keys():
-        print(rider)
         RtoDRouteShare[rider] = {}
         for driver in driversDistance.keys():
             RtoDRouteShare[rider][driver] = get_shared_path(rider, driver)
@@ -211,6 +211,17 @@ class Event(object):
     def __init__(self, **fields):
         self.__dict__.update(fields)
 
+
 #######################
+def read_json(file):
+    try:
+        print('Reading from input')
+        with open(file, 'r') as f:
+            return json.load(f)
+    finally:
+        print('Done reading')
+
+
 if __name__ == '__main__':
-    cluster_distance_route('SBgh4MKtplFEbYXLvmMY')
+    return_dict = read_json("request.json")
+    cluster_route(return_dict)
