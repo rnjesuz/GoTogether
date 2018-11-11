@@ -109,7 +109,7 @@ def group_best_match():
                 if RtoDDistance[rider][driver] > best_distance:
                     best_distance= RtoDDistance[rider][driver]
                     best_match = driver
-            if cluster.get(best_match):
+            if best_match in cluster:
                 cluster_length = len(cluster.get(best_match))
             else:
                 cluster_length = 0
@@ -131,7 +131,7 @@ def group_cells():
             if driver in cluster:
                 change = False
                 for next_driver in driversDistance.keys():
-                    if cluster.get(next_driver):
+                    if next_driver in cluster:
                         cluster_list = cluster.get(next_driver)
                         cluster_list_length = len(cluster_list)
                         # spiderman meme pointing at himself

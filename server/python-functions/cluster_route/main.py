@@ -120,11 +120,11 @@ def group_best_match():
             best_match = None
             # TODO if no driver left in list then return exception
             for driver in RtoDRouteShare[rider]:
-                # TODO use a percentage calculation? best_route / nº nodes
+                # TODO use a percentage calculation? best_route / number of nodes
                 if RtoDRouteShare[rider][driver] > best_route:
                     best_route = RtoDRouteShare[rider][driver]
                     best_match = driver
-            if cluster.get(best_match):
+            if best_match in cluster:
                 cluster_length = len(cluster.get(best_match))
             else:
                 cluster_length = 0
@@ -146,7 +146,7 @@ def group_cells():
             if driver in cluster:
                 change = False
                 for next_driver in driversDistance.keys():
-                    if cluster.get(next_driver):
+                    if next_driver in cluster:
                         cluster_list = cluster.get(next_driver)
                         cluster_list_length = len(cluster_list)
                         # spiderman meme pointing at himself

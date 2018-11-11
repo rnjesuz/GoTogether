@@ -158,7 +158,7 @@ def group_cells():
             if driver in cluster:
                 change = False
                 for next_driver in driversDistance.keys():
-                    if cluster.get(next_driver):
+                    if next_driver in cluster:
                         cluster_list = cluster.get(next_driver)
                         cluster_list_length = len(cluster_list)
                         # spiderman meme pointing at himself
