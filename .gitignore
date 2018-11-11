@@ -16,9 +16,11 @@
 /server/python-functions/cluster_distance_voronoi/env
 /server/python-functions/cluster_distance_voronoi/.idea
 /server/python-functions/cluster_distance_voronoi/ServiceAccountKey.json
+/server/python-functions/cluster_distance_voronoi/request.json
 /server/python-functions/cluster_distance_radius/env
 /server/python-functions/cluster_distance_radius/.idea
 /server/python-functions/cluster_distance_radius/ServiceAccountKey.json
+/server/python-functions/cluster_distance_radius/request.json
 /server/python-functions/cluster_route/env
 /server/python-functions/cluster_route/.idea
 /server/python-functions/cluster_route/ServiceAccountKey.json
