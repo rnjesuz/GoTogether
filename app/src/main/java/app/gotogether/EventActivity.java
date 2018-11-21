@@ -5,6 +5,7 @@ import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Resources;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
@@ -38,7 +39,6 @@ import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.PopupWindow;
 import android.widget.ProgressBar;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -57,6 +57,7 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
+import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
@@ -76,8 +77,6 @@ import com.google.firebase.functions.HttpsCallableResult;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import app.gotogether.PagerAdapter.TabItem;
-
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.HttpURLConnection;
@@ -90,6 +89,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
+import app.gotogether.PagerAdapter.TabItem;
 import app.gotogether.fragments.ClusterListFragment;
 import app.gotogether.fragments.ParticipantsListFragment;
 import biz.laenger.android.vpbs.BottomSheetUtils;
@@ -221,11 +221,13 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
             }
         }
 
+
         GoogleDirection.withServerKey(getResources().getString(R.string.google_api_key))
                 .from(routeStartLatLng)
                 .and(waypoints)
                 .to(destinationLatLng)
                 .transportMode(TransportMode.DRIVING)
+                .optimizeWaypoints(true) // optimize the order of the waypoints
                 .execute(new DirectionCallback() {
                     @Override
                     public void onDirectionSuccess(Direction direction, String rawBody) {
@@ -246,7 +248,7 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
 
                     @Override
                     public void onDirectionFailure(Throwable t) {
-                        // Do something
+                        // Do something TODO
                     }
                 });
     }
@@ -389,6 +391,16 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
+        try {
+            // Customise map styling via JSON file
+            boolean success = mMap.setMapStyle( MapStyleOptions.loadRawResourceStyle( this, R.raw.maps_style_json));
+
+            if (!success) {
+                Log.e(TAG, "Style parsing failed.");
+            }
+        } catch (Resources.NotFoundException e) {
+            Log.e(TAG, "Can't find style. Error: ", e);
+        }
         // create builder to center the map
         LatLngBounds.Builder boundsBuilder = new LatLngBounds.Builder();
 

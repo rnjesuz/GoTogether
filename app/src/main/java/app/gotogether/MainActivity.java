@@ -14,6 +14,9 @@ import android.support.annotation.RequiresApi;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.Html;
+import android.text.SpannableString;
+import android.text.Spanned;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -26,9 +29,11 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.PopupWindow;
 import android.widget.RelativeLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.firebase.ui.auth.AuthUI;
@@ -184,15 +189,7 @@ public class MainActivity extends  AppCompatActivity {
 
     private void logOut() {
         Log.i(TAG, "User is logging out...");
-        AuthUI.getInstance()
-                .signOut(this)
-                .addOnCompleteListener(new OnCompleteListener<Void>() {
-                    public void onComplete(@NonNull Task<Void> task) {
-                        // user is now signed out
-                        startActivity(new Intent(MainActivity.this, MultipleLoginActivity.class));
-                        finish();
-                    }
-                });
+        createLogoutPopUpWindow();
     }
 
     /* Activity methods */
@@ -668,8 +665,130 @@ public class MainActivity extends  AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-
         // Get event data from database
         populate();
     }
+
+    private void createLogoutPopUpWindow() {
+        RelativeLayout cConstraintLayout = (RelativeLayout) findViewById(R.id.MainActivityCL);
+        PopupWindow cPopupWindow;
+        // Initialize a new instance of LayoutInflater service
+        LayoutInflater inflater = (LayoutInflater) getApplicationContext().getSystemService(LAYOUT_INFLATER_SERVICE);
+
+        // Inflate the custom layout/view
+        View customView = inflater.inflate(R.layout.confirmation_pop_up_window, null);
+
+                /*
+                    public PopupWindow (View contentView, int width, int height)
+                        Create a new non focusable popup window which can display the contentView.
+                        The dimension of the window must be passed to this constructor.
+
+                        The popup does not provide any background. This should be handled by
+                        the content view.
+
+                    Parameters1
+                        contentView : the popup's content
+                        width : the popup's width
+                        height : the popup's height
+                */
+        // Initialize a new instance of popup window
+        cPopupWindow = new PopupWindow(
+                customView,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                true
+        );
+
+        // Set an elevation value for popup window
+        // Call requires API level 21
+        if (Build.VERSION.SDK_INT >= 21) {
+            cPopupWindow.setElevation(5.0f);
+        }
+
+        // Get a reference for the custom view title
+        TextView titleText = (TextView) customView.findViewById(R.id.titleTV);
+        String htmlTitle = "<b>Logging out...</b>";
+        Spanned s = Html.fromHtml(htmlTitle);
+        SpannableString sString = new SpannableString(s);
+        titleText.setText(sString);
+
+        // Get a reference for the custom view text
+        TextView messageText = (TextView) customView.findViewById(R.id.tv);
+        // Set text
+        String htmlMsg = "Are you sure you want to logout?";
+        messageText.setText(Html.fromHtml(htmlMsg));
+
+
+        // Get a reference for the custom view confirm button
+        Button confirmButton = (Button) customView.findViewById(R.id.ib_confirm);
+        // Set a click listener for the popup window confirm button
+        confirmButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                // Restore activity to opaque
+                ViewGroup root = (ViewGroup) getWindow().getDecorView().getRootView();
+                clearDim(root);
+                // Dismiss the popup window
+                cPopupWindow.dismiss();
+                // Confirm Event
+                AuthUI.getInstance()
+                        .signOut(MainActivity.this)
+                        .addOnCompleteListener(new OnCompleteListener<Void>() {
+                            public void onComplete(@NonNull Task<Void> task) {
+                                // user is now signed out
+                                startActivity(new Intent(MainActivity.this, MultipleLoginActivity.class));
+                                finish();
+                            }
+                        });
+
+            }
+        });
+
+        // Get a reference for the custom view cancel button
+        Button cancelButton = (Button) customView.findViewById(R.id.ib_cancel);
+        // Set a click listener for the popup window cancel button
+        cancelButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                // Restore activity to opaque
+                ViewGroup root = (ViewGroup) getWindow().getDecorView().getRootView();
+                clearDim(root);
+                // Dismiss the popup window
+                cPopupWindow.dismiss();
+            }
+        });
+
+                /*
+                    public void showAtLocation (View parent, int gravity, int x, int y)
+                        Display the content view in a popup window at the specified location. If the
+                        popup window cannot fit on screen, it will be clipped.
+                        Learn WindowManager.LayoutParams for more information on how gravity and the x
+                        and y parameters are related. Specifying a gravity of NO_GRAVITY is similar
+                        to specifying Gravity.LEFT | Gravity.TOP.
+
+                    Parameters
+                        parent : a parent view to get the getWindowToken() token from
+                        gravity : the gravity which controls the placement of the popup window
+                        x : the popup's x location offset
+                        y : the popup's y location offset
+                */
+
+
+        // Detect a click outside the window - Dismiss is the default behaviour of outside click
+        cPopupWindow.setOnDismissListener(new PopupWindow.OnDismissListener() {
+            @Override
+            public void onDismiss() {
+                ViewGroup root = (ViewGroup) getWindow().getDecorView().getRootView();
+                clearDim(root);
+            }
+        });
+
+        // Finally, show the popup window at the center location of root relative layout
+        cPopupWindow.showAtLocation(cConstraintLayout, Gravity.CENTER, 0, 0);
+
+        // Dim the activity
+        ViewGroup root = (ViewGroup) getWindow().getDecorView().getRootView();
+        applyDim(root, 0.8f);
+    }
+
 }

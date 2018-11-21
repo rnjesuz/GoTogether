@@ -11,6 +11,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
+import android.content.res.Resources;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
@@ -82,6 +83,7 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
+import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.firebase.auth.FirebaseAuth;
@@ -501,10 +503,20 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
+        try {
+            // Customise map styling via JSON file
+            boolean success = mMap.setMapStyle( MapStyleOptions.loadRawResourceStyle( this, R.raw.maps_style_json));
+
+            if (!success) {
+                Log.e(TAG, "Style parsing failed.");
+            }
+        } catch (Resources.NotFoundException e) {
+            Log.e(TAG, "Can't find style. Error: ", e);
+        }
         // Set a listener for marker click.
         mMap.setOnMarkerClickListener(this);
         // disable map tools
-        googleMap.getUiSettings().setMapToolbarEnabled(false);
+        mMap.getUiSettings().setMapToolbarEnabled(false);
         // set some padding to restrict markers to bottom half
         DisplayMetrics displayMetrics = new DisplayMetrics();
         getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
@@ -787,37 +799,28 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
         }
     }
 
-    public void DriverVolunteer(View view){
+    public void DrivingVolunteer(View view){
         ConstraintLayout seatQuestion = (ConstraintLayout) findViewById(R.id.seat_question);
-        TextView driverQuestion = (TextView) findViewById(R.id.driver_question_tv);
         seatQuestion.requestLayout();
         if(isDriver) {
-            driverQuestion.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.checkbox_outlined, 0);
             slideDrawerUp(seatQuestion);
             isDriver = false;
         } else {
-            driverQuestion.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.checkbox_fill, 0);
             slideDrawerDown(seatQuestion);
             isDriver = true;
         }
     }
 
     private void slideDrawerUp(ConstraintLayout view) {
+        view.clearAnimation();
         view.animate()
                 .translationY(-view.getHeight()/2)
                 .alpha(0.0f)
-                .setDuration(1000)
-                .setListener(new AnimatorListenerAdapter() {
-                    @Override
-                    public void onAnimationEnd(Animator animation) {
-                        super.onAnimationEnd(animation);
-                        view.setVisibility(View.INVISIBLE);
-                    }
-                });
+                .setDuration(1000);
     }
 
     private void slideDrawerDown(ConstraintLayout view) {
-        view.setVisibility(View.VISIBLE);
+        view.clearAnimation();
         view.setAlpha(0.0f);
 
         int bottom = view.getTop();
@@ -826,8 +829,7 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
         view.animate()
                 .translationY(bottom-top+(view.getHeight()))
                 .alpha(1.0f)
-                .setDuration(1000)
-                .setListener(null);
+                .setDuration(1000);
     }
 
     /**
