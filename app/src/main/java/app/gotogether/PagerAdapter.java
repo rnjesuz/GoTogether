@@ -58,10 +58,6 @@ public class PagerAdapter extends FragmentPagerAdapter {
         try {
             Fragment newFragment = fragmentClass.newInstance();
             fragments.add(newFragment);
-            if (newFragment instanceof ParticipantsListFragment)
-                pFragment = (ParticipantsListFragment) newFragment;
-            else
-                cFragment = (ClusterListFragment) newFragment;
             return newFragment;
         } catch (InstantiationException | IllegalAccessException e) {
             throw new RuntimeException("fragment must have public no-arg constructor: " + fragmentClass.getName(), e);
@@ -86,14 +82,6 @@ public class PagerAdapter extends FragmentPagerAdapter {
 
     public Fragment getFragment(int index) {
         return fragments.get(index);
-    }
-
-    public ParticipantsListFragment getpFragment() {
-        return pFragment;
-    }
-
-    public ClusterListFragment getcFragment() {
-        return cFragment;
     }
 
     public void addTabPage(TabItem item) {

@@ -6,17 +6,21 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.annotation.LongDef;
 import android.support.annotation.NonNull;
 import android.support.annotation.RequiresApi;
 import android.support.design.widget.BottomSheetBehavior;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.Snackbar;
 import android.support.design.widget.TabLayout;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
@@ -54,6 +58,7 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
@@ -118,6 +123,7 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
     private FirebaseFunctions mFunctions;
     private ProgressBar progressBar;
     private SupportMapFragment mapFragment;
+    private boolean concludingEvent = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -160,9 +166,7 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
     }
 
     private void setupBottomSheet() {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
+        LinearLayout bottomSheetFrame = findViewById(R.id.bottom_sheet);
         bottomSheetViewPager = findViewById(R.id.bottom_sheet_viewpager);
         // bottomSheetToolbar = findViewById(R.id.bottom_sheet_toolbar);
         bottomSheetTabLayout = findViewById(R.id.bottom_sheet_tabs);
@@ -181,7 +185,6 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
         bottomSheetTabLayout.setupWithViewPager(bottomSheetViewPager);
         BottomSheetUtils.setupViewPager(bottomSheetViewPager);
         // The View with the BottomSheetBehavior
-        LinearLayout bottomSheetFrame = findViewById(R.id.bottom_sheet);
         bottomSheetBehavior = BottomSheetBehavior.from(bottomSheetFrame);
         bottomSheetBehavior.setBottomSheetCallback(new BottomSheetBehavior.BottomSheetCallback() {
             @Override
@@ -197,16 +200,37 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
             }
         });
         bottomSheetBehavior.setPeekHeight(150);
-
+        bottomSheetTabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
+            @Override
+            public void onTabSelected(TabLayout.Tab tab) {
+                if(!concludingEvent) {
+                    Log.d(TAG, "Tab Selected: expanding bottom sheet");
+                    bottomSheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+                }
+            }
+            @Override
+            public void onTabUnselected(TabLayout.Tab tab) { }
+            @Override
+            public void onTabReselected(TabLayout.Tab tab) {
+                int state = BottomSheetBehavior.from(bottomSheetFrame).getState();
+                if (state == BottomSheetBehavior.STATE_EXPANDED) {
+                    Log.d(TAG, "Tab RE-selected: collapsing bottom sheet");
+                    bottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
+                }
+                else if (state == BottomSheetBehavior.STATE_COLLAPSED) {
+                    Log.d(TAG, "Tab RE-selected: expanding bottom sheet");
+                    bottomSheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+                }
             }
         });
+
+        bottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
     }
 
     @RequiresApi(api = Build.VERSION_CODES.N)
     private void drawRoute() {
         List<LatLng> waypoints = new ArrayList<>();
         LatLng routeStartLatLng = null;
-
         for (int i=0; i<myRouteCluster.size(); i++){
             int counter = i;
             String uid = myRouteCluster.get(i);
@@ -220,7 +244,6 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
                 waypoints.add(u.getStartLatLng());
             }
         }
-
 
         GoogleDirection.withServerKey(getResources().getString(R.string.google_api_key))
                 .from(routeStartLatLng)
@@ -305,7 +328,6 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
 
     public void onClusterListFragmentComplete() {
         ClusterListFragment fragment = (ClusterListFragment) sectionsPagerAdapter.getFragment(1);
-        //ClusterListFragment fragment = sectionsPagerAdapter.getcFragment();
         View inflatedView = fragment.getInflatedView();
         // initialize the db 
         FirebaseFirestore db = FirebaseFirestore.getInstance(); 
@@ -369,6 +391,8 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
                                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) { // needs api N
                                     drawRoute();
                                 }
+                                // signal event concluded
+                                concludingEvent = false;
                             } else {
                                 Log.d(TAG, "Query failed with ", task.getException());
                             }
@@ -383,8 +407,11 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
 
     private void addTab(TabItem item) {
         runOnUiThread(() -> {
-            bottomSheetTabLayout.addTab(bottomSheetTabLayout.newTab());
             sectionsPagerAdapter.addTabPage(item);
+            //bottomSheetTabLayout.addTab(bottomSheetTabLayout.newTab());
+            bottomSheetTabLayout.setupWithViewPager(bottomSheetViewPager);
+            // make the cluster tab the selected one
+            bottomSheetViewPager.setCurrentItem(1);
         });
     }
 
@@ -412,7 +439,8 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
                         .position(u.getStartLatLng())
                         .title(u.getUsername())
                         .snippet(u.getStartAddress())
-                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE))
+                        //.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE))
+                        .icon(bitmapDescriptorFromVector(this, R.drawable.ic_person_black_48dp))
                         // Lowest z-index to force marker to bee at bottom when overlapping
                         .zIndex(0));
                 boundsBuilder.include(u.getStartLatLng());
@@ -424,7 +452,8 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
                     .position(startLatLng)
                     .title("Pick-Up")
                     .snippet(start)
-                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN))
+                    //.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN))
+                    .icon(bitmapDescriptorFromVector(this, R.drawable.ic_person_green_normal_48dp))
                     // Second highest z-index. Only lowest to destination marker
                     .zIndex(1));
         boundsBuilder.include(startLatLng);
@@ -433,6 +462,7 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
                 .position(destinationLatLng)
                 .title("Destination")
                 .snippet(destination)
+                .icon(bitmapDescriptorFromVector(this, R.drawable.ic_flag_green_complementary_48dp))
                 // Highest z-index. Destination is the most important marker
                 .zIndex(2));
         boundsBuilder.include(destinationLatLng);
@@ -507,6 +537,7 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
         switch (item.getItemId()) {
             case R.id.action_conclude: {
                 // send server trigger to conclude the event
+                concludingEvent = true;
                 concludeEvent();
                 break;
             }
@@ -804,6 +835,15 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
     public void clearDim(@NonNull ViewGroup parent) {
         ViewGroupOverlay overlay = parent.getOverlay();
         overlay.clear();
+    }
+
+    private BitmapDescriptor bitmapDescriptorFromVector(Context context, int vectorResId) {
+        Drawable vectorDrawable = ContextCompat.getDrawable(context, vectorResId);
+        vectorDrawable.setBounds(0, 0, vectorDrawable.getIntrinsicWidth(), vectorDrawable.getIntrinsicHeight());
+        Bitmap bitmap = Bitmap.createBitmap(vectorDrawable.getIntrinsicWidth(), vectorDrawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+        vectorDrawable.draw(canvas);
+        return BitmapDescriptorFactory.fromBitmap(bitmap);
     }
 }
 
