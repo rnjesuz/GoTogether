@@ -106,6 +106,7 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
     private String start = null;
     private LatLng startLatLng = null;
     protected static GoogleMap mMap;
+    private ArrayList<Marker> markers = new ArrayList<>();
     private User user;
     private ArrayList<User> participants;
     private static BottomSheetBehavior<View> bottomSheetBehavior;
@@ -434,7 +435,7 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
         // Participants markers
         if(participants != null) {
             for (User u : participants) {
-                mMap.addMarker(new MarkerOptions()
+                Marker m = mMap.addMarker(new MarkerOptions()
                         .position(u.getStartLatLng())
                         .title(u.getUsername())
                         .snippet(u.getStartAddress())
@@ -442,12 +443,13 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
                         .icon(bitmapDescriptorFromVector(this, R.drawable.ic_person_black_32dp))
                         // Lowest z-index to force marker to bee at bottom when overlapping
                         .zIndex(0));
+                markers.add(m);
                 boundsBuilder.include(u.getStartLatLng());
             }
 
         }
         // User pick-up location marker
-        mMap.addMarker(new MarkerOptions()
+        Marker userMarker = mMap.addMarker(new MarkerOptions()
                     .position(startLatLng)
                     .title("Pick-Up")
                     .snippet(start)
@@ -455,15 +457,17 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
                     .icon(bitmapDescriptorFromVector(this, R.drawable.ic_person_green_normal_32dp))
                     // Second highest z-index. Only lowest to destination marker
                     .zIndex(1));
+        markers.add(userMarker);
         boundsBuilder.include(startLatLng);
         // Destination marker
-        mMap.addMarker(new MarkerOptions()
+        Marker destinationMarker = mMap.addMarker(new MarkerOptions()
                 .position(destinationLatLng)
                 .title("Destination")
                 .snippet(destination)
                 .icon(bitmapDescriptorFromVector(this, R.drawable.ic_flag_green_complementary_48dp))
                 // Highest z-index. Destination is the most important marker
                 .zIndex(2));
+        markers.add(destinationMarker);
         boundsBuilder.include(destinationLatLng);
         //mDestination.showInfoWindow();
 
