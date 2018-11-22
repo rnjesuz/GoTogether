@@ -33,6 +33,14 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.GeoPoint;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -47,11 +55,12 @@ import static app.gotogether.R.layout.event_layout;
 import static app.gotogether.R.layout.fui_idp_button_facebook;
 import static com.firebase.ui.auth.AuthUI.getApplicationContext;
 
-class EventArrayAdapter extends ArrayAdapter<Event> {
+class EventArrayAdapter extends ArrayAdapter<Event> implements ThreadCompleteListener {
 
     private Context context;
     private List<Event> eventList;
     private FirebaseAuth auth = FirebaseAuth.getInstance();
+    private ViewGroup parentView;
 
     // Constructor
     public EventArrayAdapter(@NonNull Context context, int resource, @NonNull ArrayList<Event> objects) {
@@ -64,6 +73,8 @@ class EventArrayAdapter extends ArrayAdapter<Event> {
     @RequiresApi(api = Build.VERSION_CODES.M)
     public View getView(int position, View convertView, ViewGroup parent) {
 
+        //store the parentView
+        parentView = parent;
         //get the property we are displaying
         Event event = eventList.get(position);
 
@@ -210,7 +221,7 @@ class EventArrayAdapter extends ArrayAdapter<Event> {
                             showEventIdentifier(event.getId(), parent);
                             return true;
                         case R.id.option_conclude:
-                            // concludeEvent();
+                            concludeEvent(event.getId());
                             return true;
                         default:
                             return false;
@@ -300,6 +311,61 @@ class EventArrayAdapter extends ArrayAdapter<Event> {
         // Dim the activity
         ViewGroup root = (ViewGroup) parent.getRootView();
         applyDim(root, 0.8f);
+    }
+
+    /**
+     * Conclude the event
+     * by sending and http request to the back-end
+     * @param eventUID the unique identifier of the concluded event
+     */
+    private void concludeEvent(String eventUID){
+        Thread thread = new NotifyingThread() {
+            @Override
+            public void doRun() {
+                HttpURLConnection conn = null;
+                try {
+                    URL url = new URL("https://europe-west1-graphic-theory-211215.cloudfunctions.net/cluster_route");
+                    conn = (HttpURLConnection) url.openConnection();
+                    conn = (HttpURLConnection) url.openConnection();
+                    conn.setRequestMethod("POST");
+                    conn.setRequestProperty("Content-Type", "application/json");
+                    conn.setRequestProperty("Accept", "application/json");
+                    conn.setDoOutput(true);
+                    conn.setDoInput(true);
+                    conn.connect();
+                    String jsonParam = new JSONObject()
+                            .put("eventUID", eventUID)
+                            .toString();
+                    DataOutputStream os = new DataOutputStream(conn.getOutputStream());
+                    os.writeBytes(jsonParam);
+
+                    os.flush();
+                    os.close();
+
+                    Log.i("STATUS", String.valueOf(conn.getResponseCode()));
+                    Log.i("MSG", conn.getResponseMessage());
+                } catch (MalformedURLException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                } finally {
+                    conn.disconnect();
+                }
+            }
+        };
+        ((NotifyingThread) thread).addListener(this);
+        thread.start();
+    }
+
+    /**
+     * callback from the thread that concluded the communication with the back-end
+     * @param thread the thread that finalized
+     */
+    @Override
+    public void notifyOfThreadComplete(Thread thread) {
+        MainActivity.triggerRefresh(parentView);
     }
 
     /** Apply dim to the activity */

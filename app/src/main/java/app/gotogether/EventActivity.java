@@ -13,7 +13,6 @@ import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
-import android.support.annotation.LongDef;
 import android.support.annotation.NonNull;
 import android.support.annotation.RequiresApi;
 import android.support.design.widget.BottomSheetBehavior;
@@ -440,7 +439,7 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
                         .title(u.getUsername())
                         .snippet(u.getStartAddress())
                         //.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE))
-                        .icon(bitmapDescriptorFromVector(this, R.drawable.ic_person_black_48dp))
+                        .icon(bitmapDescriptorFromVector(this, R.drawable.ic_person_black_32dp))
                         // Lowest z-index to force marker to bee at bottom when overlapping
                         .zIndex(0));
                 boundsBuilder.include(u.getStartLatLng());
@@ -453,7 +452,7 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
                     .title("Pick-Up")
                     .snippet(start)
                     //.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN))
-                    .icon(bitmapDescriptorFromVector(this, R.drawable.ic_person_green_normal_48dp))
+                    .icon(bitmapDescriptorFromVector(this, R.drawable.ic_person_green_normal_32dp))
                     // Second highest z-index. Only lowest to destination marker
                     .zIndex(1));
         boundsBuilder.include(startLatLng);
