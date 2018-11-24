@@ -70,7 +70,7 @@
             style="@style/MenuButton_Green"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@drawable/ic_edit"
+            android:src="@drawable/ic_edit_white_24dp"
             fab:fab_label="Create"
             fab:fab_size="mini" />
 

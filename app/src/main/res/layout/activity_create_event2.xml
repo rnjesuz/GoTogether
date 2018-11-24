@@ -295,7 +295,7 @@
                     android:layout_height="18dp"
                     android:layout_marginStart="3dp"
                     android:layout_marginTop="16dp"
-                    android:src="@drawable/baseline_directions_car_black_18"
+                    android:src="@drawable/ic_directions_car_black_18dp"
                     map:layout_constraintStart_toStartOf="parent"
                     map:layout_constraintTop_toTopOf="parent" />
             </android.support.constraint.ConstraintLayout>
@@ -320,7 +320,7 @@
             android:layout_marginTop="8dp"
             android:background="@color/white"
             android:drawablePadding="8dp"
-            android:drawableStart="@drawable/baseline_my_location_black_18"
+            android:drawableStart="@drawable/ic_my_location_black_18dp"
             android:paddingEnd="8dp"
             android:paddingStart="8dp"
             android:text="Use my current location"
@@ -353,7 +353,7 @@
         android:layout_marginEnd="16dp"
         android:layout_marginTop="16dp"
         android:onClick="concludeCreation"
-        android:src="@drawable/baseline_done_white_24"
+        android:src="@drawable/ic_done_white_24dp"
         android:visibility="visible"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"

@@ -141,7 +141,7 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_join_event);
-        getSupportActionBar().setHomeAsUpIndicator(R.drawable.ic_close); // change the return to parent button
+        getSupportActionBar().setHomeAsUpIndicator(R.drawable.ic_close_black_24dp); // change the return to parent button
 
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
@@ -183,7 +183,7 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
         if (possibleStart != null ){
             start = possibleStart;
             startET.setText(start);
-            startET.setCompoundDrawablesWithIntrinsicBounds(0,0, R.drawable.ic_close_red,0);
+            startET.setCompoundDrawablesWithIntrinsicBounds(0,0, R.drawable.ic_close_red_24dp,0);
         }
 
         // Assign adapter to ListView
@@ -221,7 +221,7 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
         // Enable the Up button
         actionBar.setDisplayHomeAsUpEnabled(true);
         // change the up button icon
-        actionBar.setHomeAsUpIndicator(R.drawable.ic_close);
+        actionBar.setHomeAsUpIndicator(R.drawable.ic_close_black_24dp);
         // set slider as invisible
         suggestions = findViewById(R.id.suggestions_slider);
         suggestions.setVisibility(View.INVISIBLE);
@@ -288,7 +288,7 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
                         mStart = null;
                     }
                 } else {
-                    startET.setCompoundDrawablesWithIntrinsicBounds(0,0, R.drawable.ic_close_red,0);
+                    startET.setCompoundDrawablesWithIntrinsicBounds(0,0, R.drawable.ic_close_red_24dp,0);
                 }
                 if (!locationClick)
                     dataAdapter.getFilter().filter(s.toString());
@@ -569,7 +569,7 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
         ConstraintLayout driverInputs = findViewById(R.id.driver_inputs);
         driverInputs.setVisibility(View.GONE);
         // change up button icon
-        actionBar.setHomeAsUpIndicator(R.drawable.ic_arrow_black); // the default arrow
+        actionBar.setHomeAsUpIndicator(R.drawable.ic_arrow_back_black_24dp); // the default arrow
         // change create option color
         TextView create = findViewById(R.id.action_join);
         create.setVisibility(View.GONE);
@@ -612,7 +612,7 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
         ConstraintLayout driverInputs = findViewById(R.id.driver_inputs);
         driverInputs.setVisibility(View.VISIBLE);
         // change up button icon
-        actionBar.setHomeAsUpIndicator(R.drawable.ic_close); // the default arrow
+        actionBar.setHomeAsUpIndicator(R.drawable.ic_close_black_24dp); // the default arrow
         // change create option color
         TextView create = findViewById(R.id.action_join);
         create.setVisibility(View.VISIBLE);

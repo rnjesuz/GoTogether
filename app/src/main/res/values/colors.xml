@@ -6,9 +6,7 @@
     <color name="black">#000000</color>
     <color name="white">#fafafa</color>
     <color name="green_normal_85_opacity">#D543a047</color>
-    <color name="green_normal_50_opacity">#8043a047</color>
     <color name="green_normal_40_opacity">#6643a047</color>
-    <color name="green_normal_15_opacity">#2643a047</color>
     <color name="green_normal_1_opacity">#0343a047</color>
     <color name="green_normal">#43a047</color>
     <color name="green_pressed">#2e7d32</color>
@@ -17,7 +15,6 @@
     <color name="white_background">#E8E8E8</color>
     <color name="white_background_dark">#d8d8d8</color>
     <color name="white_38_opacity">#61ffffff</color>
-    <color name="grey_disabled">#9D9FA2</color>
 
     <color name="material_green_50">#E8F5E9</color>
 

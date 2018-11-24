@@ -8,6 +8,6 @@
         android:id="@+id/action_logout"
         android:title="LogOut"
         app:showAsAction="always"
-        android:icon="@drawable/baseline_power_settings_new_24"
+        android:icon="@drawable/ic_power_settings_new_white_24dp"
         android:textColor="@color/white"/>
 </menu>

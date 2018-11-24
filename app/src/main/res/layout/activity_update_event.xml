@@ -171,7 +171,7 @@
                     android:layout_height="18dp"
                     android:layout_marginStart="5dp"
                     android:layout_marginTop="8dp"
-                    android:src="@drawable/baseline_directions_car_black_18"
+                    android:src="@drawable/ic_directions_car_black_18dp"
                     map:layout_constraintStart_toStartOf="parent"
                     map:layout_constraintTop_toTopOf="parent" />
 
@@ -303,7 +303,7 @@
             android:layout_marginTop="8dp"
             android:background="@color/white"
             android:drawablePadding="8dp"
-            android:drawableStart="@drawable/baseline_my_location_black_18"
+            android:drawableStart="@drawable/ic_my_location_black_18dp"
             android:paddingEnd="8dp"
             android:paddingStart="8dp"
             android:text="Use my current location"

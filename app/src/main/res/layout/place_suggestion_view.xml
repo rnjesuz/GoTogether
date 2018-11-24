@@ -6,7 +6,7 @@
     android:textSize="18sp"
     android:padding="8dp"
     android:drawablePadding="8dp"
-    android:drawableStart="@drawable/baseline_location_on_black_18"
+    android:drawableStart="@drawable/ic_location_on_black_18dp"
     >
 </TextView>
 

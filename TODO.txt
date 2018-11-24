@@ -14,3 +14,5 @@
 [11] O autocomplete retorna o máximo de 5 sugestões - Resenhar janela e tamanho do texto?
 [12] TextView de destino e de pick-up tem scroll manhoso
 [13] Guardar estado das actividades (Save State?) - principalmente na MainActivity 
+[14] ordenaçao dos eventos nao é consistente - problema de leitura da DB?
+[14 a] completar eventos mostra animaçoes inconsistentes as vezes - quando items estao desordenados, acho

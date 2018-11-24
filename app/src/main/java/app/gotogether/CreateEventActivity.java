@@ -239,7 +239,7 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
         // Enable the Up button
         actionBar.setDisplayHomeAsUpEnabled(true);
         // change the up button icon
-        actionBar.setHomeAsUpIndicator(R.drawable.ic_close);
+        actionBar.setHomeAsUpIndicator(R.drawable.ic_close_black_24dp);
 
         // set slider as invisible
         // TODO
@@ -358,7 +358,7 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
                         mDestination = null;
                     }
                 } else {
-                    destinationET.setCompoundDrawablesWithIntrinsicBounds(0,0, R.drawable.ic_close_red,0);
+                    destinationET.setCompoundDrawablesWithIntrinsicBounds(0,0, R.drawable.ic_close_red_24dp,0);
                 }
                 if (!locationClick)
                     dataAdapter.getFilter().filter(s.toString());
@@ -439,7 +439,7 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
                         mStart = null;
                     }
                 } else {
-                    startET.setCompoundDrawablesWithIntrinsicBounds(0,0, R.drawable.ic_close_red,0);
+                    startET.setCompoundDrawablesWithIntrinsicBounds(0,0, R.drawable.ic_close_red_24dp,0);
                 }
                 if (!locationClick)
                     dataAdapter.getFilter().filter(s.toString());
@@ -687,7 +687,7 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
         ConstraintLayout driverInputs = findViewById(R.id.driver_inputs);
         driverInputs.setVisibility(View.GONE);
         // change up button icon
-        actionBar.setHomeAsUpIndicator(R.drawable.ic_arrow_black); // the default arrow
+        actionBar.setHomeAsUpIndicator(R.drawable.ic_arrow_back_black_24dp); // the default arrow
         // change create option color
         TextView create = findViewById(R.id.action_create);
         create.setVisibility(View.GONE);
@@ -730,7 +730,7 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
         ConstraintLayout driverInputs = findViewById(R.id.driver_inputs);
         driverInputs.setVisibility(View.VISIBLE);
         // change up button icon
-        actionBar.setHomeAsUpIndicator(R.drawable.ic_close); // the default arrow
+        actionBar.setHomeAsUpIndicator(R.drawable.ic_close_black_24dp); // the default arrow
         // change create option color
         TextView create = findViewById(R.id.action_create);
         create.setVisibility(View.VISIBLE);
@@ -769,7 +769,7 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
                 invalidateOptionsMenu();
                 EditText destinationET = ((EditText) findViewById(R.id.destination_autocomplete));
                 destinationET.setText(destination);
-                destinationET.setCompoundDrawablesWithIntrinsicBounds(0,0,R.drawable.ic_close_red,0);
+                destinationET.setCompoundDrawablesWithIntrinsicBounds(0,0,R.drawable.ic_close_red_24dp,0);
                 Log.i(TAG, "Place: " + place.getName());
             } else if (resultCode == PlaceAutocomplete.RESULT_ERROR) {
                 Status status = PlaceAutocomplete.getStatus(this, data);

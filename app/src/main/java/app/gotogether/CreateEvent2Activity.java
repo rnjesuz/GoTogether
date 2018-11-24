@@ -215,7 +215,7 @@ public class CreateEvent2Activity extends AppCompatActivity implements OnMapRead
         // Enable the Up button
         actionBar.setDisplayHomeAsUpEnabled(true);
         // change the up button icon
-        actionBar.setHomeAsUpIndicator(R.drawable.ic_close);
+        actionBar.setHomeAsUpIndicator(R.drawable.ic_close_black_24dp);
         // Grab EditText for title input from actionbar
         View actionBarView = actionBar.getCustomView();
         eventTitle = actionBarView.findViewById(R.id.titleField);
@@ -289,7 +289,7 @@ public class CreateEvent2Activity extends AppCompatActivity implements OnMapRead
                     if (destinationET.getCompoundDrawables()[2] != null)
                         destinationET.setCompoundDrawablesWithIntrinsicBounds(null,null,null,null);
                 } else {
-                    destinationET.setCompoundDrawablesWithIntrinsicBounds(0,0, R.drawable.ic_close_red,0);
+                    destinationET.setCompoundDrawablesWithIntrinsicBounds(0,0, R.drawable.ic_close_red_24dp,0);
                 }
                 dataAdapter.getFilter().filter(s.toString());
             }
@@ -359,7 +359,7 @@ public class CreateEvent2Activity extends AppCompatActivity implements OnMapRead
                     if (startET.getCompoundDrawables()[2] != null)
                         startET.setCompoundDrawablesWithIntrinsicBounds(null,null,null,null);
                 } else {
-                    startET.setCompoundDrawablesWithIntrinsicBounds(0,0, R.drawable.ic_close_red,0);
+                    startET.setCompoundDrawablesWithIntrinsicBounds(0,0, R.drawable.ic_close_red_24dp,0);
                 }
                 dataAdapter.getFilter().filter(s.toString());
             }
@@ -590,7 +590,7 @@ public class CreateEvent2Activity extends AppCompatActivity implements OnMapRead
         ConstraintLayout driverInputs = findViewById(R.id.driver_inputs);
         driverInputs.setVisibility(View.GONE);
         // change up button icon
-        actionBar.setHomeAsUpIndicator(R.drawable.ic_arrow_black); // the default arrow
+        actionBar.setHomeAsUpIndicator(R.drawable.ic_arrow_back_black_24dp); // the default arrow
         // hide FAB so it doesn't obstruct view
         findViewById(R.id.create_done).setVisibility(View.GONE);
         // slide up the suggestions layout
@@ -638,7 +638,7 @@ public class CreateEvent2Activity extends AppCompatActivity implements OnMapRead
         ConstraintLayout driverInputs = findViewById(R.id.driver_inputs);
         driverInputs.setVisibility(View.VISIBLE);
         // change up button icon
-        actionBar.setHomeAsUpIndicator(R.drawable.ic_close); // the default arrow
+        actionBar.setHomeAsUpIndicator(R.drawable.ic_close_black_24dp); // the default arrow
         // redraw
         findViewById(R.id.create_done).setVisibility(View.VISIBLE);
         // slide down the suggestions layout
@@ -657,7 +657,7 @@ public class CreateEvent2Activity extends AppCompatActivity implements OnMapRead
                 destination = place.getAddress().toString();
                 EditText destinationET = ((EditText) findViewById(R.id.destination_autocomplete));
                 destinationET.setText(destination);
-                destinationET.setCompoundDrawablesWithIntrinsicBounds(0,0,R.drawable.ic_close_red,0);
+                destinationET.setCompoundDrawablesWithIntrinsicBounds(0,0,R.drawable.ic_close_red_24dp,0);
                 Log.i(TAG, "Place: " + place.getName());
             } else if (resultCode == PlaceAutocomplete.RESULT_ERROR) {
                 Status status = PlaceAutocomplete.getStatus(this, data);
