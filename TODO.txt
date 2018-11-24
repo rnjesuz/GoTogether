@@ -1,18 +1,19 @@
 [0] Melhorar o cluster_route !!!! remover API callls desnecesarias, etc
 [1] TODOs nos cluster - improvements
-[2] clusters - testar se algum cluster ja foi criado? apagar o antigo se sim, ou excepÁao?
+[2] clusters - testar se algum cluster ja foi criado? apagar o antigo se sim, ou excep√ßao?
 [2] EvenAdapter - fazer new EventAdapter { onChanged(){ adicionar novo elemento aos Eventos } }
 	Para impedir de apagar todos os eventols velhos e colocar novos
-[3] CreateEvent - melhorar fluxo de transiÁıes entre focusables. quanto um termina mas outro ainda esta livre. O Titulo nao e considerado. outros tbm nao?
+[3] CreateEvent - melhorar fluxo de transi√ß√µes entre focusables. quanto um termina mas outro ainda esta livre. O Titulo nao e considerado. outros tbm nao?
 [4] CreateEvent - Action mais +equeno?
-[5] JoinEvent - testar se j· estamos Joined
+[5] JoinEvent - testar se j√° estamos Joined
 [6] Auth - analisar display name dos guests - usar null, usar guest blabla, usar UID, ...
-[7] AutoComplete - n„o parece favorecer Portugal... Bug?
-[8] Se o LatLngfor no oceano/propriedade privada/zona sem geolocations o retorno È null. nao da para converter LatLng <=> Adress
-[9] Se n„o houver internet para comunicar com o server - fazer Timeout? - j· È verificado pelas funÁıes do firebase?
-[10] Slider da pergunta de carro n„o funciona se for muito r·pido
-[11] O autocomplete retorna o m·ximo de 5 sugestıes - Resenhar janela e tamanho do texto?
+[7] AutoComplete - n√£o parece favorecer Portugal... Bug?
+[8] Se o LatLngfor no oceano/propriedade privada/zona sem geolocations o retorno √© null. nao da para converter LatLng <=> Adress
+[9] Se n√£o houver internet para comunicar com o server - fazer Timeout? - j√° √© verificado pelas fun√ß√µes do firebase?
+[10] Slider da pergunta de carro n√£o funciona se for muito r√°pido
+[11] O autocomplete retorna o m√°ximo de 5 sugest√µes - Resenhar janela e tamanho do texto?
 [12] TextView de destino e de pick-up tem scroll manhoso
 [13] Guardar estado das actividades (Save State?) - principalmente na MainActivity 
-[14] ordenaÁao dos eventos nao È consistente - problema de leitura da DB?
-[14 a] completar eventos mostra animaÁoes inconsistentes as vezes - quando items estao desordenados, acho
+[14] ordena√ßao dos eventos nao √© consistente - problema de leitura da DB?
+[14 a] completar eventos mostra anima√ßoes inconsistentes as vezes - quando items estao desordenados, acho
+	- garantir que a ordena√ßao de visualiza√ß√£o √© a mesma que a guardada nas listas
