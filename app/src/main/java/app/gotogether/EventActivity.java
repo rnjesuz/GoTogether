@@ -11,6 +11,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.LayerDrawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -200,7 +201,6 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
                 Log.i(TAG, "onSlide");
             }
         });
-        bottomSheetBehavior.setPeekHeight(150);
         bottomSheetTabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override
             public void onTabSelected(TabLayout.Tab tab) {
@@ -225,7 +225,30 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
             }
         });
 
+        // sheet starts collapsed
         bottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
+
+        // set sheet's peek height
+        final TabLayout tb = (TabLayout) findViewById(R.id.bottom_sheet_tabs);
+        // need a GlobalLayoutListener to wait for the view to be drawn
+        ViewTreeObserver vto = tb.getViewTreeObserver();
+        vto.addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+
+            @Override
+            public void onGlobalLayout() {
+                // Tablayout was drawn now we can get it's height
+                // and set bottom sheet's peek height
+                bottomSheetBehavior.setPeekHeight(tb.getHeight());
+
+                ViewTreeObserver obs = tb.getViewTreeObserver();
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+                    obs.removeOnGlobalLayoutListener(this);
+                } else {
+                    obs.removeGlobalOnLayoutListener(this);
+                }
+            }
+
+        });
     }
 
     @RequiresApi(api = Build.VERSION_CODES.N)
