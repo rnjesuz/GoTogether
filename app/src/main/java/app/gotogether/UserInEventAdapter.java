@@ -1,5 +1,6 @@
 package app.gotogether;
 
+import android.support.constraint.ConstraintLayout;
 import android.support.v7.widget.RecyclerView;
 import android.text.Html;
 import android.text.SpannableString;
@@ -7,6 +8,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import java.util.List;
@@ -45,25 +47,31 @@ public class UserInEventAdapter extends RecyclerView.Adapter<UserInEventAdapter.
 
     public class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
 
-        public TextView nameView;
-        public TextView destinationView;
-        public TextView driverView;
-        public TextView seatsView;
-        public ImageButton goParticipant;
-        public User user;
+        private ConstraintLayout participantInfo;
+        private TextView nameView;
+        private TextView destinationView;
+        private TextView driverView;
+        private TextView seatsView;
+        private User user;
 
         public ViewHolder(View view) {
             super(view);
             itemView.setOnClickListener(this);
+            participantInfo = (ConstraintLayout) view.findViewById(R.id.participant_info);
             nameView = (TextView) view.findViewById(R.id.nameView);
             destinationView = (TextView) view.findViewById(R.id.destinationView);
             driverView = (TextView) view.findViewById(R.id.driverView);
             seatsView = (TextView) view.findViewById(R.id.seatsView);
-            goParticipant = (ImageButton) view.findViewById(R.id.goParticipant);
         }
 
         public void setData(User user) {
             this.user = user;
+            participantInfo.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    EventActivity.goMarkerParticipant(user);
+                }
+            });
             nameView.setText(user.getUsername());
             destinationView.setText(new SpannableString(Html.fromHtml("<b>Destination: </b>"+ user.getStartAddress())));
             if (user.isDriver()){
@@ -73,12 +81,6 @@ public class UserInEventAdapter extends RecyclerView.Adapter<UserInEventAdapter.
                 driverView.setText(new SpannableString(Html.fromHtml("<b>Driver: </b>Not available")));
                 seatsView.setVisibility(View.GONE);
             }
-            goParticipant.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    EventActivity.goMarkerParticipant(user);
-                }
-            });
         }
 
         @Override

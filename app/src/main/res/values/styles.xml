@@ -71,12 +71,6 @@
         <item name="android:theme">@style/Theme.AppCompat.Light</item>
     </style>
 
-    <style name="BottomSheetToolbarStyle" parent="Widget.AppCompat.Toolbar">
-        <item name="android:layout_height">?attr/actionBarSize</item>
-        <item name="android:theme">@style/ThemeOverlay.AppCompat.Light</item>
-        <item name="popupTheme">@style/ThemeOverlay.AppCompat.Light</item>
-    </style>
-
     <style name="BottomSheetTabLayoutStyle" parent="MainTabLayoutStyle">
         <item name="tabIndicatorColor">?attr/colorPrimaryDark</item>
     </style>

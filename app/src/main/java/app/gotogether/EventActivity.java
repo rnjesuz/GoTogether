@@ -106,7 +106,7 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
     private String start = null;
     private LatLng startLatLng = null;
     protected static GoogleMap mMap;
-    private ArrayList<Marker> markers = new ArrayList<>();
+    private HashMap<String, Marker> markers = new HashMap<>();
     private User user;
     private ArrayList<User> participants;
     private static BottomSheetBehavior<View> bottomSheetBehavior;
@@ -174,6 +174,7 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
         // bottomSheetToolbar.setTitle(R.string.bottom_sheet_title);
         if (complete){
             Log.d(TAG, "complete");
+            concludingEvent = true;
             sectionsPagerAdapter = new PagerAdapter(getSupportFragmentManager(), EventActivity.this, TabItem.PARTICIPANTS, TabItem.CLUSTER);
         }
         else {
@@ -289,11 +290,25 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
         View inflatedView = fragment.getInflatedView();
 
         // the event part
+        LinearLayout eventInfo = inflatedView.findViewById(R.id.event_info);
+        eventInfo.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                goMarkerDestination();
+            }
+        });
         TextView eventTitle = inflatedView.findViewById(R.id.titleView);
         eventTitle.setText(new SpannableString(Html.fromHtml("<b>Title: </b>"+ title)));
         TextView eventDestination = inflatedView.findViewById(R.id.destinationView);
         eventDestination.setText(new SpannableString(Html.fromHtml("<b>Destination: </b>"+ destination)));
         // the user part
+        LinearLayout userInfo = inflatedView.findViewById(R.id.user_info);
+        userInfo.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                goMarkerUser();
+            }
+        });
         TextView userPickup = inflatedView.findViewById(R.id.pickupView);
         userPickup.setText(new SpannableString(Html.fromHtml("<b>Pickup: </b>"+ start)));
         TextView userDriver = inflatedView.findViewById(R.id.driverView);
@@ -357,6 +372,9 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
                                     ArrayList<String> ridersUsername = new ArrayList<>();
                                     Boolean isUserRoute = false;
 
+                                    // change the map marker relating to this driver
+                                    changeDriverMarker(driverUID);
+
                                     ArrayList<DocumentReference> ridersRef = cluster.get(driverUID);
                                     drivers.add(participantsUID.get(driverUID));
                                     if (driverUID.equals(user.getId())){
@@ -391,6 +409,8 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
                                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) { // needs api N
                                     drawRoute();
                                 }
+                                // make the cluster tab the selected one
+                                bottomSheetViewPager.setCurrentItem(1);
                                 // signal event concluded
                                 concludingEvent = false;
                             } else {
@@ -411,7 +431,6 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
             //bottomSheetTabLayout.addTab(bottomSheetTabLayout.newTab());
             bottomSheetTabLayout.setupWithViewPager(bottomSheetViewPager);
             // make the cluster tab the selected one
-            bottomSheetViewPager.setCurrentItem(1);
         });
     }
 
@@ -443,7 +462,7 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
                         .icon(bitmapDescriptorFromVector(this, R.drawable.ic_person_black_32dp))
                         // Lowest z-index to force marker to bee at bottom when overlapping
                         .zIndex(0));
-                markers.add(m);
+                markers.put(u.getId(), m);
                 boundsBuilder.include(u.getStartLatLng());
             }
 
@@ -457,7 +476,7 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
                     .icon(bitmapDescriptorFromVector(this, R.drawable.ic_person_green_normal_32dp))
                     // Second highest z-index. Only lowest to destination marker
                     .zIndex(1));
-        markers.add(userMarker);
+        markers.put("Pick-Up", userMarker);
         boundsBuilder.include(startLatLng);
         // Destination marker
         Marker destinationMarker = mMap.addMarker(new MarkerOptions()
@@ -467,7 +486,7 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
                 .icon(bitmapDescriptorFromVector(this, R.drawable.ic_flag_green_complementary_48dp))
                 // Highest z-index. Destination is the most important marker
                 .zIndex(2));
-        markers.add(destinationMarker);
+        markers.put("Destination", destinationMarker);
         boundsBuilder.include(destinationLatLng);
         //mDestination.showInfoWindow();
 
@@ -513,6 +532,18 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
         // for the default behavior to occur (which is for the camera to move such that the
         // marker is centered and for the marker's info window to open, if it has one).
         return false;
+    }
+
+    protected void changeDriverMarker(String markerIdentifier){
+        Marker m;
+        if (user.getId().equals(markerIdentifier)) {
+            m = markers.get("Pick-Up");
+            m.setIcon(bitmapDescriptorFromVector(this, R.drawable.ic_directions_car_green_normal_32dp));
+        }
+        else {
+            m = markers.get(markerIdentifier);
+            m.setIcon(bitmapDescriptorFromVector(this, R.drawable.ic_directions_car_black_32dp));
+        }
     }
 
     @Override
@@ -686,16 +717,16 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
 
     /** Center map on the user marker
      * Initiated by a button in the bottom sheet */
-    public void goMarkerUser(View view){
+    public void goMarkerUser(){
         bottomSheetBehavior.setState(4); // collapse the sheet
-        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(startLatLng, 15));
+        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(startLatLng, 17));
     }
 
     /** Center map on the destination marker
      * Initiated by a button in the bottom sheet */
-    public void goMarkerDestination(View view){
+    public void goMarkerDestination(){
         bottomSheetBehavior.setState(4); // collapse the sheet
-        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(destinationLatLng, 15));
+        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(destinationLatLng, 17));
     }
 
     /** Center map on a participant marker
@@ -703,7 +734,7 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
      * @param participant the participant to center on */
     public static void goMarkerParticipant(User participant){
         bottomSheetBehavior.setState(4); // collapse the sheet
-        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(participant.getStartLatLng(), 15));
+        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(participant.getStartLatLng(), 17));
     }
 
     /** Recenter the map */

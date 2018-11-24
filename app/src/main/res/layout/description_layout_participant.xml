@@ -1,51 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<android.support.constraint.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:id="@+id/participant_info"
     >
 
-    <android.support.constraint.ConstraintLayout
+    <TextView
+        android:id="@+id/nameView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/nameInfo"
-        android:background="@color/white_background_dark">
-
-        <TextView
-            android:id="@+id/nameView"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="8dp"
-            android:drawablePadding="8dp"
-            android:drawableStart="@drawable/baseline_person_black_18"
-            android:gravity="center_vertical"
-            android:paddingBottom="2dp"
-            android:paddingEnd="8dp"
-            android:paddingStart="8dp"
-            android:paddingTop="2dp"
-            android:text="User name"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/goParticipant"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <ImageButton
-            android:id="@+id/goParticipant"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="4dp"
-            android:layout_marginEnd="8dp"
-            android:layout_marginTop="4dp"
-            android:background="@color/white_background_dark"
-            android:gravity="center_vertical"
-            android:onClick="goMarkerParticipant"
-            android:src="@drawable/baseline_directions_black_24"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-    </android.support.constraint.ConstraintLayout>
+        android:drawableStart="@drawable/baseline_person_black_18"
+        android:drawablePadding="8dp"
+        android:gravity="center_vertical"
+        android:paddingStart="8dp"
+        android:paddingTop="2dp"
+        android:paddingEnd="8dp"
+        android:paddingBottom="2dp"
+        android:text="User name"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:background="@color/white_background_dark"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
         android:id="@+id/destinationView"
@@ -59,7 +37,7 @@
         app:layout_constraintBottom_toTopOf="@+id/driverView"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/nameInfo"
+        app:layout_constraintTop_toBottomOf="@+id/nameView"
         android:background="@color/white_background"
         android:gravity="center_vertical"/>
 

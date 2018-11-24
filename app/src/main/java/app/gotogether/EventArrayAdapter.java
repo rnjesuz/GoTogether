@@ -1,22 +1,20 @@
 package app.gotogether;
 
-import android.arch.lifecycle.Lifecycle;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
+import android.graphics.PorterDuff;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.RequiresApi;
-import android.support.design.widget.CoordinatorLayout;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewGroupOverlay;
@@ -26,6 +24,8 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.PopupMenu;
 import android.widget.PopupWindow;
+import android.widget.ProgressBar;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -44,15 +44,9 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Random;
-import java.util.concurrent.ThreadLocalRandom;
 
 import static android.content.Context.LAYOUT_INFLATER_SERVICE;
-import static app.gotogether.MainActivity.getLocationFromAddress;
-import static app.gotogether.MainActivity.names;
-import static app.gotogether.MainActivity.pickup;
 import static app.gotogether.R.layout.event_layout;
-import static app.gotogether.R.layout.fui_idp_button_facebook;
 import static com.firebase.ui.auth.AuthUI.getApplicationContext;
 
 class EventArrayAdapter extends ArrayAdapter<Event> implements ThreadCompleteListener {
@@ -61,6 +55,7 @@ class EventArrayAdapter extends ArrayAdapter<Event> implements ThreadCompleteLis
     private List<Event> eventList;
     private FirebaseAuth auth = FirebaseAuth.getInstance();
     private ViewGroup parentView;
+    private View eventView;
 
     // Constructor
     public EventArrayAdapter(@NonNull Context context, int resource, @NonNull ArrayList<Event> objects) {
@@ -75,6 +70,7 @@ class EventArrayAdapter extends ArrayAdapter<Event> implements ThreadCompleteLis
 
         //store the parentView
         parentView = parent;
+
         //get the property we are displaying
         Event event = eventList.get(position);
 
@@ -82,7 +78,8 @@ class EventArrayAdapter extends ArrayAdapter<Event> implements ThreadCompleteLis
         LayoutInflater inflater = (LayoutInflater) context.getSystemService(LAYOUT_INFLATER_SERVICE);
         assert inflater != null;
         View view = inflater.inflate(event_layout, null);
-
+        //store the event view
+        eventView = view;
 
         TextView title = (TextView) view.findViewById(R.id.titleView);
         TextView destination = (TextView) view.findViewById(R.id.destinationView);
@@ -92,7 +89,7 @@ class EventArrayAdapter extends ArrayAdapter<Event> implements ThreadCompleteLis
         ImageButton options = (ImageButton) view.findViewById(R.id.options);
 
         if (event.isCompleted()){
-            view.setBackgroundColor(context.getResources().getColor(R.color.green_normal_85transparent));
+            view.setBackgroundColor(context.getResources().getColor(R.color.green_normal_85_opacity));
             title.setTextColor(context.getColor(R.color.white));
             title.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_title_white_24dp, 0, 0, 0);
             destination.setTextColor(context.getColor(R.color.white));
@@ -319,6 +316,20 @@ class EventArrayAdapter extends ArrayAdapter<Event> implements ThreadCompleteLis
      * @param eventUID the unique identifier of the concluded event
      */
     private void concludeEvent(String eventUID){
+        // change background to a intermediate / transparent green
+        eventView.setBackgroundColor(context.getResources().getColor(R.color.green_normal_40_opacity));
+        // match the background of the edit button and disable it
+        eventView.findViewById(R.id.editButton).getBackground().setColorFilter(context.getColor(R.color.green_normal_1_opacity), PorterDuff.Mode.MULTIPLY);
+        eventView.findViewById(R.id.editButton).setEnabled(false);
+        // match the background of the options button and disable it
+        eventView.findViewById(R.id.options).getBackground().setColorFilter(context.getColor(R.color.green_normal_1_opacity), PorterDuff.Mode.MULTIPLY);
+        eventView.findViewById(R.id.options).setEnabled(false);
+        // since it's a drawable, we need to change to a more appropriate one
+        ((ImageButton) eventView.findViewById(R.id.options)).setImageResource(R.drawable.ic_more_vert_grey_disabled_24dp);
+        // show the progress bar
+        eventView.findViewById(R.id.progress_circle).setVisibility(View.VISIBLE);
+
+
         Thread thread = new NotifyingThread() {
             @Override
             public void doRun() {
@@ -365,7 +376,30 @@ class EventArrayAdapter extends ArrayAdapter<Event> implements ThreadCompleteLis
      */
     @Override
     public void notifyOfThreadComplete(Thread thread) {
-        MainActivity.triggerRefresh(parentView);
+        TextView title = (TextView) eventView.findViewById(R.id.titleView);
+        TextView destination = (TextView) eventView.findViewById(R.id.destinationView);
+        TextView participantsView = (TextView) eventView.findViewById(R.id.participantsView);
+        Button edit = (Button) eventView.findViewById(R.id.editButton);
+        ImageButton options = (ImageButton) eventView.findViewById(R.id.options);
+        ProgressBar progressBar = (ProgressBar) eventView.findViewById(R.id.progress_circle);
+
+        MainActivity ma = (MainActivity) context;
+        ma.runOnUiThread(new Runnable() {
+                          @Override
+                          public void run() {
+                              eventView.setBackgroundColor(context.getResources().getColor(R.color.green_normal_85_opacity));
+                              title.setTextColor(context.getColor(R.color.white));
+                              title.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_title_white_24dp, 0, 0, 0);
+                              destination.setTextColor(context.getColor(R.color.white));
+                              destination.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_location_on_white_24dp, 0, 0, 0);
+                              participantsView.setTextColor(context.getColor(R.color.white));
+                              participantsView.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_group_white_24dp, 0, 0, 0);
+                              eventView.findViewById(R.id.dividerView).setBackgroundColor(context.getColor(R.color.white));
+                              edit.setVisibility(View.GONE);
+                              options.setVisibility(View.GONE);
+                              progressBar.setVisibility(View.GONE);
+                          }
+                });
     }
 
     /** Apply dim to the activity */

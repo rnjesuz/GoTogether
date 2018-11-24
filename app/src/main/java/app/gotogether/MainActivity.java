@@ -416,18 +416,6 @@ public class MainActivity extends  AppCompatActivity {
         //adapter.notifyDataSetChanged(); TODO is this needed?
     }
 
-    /** triggers the swipe refresh listener on demand */
-    protected static void triggerRefresh(ViewGroup view){
-        SwipeRefreshLayout swipeRefreshLayout = (SwipeRefreshLayout) view.findViewById(R.id.swipe_refresh);
-        swipeRefreshLayout.setColorSchemeColors(view.getResources().getColor(R.color.green_complementary));
-        swipeRefreshLayout.post(new Runnable() {
-            @Override
-            public void run() {
-                swipeRefreshLayout.setRefreshing(true);
-            }
-        });
-    }
-
     /** Method to populate the Activity ListView with the user's events*/
     private void populate() {
         if (adapter!=null)
