@@ -25,7 +25,6 @@ import android.widget.ImageView;
 import android.widget.PopupMenu;
 import android.widget.PopupWindow;
 import android.widget.ProgressBar;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -54,8 +53,8 @@ class EventArrayAdapter extends ArrayAdapter<Event> implements ThreadCompleteLis
     private Context context;
     private List<Event> eventList;
     private FirebaseAuth auth = FirebaseAuth.getInstance();
-    private ViewGroup parentView;
     private View eventView;
+    private ArrayList<Integer> disabledEvents= new ArrayList<>();
 
     // Constructor
     public EventArrayAdapter(@NonNull Context context, int resource, @NonNull ArrayList<Event> objects) {
@@ -65,11 +64,16 @@ class EventArrayAdapter extends ArrayAdapter<Event> implements ThreadCompleteLis
         this.eventList = objects;
     }
 
+    @Override
+    public boolean isEnabled(int position) {
+        if (disabledEvents.contains(position))
+            return false;
+        else
+            return true;
+    }
+
     @RequiresApi(api = Build.VERSION_CODES.M)
     public View getView(int position, View convertView, ViewGroup parent) {
-
-        //store the parentView
-        parentView = parent;
 
         //get the property we are displaying
         Event event = eventList.get(position);
@@ -218,7 +222,8 @@ class EventArrayAdapter extends ArrayAdapter<Event> implements ThreadCompleteLis
                             showEventIdentifier(event.getId(), parent);
                             return true;
                         case R.id.option_conclude:
-                            concludeEvent(event.getId());
+                            disabledEvents.add(position);
+                            concludeEvent(event);
                             return true;
                         default:
                             return false;
@@ -313,9 +318,9 @@ class EventArrayAdapter extends ArrayAdapter<Event> implements ThreadCompleteLis
     /**
      * Conclude the event
      * by sending and http request to the back-end
-     * @param eventUID the unique identifier of the concluded event
+     * @param event the concluded event
      */
-    private void concludeEvent(String eventUID){
+    private void concludeEvent(Event event){
         // change background to a intermediate / transparent green
         eventView.setBackgroundColor(context.getResources().getColor(R.color.green_normal_40_opacity));
         // match the background of the edit button and disable it
@@ -345,7 +350,7 @@ class EventArrayAdapter extends ArrayAdapter<Event> implements ThreadCompleteLis
                     conn.setDoInput(true);
                     conn.connect();
                     String jsonParam = new JSONObject()
-                            .put("eventUID", eventUID)
+                            .put("eventUID", event.getId())
                             .toString();
                     DataOutputStream os = new DataOutputStream(conn.getOutputStream());
                     os.writeBytes(jsonParam);
@@ -362,6 +367,9 @@ class EventArrayAdapter extends ArrayAdapter<Event> implements ThreadCompleteLis
                 } catch (JSONException e) {
                     e.printStackTrace();
                 } finally {
+                    int disabled = eventList.indexOf(event);
+                    disabledEvents.remove(Integer.valueOf(disabled));
+                    event.setCompleted(true);
                     conn.disconnect();
                 }
             }

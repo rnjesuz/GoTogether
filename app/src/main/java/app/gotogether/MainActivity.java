@@ -512,10 +512,12 @@ public class MainActivity extends  AppCompatActivity {
 
     private void initializeAdapter() {
         // Create our new array adapter
-        if(adapter == null)
+        if(adapter == null) {
             adapter = new EventArrayAdapter(this, 0, eventList);
-        // Find list view and bind it with the custom adapter
+        }
+        // Find list view
         eventListView = (ListView) findViewById(R.id.EventList);
+        // Bind ListView with the custom adapter
         eventListView.setAdapter(adapter);
         eventListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
