@@ -55,6 +55,7 @@ class EventArrayAdapter extends ArrayAdapter<Event> implements ThreadCompleteLis
     private FirebaseAuth auth = FirebaseAuth.getInstance();
     private View eventView;
     private ArrayList<Integer> disabledEvents= new ArrayList<>();
+    private String TAG = "EventArrayAdapter";
 
     // Constructor
     public EventArrayAdapter(@NonNull Context context, int resource, @NonNull ArrayList<Event> objects) {
@@ -82,8 +83,6 @@ class EventArrayAdapter extends ArrayAdapter<Event> implements ThreadCompleteLis
         LayoutInflater inflater = (LayoutInflater) context.getSystemService(LAYOUT_INFLATER_SERVICE);
         assert inflater != null;
         View view = inflater.inflate(event_layout, null);
-        //store the event view
-        eventView = view;
 
         TextView title = (TextView) view.findViewById(R.id.titleView);
         TextView destination = (TextView) view.findViewById(R.id.destinationView);
@@ -222,6 +221,9 @@ class EventArrayAdapter extends ArrayAdapter<Event> implements ThreadCompleteLis
                             showEventIdentifier(event.getId(), parent);
                             return true;
                         case R.id.option_conclude:
+                            //store the event view
+                            eventView = view;
+                            Log.d(TAG, "Event clicked: "+ event.getTitle() + "; At position: " + position);
                             disabledEvents.add(position);
                             concludeEvent(event);
                             return true;

@@ -524,8 +524,7 @@ public class MainActivity extends  AppCompatActivity {
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 Event clickedEvent = eventList.get(position);
                 ArrayList<User> participants = eventParticipants.get(clickedEvent);
-                Log.i("Quem sao? ",participants.toString());
-                Log.i("MainActivity", "Event click: "+clickedEvent.getTitle());
+                Log.d(TAG, "Event clicked: "+ clickedEvent.getTitle() + "; At position: " + position);
                 LaunchEvent(clickedEvent, participants);
             }
         });
