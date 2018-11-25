@@ -102,7 +102,7 @@ public class JoinEventOldActivity extends AppCompatActivity implements OnMapRead
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_join_event_old);
-        getSupportActionBar().setHomeAsUpIndicator(R.drawable.ic_close_black_24dp); // change the return to parent button
+        getSupportActionBar().setHomeAsUpIndicator(R.drawable.ic_close_white_24dp); // change the return to parent button
 
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.destinationMap_join);

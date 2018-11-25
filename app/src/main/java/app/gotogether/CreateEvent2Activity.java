@@ -215,7 +215,7 @@ public class CreateEvent2Activity extends AppCompatActivity implements OnMapRead
         // Enable the Up button
         actionBar.setDisplayHomeAsUpEnabled(true);
         // change the up button icon
-        actionBar.setHomeAsUpIndicator(R.drawable.ic_close_black_24dp);
+        actionBar.setHomeAsUpIndicator(R.drawable.ic_close_white_24dp);
         // Grab EditText for title input from actionbar
         View actionBarView = actionBar.getCustomView();
         eventTitle = actionBarView.findViewById(R.id.titleField);
@@ -638,7 +638,7 @@ public class CreateEvent2Activity extends AppCompatActivity implements OnMapRead
         ConstraintLayout driverInputs = findViewById(R.id.driver_inputs);
         driverInputs.setVisibility(View.VISIBLE);
         // change up button icon
-        actionBar.setHomeAsUpIndicator(R.drawable.ic_close_black_24dp); // the default arrow
+        actionBar.setHomeAsUpIndicator(R.drawable.ic_close_white_24dp); // the default arrow
         // redraw
         findViewById(R.id.create_done).setVisibility(View.VISIBLE);
         // slide down the suggestions layout

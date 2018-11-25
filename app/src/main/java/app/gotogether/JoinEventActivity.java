@@ -1,8 +1,6 @@
 package app.gotogether;
 
 import android.Manifest;
-import android.animation.Animator;
-import android.animation.AnimatorListenerAdapter;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
@@ -141,7 +139,7 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_join_event);
-        getSupportActionBar().setHomeAsUpIndicator(R.drawable.ic_close_black_24dp); // change the return to parent button
+        getSupportActionBar().setHomeAsUpIndicator(R.drawable.ic_close_white_24dp); // change the return to parent button
 
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
@@ -221,7 +219,7 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
         // Enable the Up button
         actionBar.setDisplayHomeAsUpEnabled(true);
         // change the up button icon
-        actionBar.setHomeAsUpIndicator(R.drawable.ic_close_black_24dp);
+        actionBar.setHomeAsUpIndicator(R.drawable.ic_close_white_24dp);
         // set slider as invisible
         suggestions = findViewById(R.id.suggestions_slider);
         suggestions.setVisibility(View.INVISIBLE);
@@ -612,7 +610,7 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
         ConstraintLayout driverInputs = findViewById(R.id.driver_inputs);
         driverInputs.setVisibility(View.VISIBLE);
         // change up button icon
-        actionBar.setHomeAsUpIndicator(R.drawable.ic_close_black_24dp); // the default arrow
+        actionBar.setHomeAsUpIndicator(R.drawable.ic_close_white_24dp); // the default arrow
         // change create option color
         TextView create = findViewById(R.id.action_join);
         create.setVisibility(View.VISIBLE);

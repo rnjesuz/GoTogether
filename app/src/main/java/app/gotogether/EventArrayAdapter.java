@@ -277,7 +277,8 @@ class EventArrayAdapter extends ArrayAdapter<Event> implements ThreadCompleteLis
             public void onClick(View view) {
                 // Copy to Clipboard
                 ClipboardManager clipboard = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
-                ClipData clip = ClipData.newPlainText("Identifier", "Enter this identifier in Go-Together to join my Event!: " + eventUID);
+                //ClipData clip = ClipData.newPlainText("Identifier", "Enter this identifier in Go-Together to join my Event!: " + eventUID);
+                ClipData clip = ClipData.newPlainText("Identifier", eventUID);
                 clipboard.setPrimaryClip(clip);
                 // Confirm copy to user bia Toast
                 Toast.makeText(context, "Identifier copied to clipboard!", Toast.LENGTH_SHORT).show();

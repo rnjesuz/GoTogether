@@ -101,7 +101,7 @@ public class CreateEventOldActivity extends AppCompatActivity implements
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_create_event_old);
-        getSupportActionBar().setHomeAsUpIndicator(R.drawable.ic_close_black_24dp); // change the return to parent button
+        getSupportActionBar().setHomeAsUpIndicator(R.drawable.ic_close_white_24dp); // change the return to parent button
 
 
         // Initialize both fragment (Start and Destination queries) for Google's Places API

@@ -1,8 +1,6 @@
 package app.gotogether;
 
 import android.Manifest;
-import android.animation.Animator;
-import android.animation.AnimatorListenerAdapter;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.ClipData;
@@ -239,7 +237,7 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
         // Enable the Up button
         actionBar.setDisplayHomeAsUpEnabled(true);
         // change the up button icon
-        actionBar.setHomeAsUpIndicator(R.drawable.ic_close_black_24dp);
+        actionBar.setHomeAsUpIndicator(R.drawable.ic_close_white_24dp);
 
         // set slider as invisible
         // TODO
@@ -730,7 +728,7 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
         ConstraintLayout driverInputs = findViewById(R.id.driver_inputs);
         driverInputs.setVisibility(View.VISIBLE);
         // change up button icon
-        actionBar.setHomeAsUpIndicator(R.drawable.ic_close_black_24dp); // the default arrow
+        actionBar.setHomeAsUpIndicator(R.drawable.ic_close_white_24dp); // the default arrow
         // change create option color
         TextView create = findViewById(R.id.action_create);
         create.setVisibility(View.VISIBLE);
@@ -1072,7 +1070,8 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
             public void onClick(View view) {
                 // Copy to Clipboard
                 ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
-                ClipData clip = ClipData.newPlainText("Identifier", "Enter this identifier in Go-Together to join my Event!: " + eventUID);
+                //ClipData clip = ClipData.newPlainText("Identifier", "Enter this identifier in Go-Together to join my Event!: " + eventUID);
+                ClipData clip = ClipData.newPlainText("Identifier", eventUID);
                 clipboard.setPrimaryClip(clip);
                 // Confirm copy to user bia Toast
                 Toast.makeText(CreateEventActivity.this, "Identifier copied to clipboard!", Toast.LENGTH_SHORT).show();

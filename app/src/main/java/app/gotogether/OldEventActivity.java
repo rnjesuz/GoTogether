@@ -415,7 +415,8 @@ public class OldEventActivity extends AppCompatActivity implements OnMapReadyCal
             public void onClick(View view) {
                 // Copy to Clipboard
                 ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
-                ClipData clip = ClipData.newPlainText("Identifier", "Enter this identifier in Go-Together to join my Event!: " + eventUID);
+                //ClipData clip = ClipData.newPlainText("Identifier", "Enter this identifier in Go-Together to join my Event!: " + eventUID);
+                ClipData clip = ClipData.newPlainText("Identifier", eventUID);
                 clipboard.setPrimaryClip(clip);
                 // Confirm copy to user bia Toast
                 Toast.makeText(OldEventActivity.this, "Identifier copied to clipboard!", Toast.LENGTH_SHORT).show();

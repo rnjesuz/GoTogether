@@ -30,6 +30,7 @@ import android.text.Html;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.style.ImageSpan;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -228,17 +229,20 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
         // sheet starts collapsed
         bottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
 
-        // set sheet's peek height
-        final TabLayout tb = (TabLayout) findViewById(R.id.bottom_sheet_tabs);
         // need a GlobalLayoutListener to wait for the view to be drawn
+        final TabLayout tb = (TabLayout) findViewById(R.id.bottom_sheet_tabs);
         ViewTreeObserver vto = tb.getViewTreeObserver();
         vto.addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
 
             @Override
             public void onGlobalLayout() {
-                // Tablayout was drawn now we can get it's height
+                // TabLayout was drawn now we can get it's height
+                int tbHeight = tb.getHeight();
                 // and set bottom sheet's peek height
-                bottomSheetBehavior.setPeekHeight(tb.getHeight());
+                bottomSheetBehavior.setPeekHeight(tbHeight);
+
+                // and set some padding to accommodate for bottom shelf - so the google logo shows
+                mMap.setPadding(0, 0, 0, tbHeight);
 
                 ViewTreeObserver obs = tb.getViewTreeObserver();
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
@@ -522,12 +526,6 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
 
         // disable map tools
         googleMap.getUiSettings().setMapToolbarEnabled(false);
-
-        // set some padding to accommodate for bottom shelf
-        /*DisplayMetrics displayMetrics = new DisplayMetrics();
-        getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
-        int screenHeight = displayMetrics.heightPixels;
-        mMap.setPadding(0, screenHeight / 2, 0, 0);*/
 
         // Center map between pick-up and destination
         final View mapView = getSupportFragmentManager().findFragmentById(R.id.map_event).getView(); //TODO remove? already a field in the activity
@@ -840,7 +838,8 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
             public void onClick(View view) {
                 // Copy to Clipboard
                 ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
-                ClipData clip = ClipData.newPlainText("Identifier", "Enter this identifier in Go-Together to join my Event!: " + eventUID);
+                //ClipData clip = ClipData.newPlainText("Identifier", "Enter this identifier in Go-Together to join my Event!: " + eventUID);
+                ClipData clip = ClipData.newPlainText("Identifier", eventUID);
                 clipboard.setPrimaryClip(clip);
                 // Confirm copy to user bia Toast
                 Toast.makeText(EventActivity.this, "Identifier copied to clipboard!", Toast.LENGTH_SHORT).show();
