@@ -66,16 +66,18 @@ def cluster_route(request):
         p = Participant(**participant.to_dict())
         p.set_id(participant.id)
         source = p.start.get(u'street')
-        distance_results = gmaps.distance_matrix(source, destination)  # TODO this can result ZERO_RESULTS
+        # distance_results = gmaps.distance_matrix(source, destination)  # TODO this can result ZERO_RESULTS
         direction_results = gmaps.directions(source, destination)  # TODO this may probably also return ZERO_RESULTS
         if p.is_driver():
             drivers.append(p)
-            driversDistance[p.id] = distance_results.get(u'rows')[0].get(u'elements')[0].get(u'distance').get(u'value')
+            # driversDistance[p.id]= distance_results.get(u'rows')[0].get(u'elements')[0].get(u'distance').get(u'value')
+            driversDistance[p.id]= direction_results.get(u'rows')[0].get(u'elements')[0].get(u'distance').get(u'value')
             driversDirections[p.id] = direction_results
             cluster[p.id] = []
         else:
             riders.append(p)
-            ridersDistance[p.id] = distance_results.get(u'rows')[0].get(u'elements')[0].get(u'distance').get(u'value')
+            # ridersDistance[p.id] = distance_results.get(u'rows')[0].get(u'elements')[0].get(u'distance').get(u'value')
+            ridersDistance[p.id] = direction_results.get(u'routes')[0].get(u'legs')[0].get(u'distance').get(u'value')
             ridersDirections[p.id] = direction_results
         participants[p.id] = p
 
@@ -83,6 +85,7 @@ def cluster_route(request):
         RtoDRouteShare[rider] = {}
         for driver in driversDistance.keys():
             RtoDRouteShare[rider][driver] = get_shared_path(rider, driver)
+
 
     print("Routes: {}".format(RtoDRouteShare))
     group_best_match()
@@ -149,7 +152,7 @@ def group_cells():
                     if next_driver in cluster:
                         cluster_list = cluster.get(next_driver)
                         cluster_list_length = len(cluster_list)
-                        # spiderman meme pointing at himself
+                        # me, myself and I
                         if participants.get(next_driver) == participants.get(driver):
                             reset = False
                             continue
