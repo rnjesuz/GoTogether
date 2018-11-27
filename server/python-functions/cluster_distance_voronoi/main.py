@@ -51,6 +51,7 @@ def cluster_distance_voronoi(request):
     # if event_uid is None:
     # 	event_uid = u'SBgh4MKtplFEbYXLvmMY'
     event_uid = request['eventUID']
+    event_mode = request['mode']
     event_ref = db.collection(u'events').document(event_uid)
     participants_ref = db.collection(u'events').document(event_uid).collection(u'participants')
     print(u'Completed event: {}'.format(event_uid))
@@ -85,10 +86,18 @@ def cluster_distance_voronoi(request):
 
     print("Distances: {}".format(RtoDDistance))
     group_best_match()
-    print(u'Initial groupings: {}'.format(cluster))
-    group_cells()
-    print(u'Created clusters: {}'.format(cluster))
-    #  update_database()
+    print(u'Voronoi cluster: {}'.format(cluster))
+    if event_mode == 'cars':
+        print("Grouping cells by reducing number of cars.")
+        group_cells_cars()
+    elif event_mode == 'distance':
+        print("Grouping cells by reducing distance travelled")
+        group_cells_distance()
+    else:  # fail-safe
+        print("Grouping with fail-safe")
+        group_cells()
+    print(u'Final clusters: {}'.format(cluster))
+    update_database()
     #  return cluster
     #  return 'OK'
     #  data = {'response': 'OK'}
@@ -103,7 +112,6 @@ def group_best_match():
         while not match:
             best_distance = 0
             best_match = None
-            # TODO if no driver left in list then return exception
             for driver in RtoDDistance[rider]:
                 # TODO use a percentage calculation? best_route / nº nodes
                 if RtoDDistance[rider][driver] > best_distance:
@@ -115,11 +123,66 @@ def group_best_match():
                 cluster_length = 0
             participant = participants.get(best_match)
             seats = participant.get_seats()
-            if seats >= cluster_length:
+            if seats > cluster_length:
                 cluster[best_match].append(rider)
                 match = True
             else:
                 del RtoDDistance[rider][best_match]
+                if not RtoDDistance[rider]:  # is empty
+                    match = True
+
+
+######################
+def group_cells_distance():
+    # calculate distances between the selected drivers
+    DtoDDistance = {}
+    for driver in drivers:
+        DtoDDistance[driver] = {}
+        source = participants.get(driver).start.get('street')
+        for other_driver in drivers:
+            if driver is other_driver:
+                continue
+            destination = participants.get(other_driver).start.get('street')
+            DtoDDistance[driver][other_driver] = gmaps.distance_matrix(source, destination).get(u'rows')[0].get(u'elements')[0].get(u'distance').get(u'value')  # TODO this can result ZERO_RESULTS
+    # group cars with the best available option
+    group_best_match_drivers(DtoDDistance)
+
+
+######################
+def group_best_match_drivers(DtoDDistance):
+    for driver in DtoDDistance:
+        match = False
+        while not match:
+            best_distance = 0
+            best_match = None
+            for new_driver in DtoDDistance[driver]:
+                # TODO use a percentage calculation? best_route / nº nodes
+                if DtoDDistance[driver][new_driver] > best_distance:
+                    best_distance = DtoDDistance[driver][new_driver]
+                    best_match = new_driver
+            participant = participants.get(best_match)
+            seats = participant.get_seats()
+            if best_match in cluster:
+                cluster_length = len(cluster.get(best_match))
+            else:
+                cluster_length = seats
+            if seats > cluster_length:
+                # join cars
+                for rider in cluster.get(driver):
+                    cluster[best_match].append(rider)
+                cluster[best_match].append(driver)
+                # remove old car from available clusters
+                del cluster[driver]
+                match = True
+            else:
+                del DtoDDistance[driver][best_match]
+                if not DtoDDistance[driver]:  # is empty
+                    match = True
+
+
+######################
+def group_cells_cars():
+    group_cells()
 
 
 ######################

@@ -53,6 +53,7 @@ def cluster_distance_radius(request):
     # if event_uid is None:
     # 	event_uid = u'SBgh4MKtplFEbYXLvmMY'
     event_uid = request['eventUID']
+    event_mode = request['mode']
     event_ref = db.collection(u'events').document(event_uid)
     participants_ref = db.collection(u'events').document(event_uid).collection(u'participants')
     print(u'Completed event: {}'.format(event_uid))
@@ -78,8 +79,7 @@ def cluster_distance_radius(request):
             ridersDistance[p.id] = distance_results.get(u'rows')[0].get(u'elements')[0].get(u'distance').get(u'value')
         participants[p.id] = p
 
-    radius = 10  # Kilometers
-
+    radius = 5  # Kilometers
     matches = 0
     while len(ridersDistance.keys()) > matches:
         for driver in driversDistance:
@@ -91,19 +91,27 @@ def cluster_distance_radius(request):
                 driver_cluster_len = len(cluster.get(driver))
                 if driver_cluster_len < seats:
                     if is_inside_radius(participants.get(driver).start.get(u'street'), participants.get(possible_riders[i]).start.get(u'street'), radius):
-                        print(u'Group! rider {} grouped with driver {}.'.format(possible_riders[i], driver))
+                        print(u'Group! Rider \'{}\' grouped with driver \'{}\'.'.format(possible_riders[i], driver))
                         cluster[driver].append(possible_riders[i])
                         riders.remove(possible_riders[i])
                         matches += 1
                     else:
-                        print(u'NO Group! rider {} not grouped with driver {}.'.format(possible_riders[i], driver))
-        print('Grouped: {}'.format(cluster))
+                        print(u'NO Group! Insufficient seats')
         print('Remaining riders: {}'.format(riders))
-        radius = radius + 2  # increase radius by 2 Km and repeat
+        print('Increasing radius')
+        radius = radius + 5  # increase radius by X Km and repeat
 
-    print(u'Initial grouping: {}'.format(cluster))
-    group_cells()
-    print(u'Created clusters: {}'.format(cluster))
+    print(u'Radial clusters: {}'.format(cluster))
+    if event_mode == 'cars':
+        print("Grouping cells by reducing number of cars.")
+        group_cells_cars()
+    elif event_mode == 'distance':
+        print("Grouping cells by reducing distance travelled")
+        group_cells_distance()
+    else:  # fail-safe
+        print("Grouping with fail-safe")
+        group_cells()
+    print(u'Final clusters: {}'.format(cluster))
     update_database()
     #  return cluster
     #  return 'OK'
@@ -147,6 +155,55 @@ def haversine_formula(lon1, lat1, lon2, lat2):
     c = 2 * asin(sqrt(a))
     r = 6371  # Radius of earth in kilometers. Use 3956 for miles
     return c * r
+
+
+######################
+def group_cells_distance():
+    radius = 10  # Kilometers
+    for driver in driversDistance:
+        print('DRIVER: {}'.format(driver))
+        if driver in drivers:
+            reset = True
+            while reset:
+                possible_drivers = drivers.copy()
+                drivers_range = len(possible_drivers)
+                driver_cluster_len = len(cluster.get(driver))
+                for i in range(drivers_range):
+                    # it's the same individual
+                    if driver is possible_drivers[i]:
+                        continue
+                    participant = participants.get(possible_drivers[i])
+                    seats = participant.get_seats()
+                    if driver_cluster_len < seats - (len(cluster.get(possible_drivers[i])) + 1):
+                        if is_inside_radius(participants.get(driver).start.get(u'street'),
+                                            participants.get(possible_drivers[i]).start.get(u'street'), radius):
+                            print(u'Group! Driver \'{}\' grouped with new driver \'{}\'.'.format(driver, possible_drivers[i]))
+                            for rider in cluster.get(driver) or []:
+                                cluster[possible_drivers[i]].append(rider)
+                            cluster[possible_drivers[i]].append(driver)
+                            drivers.remove(driver)
+                            del cluster[driver]
+                            reset = False
+                            # Break the inner loop
+                            break
+                        else:
+                            reset = True
+                            print(u'NO Group! Insufficient seats')
+                    else:
+                        reset = False
+                else:
+                    # Continue if the inner loop wasn't broken
+                    print('Increasing radius')
+                    radius = radius + 10  # increase radius by 2 Km and repeat
+                    continue
+                # Inner loop was broken, break the outer
+                break
+            print('Remaining drivers: {}'.format(drivers))
+
+
+######################
+def group_cells_cars():
+    group_cells()
 
 
 ######################

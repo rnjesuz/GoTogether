@@ -21,6 +21,7 @@ ridersDistance = ValueSortedDict()
 RtoDRouteShare = {}
 
 participants = {}
+participantsDirections = {}
 
 cluster = {}
 
@@ -30,7 +31,8 @@ def cluster_route(request):
     global event_ref
     global drivers, driversDistance, driversDirections
     global riders, ridersDistance, ridersDirections
-    global participants, RtoDRouteShare, cluster
+    global participants, participantsDirections
+    global RtoDRouteShare, cluster
 
     drivers = []
     driversDirections = {}
@@ -43,6 +45,7 @@ def cluster_route(request):
     RtoDRouteShare = {}
 
     participants = {}
+    participantsDirections = {}
 
     cluster = {}
 
@@ -51,6 +54,7 @@ def cluster_route(request):
     # if event_uid is None:
     # 	event_uid = u'SBgh4MKtplFEbYXLvmMY'
     event_uid = request['eventUID']
+    event_mode = request['mode']
     event_ref = db.collection(u'events').document(event_uid)
     participants_ref = db.collection(u'events').document(event_uid).collection(u'participants')
     print(u'Completed event: {}'.format(event_uid))
@@ -71,15 +75,16 @@ def cluster_route(request):
         if p.is_driver():
             drivers.append(p)
             # driversDistance[p.id]= distance_results.get(u'rows')[0].get(u'elements')[0].get(u'distance').get(u'value')
-            driversDistance[p.id]= direction_results.get(u'rows')[0].get(u'elements')[0].get(u'distance').get(u'value')
-            driversDirections[p.id] = direction_results
+            driversDistance[p.id] = direction_results[0].get(u'legs')[0].get(u'distance').get(u'value')
+            # driversDirections[p.id] = direction_results
             cluster[p.id] = []
         else:
             riders.append(p)
             # ridersDistance[p.id] = distance_results.get(u'rows')[0].get(u'elements')[0].get(u'distance').get(u'value')
-            ridersDistance[p.id] = direction_results.get(u'routes')[0].get(u'legs')[0].get(u'distance').get(u'value')
-            ridersDirections[p.id] = direction_results
+            ridersDistance[p.id] = direction_results[0].get(u'legs')[0].get(u'distance').get(u'value')
+            # ridersDirections[p.id] = direction_results
         participants[p.id] = p
+        participantsDirections[p.id] = direction_results
 
     for rider in ridersDistance.keys():
         RtoDRouteShare[rider] = {}
@@ -87,11 +92,19 @@ def cluster_route(request):
             RtoDRouteShare[rider][driver] = get_shared_path(rider, driver)
 
 
-    print("Routes: {}".format(RtoDRouteShare))
-    group_best_match()
-    print("Route cluster: {}".format(cluster))
-    group_cells()
-    print(u'Created cluster: {}'.format(cluster))
+    print("Shared Nodes: {}".format(RtoDRouteShare))
+    group_best_match_riders()
+    print("Route clusters: {}".format(cluster))
+    if event_mode == 'cars':
+        print("Grouping cells by reducing number of cars.")
+        group_cells_cars()
+    elif event_mode == 'distance':
+        print("Grouping cells by reducing distance travelled")
+        group_cells_distance()
+    else:  # fail-safe
+        print("Grouping with fail-safe")
+        group_cells()
+    print(u'Final clusters: {}'.format(cluster))
     update_database()
     # return cluster
     # return 'OK'
@@ -100,28 +113,25 @@ def cluster_route(request):
 
 
 ###########################
-def get_shared_path(rider, driver):
+def get_shared_path(first_participant, second_participant):
     share = 0
-    r_directions = ridersDirections.get(rider)[0].get('legs')[0].get('steps')
-    d_directions = driversDirections.get(driver)[0].get('legs')[0].get('steps')
-    riders_directions_range = len(r_directions)
-    drivers_directions_range = len(d_directions)
-    for r_steps in range(riders_directions_range):
-        for d_steps in range(drivers_directions_range):
-            if (r_directions[r_steps].get('start_location') == d_directions[d_steps].get('start_location')) and (r_directions[r_steps].get('end_location') == d_directions[d_steps].get('end_location')):
+    f_directions = participantsDirections.get(first_participant)[0].get('legs')[0].get('steps')
+    s_directions = participantsDirections.get(second_participant)[0].get('legs')[0].get('steps')
+    for r_steps in range(len(f_directions)):
+        for d_steps in range(len(s_directions)):
+            if (f_directions[r_steps].get('start_location') == s_directions[d_steps].get('start_location')) and (f_directions[r_steps].get('end_location') == s_directions[d_steps].get('end_location')):
                 share = share+1
     return share
 
 
 ##########################
-def group_best_match():
+def group_best_match_riders():
     global participants
     for rider in RtoDRouteShare:
         match = False
         while not match:
             best_route = 0
             best_match = None
-            # TODO if no driver left in list then return exception
             for driver in RtoDRouteShare[rider]:
                 # TODO use a percentage calculation? best_route / number of nodes
                 if RtoDRouteShare[rider][driver] > best_route:
@@ -133,11 +143,65 @@ def group_best_match():
                 cluster_length = 0
             participant = participants.get(best_match)
             seats = participant.get_seats()
-            if seats >= cluster_length:
+            if seats > cluster_length:
                 cluster[best_match].append(rider)
                 match = True
             else:
                 del RtoDRouteShare[rider][best_match]
+                if not RtoDRouteShare[rider]:  # is empty
+                    match = True
+
+
+######################
+def group_cells_distance():
+    # calculate route shared with other drivers, till the destination
+    DtoDRouteShare = {}
+    for driver in driversDistance.keys():
+        DtoDRouteShare[driver] = {}
+        for other_driver in driversDistance.keys():
+            if driver is other_driver:
+                continue
+            DtoDRouteShare[driver][other_driver] = get_shared_path(driver, other_driver)
+    # group cars with the best available option
+    group_best_match_drivers(DtoDRouteShare)
+
+
+######################
+def group_best_match_drivers(DtoDRouteShare):
+    global participants
+    for driver in DtoDRouteShare:
+        match = False
+        while not match:
+            best_route = 0
+            best_match = None
+            for new_driver in DtoDRouteShare[driver]:
+                # TODO use a percentage calculation? best_route / number of nodes
+                if DtoDRouteShare[driver][new_driver] > best_route:
+                    best_route = DtoDRouteShare[driver][new_driver]
+                    best_match = new_driver
+            participant = participants.get(best_match)
+            seats = participant.get_seats()
+            if best_match in cluster:
+                cluster_length = len(cluster.get(best_match))
+            else:
+                cluster_length = seats
+            if seats > cluster_length + len(cluster.get(driver)) + 1:
+                # join cars
+                for rider in cluster.get(driver):
+                    cluster[best_match].append(rider)
+                cluster[best_match].append(driver)
+                # remove old car from available clusters
+                del cluster[driver]
+                match = True
+            else:
+                del DtoDRouteShare[driver][best_match]
+                if not DtoDRouteShare[driver]:  # is empty
+                    match = True
+
+
+######################
+def group_cells_cars():
+    group_cells()
 
 
 ######################
@@ -152,7 +216,7 @@ def group_cells():
                     if next_driver in cluster:
                         cluster_list = cluster.get(next_driver)
                         cluster_list_length = len(cluster_list)
-                        # me, myself and I
+                        # looking in the mirror
                         if participants.get(next_driver) == participants.get(driver):
                             reset = False
                             continue
@@ -161,6 +225,7 @@ def group_cells():
                             reset = False
                             continue
                         # driver has available seats
+                        # #(riders)+driver <= (possible car).seats - already occupied seats
                         elif (len(cluster.get(driver)))+1 <= (participants.get(next_driver).get_seats() - cluster_list_length):
                             # TODO match full car
                             # TODO only match if round trip isn't bigger than separate trip
