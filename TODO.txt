@@ -1,19 +1,15 @@
-[0] Melhorar o cluster_route !!!! remover API callls desnecesarias, etc
-[1] TODOs nos cluster - improvements
+﻿[1] TODOs nos cluster - improvements
 [2] clusters - testar se algum cluster ja foi criado? apagar o antigo se sim, ou excepçao?
 [2] EvenAdapter - fazer new EventAdapter { onChanged(){ adicionar novo elemento aos Eventos } }
 	Para impedir de apagar todos os eventols velhos e colocar novos
 [3] CreateEvent - melhorar fluxo de transições entre focusables. quanto um termina mas outro ainda esta livre. O Titulo nao e considerado. outros tbm nao?
-[4] CreateEvent - Action mais +equeno?
-[5] JoinEvent - testar se já estamos Joined
+[4] CreateEvent - Action mais pequeno?
+[5][TODO - Test] JoinEvent - testar se já estamos Joined
 [6] Auth - analisar display name dos guests - usar null, usar guest blabla, usar UID, ...
 [7] AutoComplete - não parece favorecer Portugal... Bug?
 [8] Se o LatLngfor no oceano/propriedade privada/zona sem geolocations o retorno é null. nao da para converter LatLng <=> Adress
 [9] Se não houver internet para comunicar com o server - fazer Timeout? - já é verificado pelas funções do firebase?
-[10] Slider da pergunta de carro não funciona se for muito rápido
 [11] O autocomplete retorna o máximo de 5 sugestões - Resenhar janela e tamanho do texto?
 [12] TextView de destino e de pick-up tem scroll manhoso
 [13] Guardar estado das actividades (Save State?) - principalmente na MainActivity 
-[14] ordenaçao dos eventos nao é consistente - problema de leitura da DB?
-[14 a] completar eventos mostra animaçoes inconsistentes as vezes - quando items estao desordenados, acho
-	- garantir que a ordenaçao de visualização é a mesma que a guardada nas listas
+[14] Ordenaçao dos eventos nao é consistente - problema de leitura da DB?

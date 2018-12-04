@@ -66,6 +66,7 @@ public class MainActivity extends  AppCompatActivity {
     private static final String TAG = "MainActivity";
     private FloatingActionMenu menuEvent;
     private ArrayList<Event> eventList = new ArrayList<>();
+    private ArrayList<String> eventUIDList = new ArrayList<>();
     private ArrayList<User> participants;
     private static HashMap<Event,ArrayList<User>> eventParticipants = new HashMap<Event, ArrayList<User>>();
     private Handler mUiHandler = new Handler();
@@ -73,13 +74,6 @@ public class MainActivity extends  AppCompatActivity {
     private ListView eventListView;
     private FirebaseFirestore db;
     private FirebaseAuth auth;
-
-    /* Testing variables */
-    String[] titles = {"Tour de France", "ComicCon", "Sombra da bananeira", "Mundial 2022", "Fuga dos Paraliticos po Deserto", "Rumo ao tetra", "VDL", "Á procura da piada", "feira do tremoço", "po tras do sol posto", "ver os animais", "coçar macacos no zoo"};
-    String[] locations =    {"Cascais", "Oeiras", "Setúbal", "Sintra", "Ericeira", "Óbidos", "Entroncamento", "Amadora", "Belém, Lisboa", "Caparica", "Lisboa", "Algarve", "Porto", "Moscovo", "Vaticano", "Nova Deli", "Washington DC", "Faro", "Copenhaga", "Berlim", "Londres", "Paris", "Madrid", "Seville", "Beja", "Funchal", "Pico, Açores", "Braga", "Guarda, Portugal", "Guimarães", "Santarém", "Seia, Portugal"};
-    static String[] pickup =       {"Cascais", "Oeiras", "Setúbal", "Sintra", "Ericeira", "Óbidos", "Entroncamento", "Amadora", "Belém, Lisboa", "Caparica", "Lisboa", "Algarve", "Porto", "Moscovo", "Vaticano", "Nova Deli", "Washington DC", "Faro", "Copenhaga", "Berlim", "Londres", "Paris", "Madrid", "Seville", "Beja", "Funchal", "Pico, Açores", "Braga", "Guarda, Portugal", "Guimarães", "Santarém", "Seia, Portugal"};
-    static String[] names = {"Ricardo", "Margarida", "Carlos", "Anabela", "TóZé", "hunter2", "MissingNo", "Anon", "*****", "aijasus", "robot2", "robot1", "Gladis", "robot3", "robot4", "Neo", "Morpheus", "Trinity", "Agent Smith", "Gaben", "Notch", "Obama", "Goku", "Ezio", "Altair", "Rambo", "Rocky", "John Snow", "Darth JarJar", "Luke", "DumbHodor", "Hari Potter", "Ben Dover"};
-    private static MainActivity context;
 
 
     /* Functionality Android methods*/
@@ -104,9 +98,6 @@ public class MainActivity extends  AppCompatActivity {
                 .setPersistenceEnabled(true)
                 .build();
         db.setFirestoreSettings(settings);
-
-        // the context
-        context = MainActivity.this;
 
         menuEvent = (FloatingActionMenu) findViewById(R.id.menu_event);
 
@@ -260,6 +251,8 @@ public class MainActivity extends  AppCompatActivity {
 
         if (identifier.matches("")){
             Toast.makeText(MainActivity.this, "The provided identifier is an invalid one. Please try again.", Toast.LENGTH_SHORT).show();
+        } else if (eventUIDList.contains(identifier)){
+            Toast.makeText(MainActivity.this, "Your already taking part in this event.", Toast.LENGTH_SHORT).show();
         } else {
             Intent intent = new Intent(MainActivity.this, JoinEventActivity.class);
             intent.putExtra("eventUID", identifier);
@@ -420,7 +413,10 @@ public class MainActivity extends  AppCompatActivity {
     private void populate() {
         if (adapter!=null)
             adapter.clear();
-        // get the user and its uniqueidentifier
+        eventList.clear();
+        eventUIDList.clear();
+        eventParticipants.clear();
+        // get the user and its unique identifier
         FirebaseUser fbUser = auth.getCurrentUser();
         String uid = fbUser.getUid();
         // get the events the user is participating in
@@ -481,6 +477,7 @@ public class MainActivity extends  AppCompatActivity {
                                                                         newEvent.setParticipantsList(participants);
                                                                     }
                                                                     eventList.add(newEvent);
+                                                                    eventUIDList.add(eventID);
                                                                     eventParticipants.put(newEvent, participants);
                                                                     // initialize the adapter
                                                                     initializeAdapter();
@@ -528,46 +525,6 @@ public class MainActivity extends  AppCompatActivity {
                 LaunchEvent(clickedEvent, participants);
             }
         });
-    }
-
-    /** Method to populate the Activity ListView with dummy events */
-    private void testPopulate() {
-        Random random = new Random();
-        // Create our events
-        int eventNum = ThreadLocalRandom.current().nextInt(1, 10 + 1);
-        Log.i("Nº Eventos", Integer.toString(eventNum));
-        for (int i=0; i<eventNum; i++ ) {
-            int participantsNum = ThreadLocalRandom.current().nextInt(3, 7 + 1);
-            Log.i("Nº Particiantes", Integer.toString(participantsNum));
-            participants = new ArrayList<>();
-            for(int j=0; j<participantsNum; j++) {
-                User participant;
-                String name = names[random.nextInt(names.length)];
-                Log.i("Participant Name",name);
-                String addr = pickup[random.nextInt(pickup.length)];
-                Log.i("Participant PickUp",addr);
-                // is driver?
-                boolean driver = random.nextBoolean();
-                int seats = 0;
-                if (driver) {
-                    seats = ThreadLocalRandom.current().nextInt(1, 6+1);
-                    participant = new User("teste", name, addr, getLocationFromAddress(this, addr), seats );
-                }
-                else {
-                    participant = new User("teste", names[random.nextInt(names.length)], addr, getLocationFromAddress(this, addr));
-                }
-                participants.add(participant);
-            }
-            Event event = new Event(titles[random.nextInt(titles.length)], locations[random.nextInt(locations.length)], participants.size(), "ic_launcher_round");
-            event.setParticipantsList(participants);
-            eventList.add(event);
-            Log.i("este evento", event.toString());
-            Log.i("estes participantes", participants.toString());
-            eventParticipants.put(event, participants);
-            Log.i("este evento 2", event.toString());
-            eventParticipants.get(event);
-            Log.i("estes participantes 2", eventParticipants.get(event).toString());
-        }
     }
 
     /** Create a Bundle with destinations Latitude, Longitude and Address
