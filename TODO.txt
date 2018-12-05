@@ -4,7 +4,6 @@
 	Para impedir de apagar todos os eventols velhos e colocar novos
 [3] CreateEvent - melhorar fluxo de transições entre focusables. quanto um termina mas outro ainda esta livre. O Titulo nao e considerado. outros tbm nao?
 [4] CreateEvent - Action mais pequeno?
-[5][TODO - Test] JoinEvent - testar se já estamos Joined
 [6] Auth - analisar display name dos guests - usar null, usar guest blabla, usar UID, ...
 [7] AutoComplete - não parece favorecer Portugal... Bug?
 [8] Se o LatLngfor no oceano/propriedade privada/zona sem geolocations o retorno é null. nao da para converter LatLng <=> Adress
@@ -13,3 +12,4 @@
 [12] TextView de destino e de pick-up tem scroll manhoso
 [13] Guardar estado das actividades (Save State?) - principalmente na MainActivity 
 [14] Ordenaçao dos eventos nao é consistente - problema de leitura da DB?
+[15] Editar o evento so com 1 pessoa (nos proprios) parece inverter o radiobutton de voluntariar para conduzir

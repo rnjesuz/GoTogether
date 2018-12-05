@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:map="http://schemas.android.com/apk/res-auto"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:fab="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     tools:context=".CreateEventActivity"
     android:layout_height="match_parent"
@@ -324,4 +326,23 @@
             android:divider="@android:color/transparent"
             android:scrollbars="none"/>
     </LinearLayout>
+
+    <com.github.clans.fab.FloatingActionButton
+        android:id="@+id/create_done"
+        style="@style/MenuButton_Green"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginBottom="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginTop="16dp"
+        android:onClick="concludeCreation"
+        android:src="@drawable/ic_done_white_24dp"
+        android:visibility="visible"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        fab:fab_size="normal"
+        />
 </RelativeLayout>

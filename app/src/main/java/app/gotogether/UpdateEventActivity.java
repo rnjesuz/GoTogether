@@ -636,10 +636,10 @@ public class UpdateEventActivity extends AppCompatActivity implements OnMapReady
                 }
                 return true;
 
-            case R.id.action_update:
+            /*case R.id.action_update:
                 hideKeyboard(UpdateEventActivity.this);
                 concludeCreation();
-                return false;
+                return false;*/
 
             default:
                 // If we got here, the user's action was not recognized.
@@ -712,8 +712,8 @@ public class UpdateEventActivity extends AppCompatActivity implements OnMapReady
         // change up button icon
         actionBar.setHomeAsUpIndicator(R.drawable.ic_arrow_back_black_24dp); // the default arrow
         // change create option color
-        TextView create = findViewById(R.id.action_update);
-        create.setVisibility(View.GONE);
+        /*TextView create = findViewById(R.id.action_update);
+        create.setVisibility(View.GONE);*/
         // slide up the suggestions layout
         suggestions.setVisibility(View.VISIBLE);
         suggestions.animate().translationY(0);
@@ -755,8 +755,8 @@ public class UpdateEventActivity extends AppCompatActivity implements OnMapReady
         // change up button icon
         actionBar.setHomeAsUpIndicator(R.drawable.ic_close_white_24dp); // the default arrow
         // change create option color
-        TextView create = findViewById(R.id.action_update);
-        create.setVisibility(View.VISIBLE);
+        /*TextView create = findViewById(R.id.action_update);
+        create.setVisibility(View.VISIBLE);*/
         // slide down the suggestions layout
         DisplayMetrics displayMetrics = new DisplayMetrics();
         getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
@@ -765,7 +765,7 @@ public class UpdateEventActivity extends AppCompatActivity implements OnMapReady
     }
 
     // create an action bar button
-    @Override
+    /*@Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.update_menu, menu);
         menu.getItem(0).setEnabled(false);
@@ -781,7 +781,7 @@ public class UpdateEventActivity extends AppCompatActivity implements OnMapReady
         else
             menu.getItem(0).setEnabled(false);
         return true;
-    }
+    }*/
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -874,7 +874,7 @@ public class UpdateEventActivity extends AppCompatActivity implements OnMapReady
      Finalize event creation. Validate activity fields.
      */
     @RequiresApi(api = Build.VERSION_CODES.O)
-    public void concludeCreation() {
+    public void concludeUpdate(View view) {
         // Has title?
         if (title.equals("")) {
             // Send error message
@@ -1034,7 +1034,7 @@ public class UpdateEventActivity extends AppCompatActivity implements OnMapReady
      * @param message the message to be presented
      */
     public void createTextPopUpWindow(String message) {
-        RelativeLayout tConstraintLayout = (RelativeLayout) findViewById(R.id.createEventLayout);
+        RelativeLayout tConstraintLayout = (RelativeLayout) findViewById(R.id.updateEventLayout);
         PopupWindow tPopupWindow;
         // Initialize a new instance of LayoutInflater service
         LayoutInflater inflater = (LayoutInflater) getApplicationContext().getSystemService(LAYOUT_INFLATER_SERVICE);
@@ -1101,7 +1101,7 @@ public class UpdateEventActivity extends AppCompatActivity implements OnMapReady
      *
      */
     public void showEventIdentifier(String eventUID) {
-        RelativeLayout tConstraintLayout = (RelativeLayout) findViewById(R.id.createEventLayout);
+        RelativeLayout tConstraintLayout = (RelativeLayout) findViewById(R.id.updateEventLayout);
         PopupWindow tPopupWindow;
         // Initialize a new instance of LayoutInflater service
         LayoutInflater inflater = (LayoutInflater) getApplicationContext().getSystemService(LAYOUT_INFLATER_SERVICE);
@@ -1371,12 +1371,12 @@ public class UpdateEventActivity extends AppCompatActivity implements OnMapReady
             // Received permission result
             if (grantResults.length == 1 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 // All required permissions have been granted.
-                Snackbar.make(findViewById(R.id.createEventLayout), R.string.permission_available_location,
+                Snackbar.make(findViewById(R.id.updateEventLayout), R.string.permission_available_location,
                         Snackbar.LENGTH_SHORT)
                         .show();
             } else {
                 Log.i(TAG, "Location permissions were NOT granted.");
-                Snackbar.make(findViewById(R.id.createEventLayout), R.string.permissions_not_granted,
+                Snackbar.make(findViewById(R.id.updateEventLayout), R.string.permissions_not_granted,
                         Snackbar.LENGTH_SHORT)
                         .show();
             }

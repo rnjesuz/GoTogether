@@ -494,15 +494,23 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
                     return false; // don't consume the action
                 return true;
 
-            case R.id.action_join:
+            /*case R.id.action_join:
                 concludeCreation();
-                return false;
+                return false;*/
 
             default:
                 // If we got here, the user's action was not recognized.
                 // Invoke the superclass to handle it.
                 return super.onOptionsItemSelected(item);
         }
+    }
+
+    /** create an action bar button */
+    /*@Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.join_menu, menu);
+        menu.getItem(0).setEnabled(false);
+        return super.onCreateOptionsMenu(menu);
     }
 
     @Override
@@ -513,7 +521,7 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
         else
             menu.getItem(0).setEnabled(false);
         return true;
-    }
+    }*/
 
     /** Override method to change functionality in times where layout is CollapsedForInput() */
     public void onBackPressed(){
@@ -569,9 +577,9 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
         // change up button icon
         actionBar.setHomeAsUpIndicator(R.drawable.ic_arrow_back_black_24dp); // the default arrow
         // change create option color
-        TextView create = findViewById(R.id.action_join);
+        /*TextView create = findViewById(R.id.action_join);
         create.setVisibility(View.GONE);
-        //create.setTextColor(getResources().getColor(R.color.black));
+        //create.setTextColor(getResources().getColor(R.color.black));*/
         // slide up the suggestions layout
         suggestions.setVisibility(View.VISIBLE);
         suggestions.animate().translationY(0);
@@ -612,22 +620,14 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
         // change up button icon
         actionBar.setHomeAsUpIndicator(R.drawable.ic_close_white_24dp); // the default arrow
         // change create option color
-        TextView create = findViewById(R.id.action_join);
-        create.setVisibility(View.VISIBLE);
+        /*TextView create = findViewById(R.id.action_join);
+        create.setVisibility(View.VISIBLE);*/
         //create.setTextColor(getResources().getColor(R.color.white));
         // slide down the suggestions layout
         DisplayMetrics displayMetrics = new DisplayMetrics();
         getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
         int screenHeight = displayMetrics.heightPixels;
         suggestions.animate().translationY(screenHeight - parent.getHeight());
-    }
-
-    /** create an action bar button */
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.join_menu, menu);
-        menu.getItem(0).setEnabled(false);
-        return super.onCreateOptionsMenu(menu);
     }
 
     public void DriverVolunteer(View view){
@@ -679,11 +679,11 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
     }
 
     /**
-     Finalize event creation.
+     Finalize event participation.
      Validate activity fields
      */
     @RequiresApi(api = Build.VERSION_CODES.O)
-    public void concludeCreation() {
+    public void concludeParticipation(View view) {
         // Has pick-up location?
         if (start == null) {
             // Send error message
