@@ -38,7 +38,6 @@ import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.LayoutInflater;
-import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
@@ -55,6 +54,7 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.PopupWindow;
 import android.widget.RelativeLayout;
+import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -189,6 +189,8 @@ public class UpdateEventActivity extends AppCompatActivity implements OnMapReady
             seats.setText(Integer.toString(getIntent().getExtras().getInt("Seats")));
         } else {
             // DriverVolunteer(findViewById(R.id.driver_question_tv));
+            Switch s = (Switch) findViewById(R.id.radioButton);
+            s.setChecked(false);
             DrivingVolunteer(findViewById(R.id.driver_question_tv));
         }
 

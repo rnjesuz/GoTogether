@@ -5,6 +5,9 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:id="@+id/participant_info"
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="@drawable/ripple_effect"
     >
 
     <TextView
@@ -77,4 +80,5 @@
         app:layout_constraintTop_toBottomOf="@+id/driverView"
         android:background="@color/white_background"
         android:gravity="center_vertical"/>
+
 </android.support.constraint.ConstraintLayout>

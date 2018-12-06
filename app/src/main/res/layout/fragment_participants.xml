@@ -18,7 +18,11 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:id="@+id/event_info">
+            android:id="@+id/event_info"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="@drawable/ripple_effect"
+            >
 
             <TextView
                 android:layout_width="match_parent"
@@ -30,48 +34,53 @@
                 android:paddingBottom="4dp"
                 android:text="Event"
                 android:textSize="16sp"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                />
 
             <TextView
-            android:id="@+id/titleView"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:padding="8dp"
-            android:drawableStart="@drawable/ic_title_white_18dp"
-            android:drawablePadding="8dp"
-            android:text="Title"
-            android:textSize="14sp"
-            android:textColor="@color/white"
-            app:layout_constraintBottom_toTopOf="@+id/destinationView"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            android:background="@color/green_complementary"
-            />
+                android:id="@+id/titleView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="8dp"
+                android:drawableStart="@drawable/ic_title_white_18dp"
+                android:drawablePadding="8dp"
+                android:text="Title"
+                android:textSize="14sp"
+                android:textColor="@color/white"
+                app:layout_constraintBottom_toTopOf="@+id/destinationView"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                android:background="@color/green_complementary"
+                />
 
-        <TextView
-            android:id="@+id/destinationView"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:paddingEnd="8dp"
-            android:paddingStart="8dp"
-            android:paddingBottom="8dp"
-            android:drawableStart="@drawable/ic_location_on_white_18dp"
-            android:drawablePadding="8dp"
-            android:text="Destination"
-            android:textSize="14sp"
-            android:textColor="@color/white"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/titleView"
-            android:background="@color/green_complementary"/>
-
+            <TextView
+                android:id="@+id/destinationView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingEnd="8dp"
+                android:paddingStart="8dp"
+                android:paddingBottom="8dp"
+                android:drawableStart="@drawable/ic_location_on_white_18dp"
+                android:drawablePadding="8dp"
+                android:text="Destination"
+                android:textSize="14sp"
+                android:textColor="@color/white"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/titleView"
+                android:background="@color/green_complementary"
+                />
         </LinearLayout>
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:id="@+id/user_info">
+            android:id="@+id/user_info"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="@drawable/ripple_effect">
 
             <TextView
                 android:layout_width="match_parent"
@@ -83,60 +92,61 @@
                 android:paddingBottom="4dp"
                 android:text="You"
                 android:textSize="16sp"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                />
 
             <TextView
-            android:id="@+id/pickupView"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:padding="8dp"
-            android:drawableStart="@drawable/ic_location_on_white_18dp"
-            android:drawablePadding="8dp"
-            android:text="User destination"
-            android:textSize="14sp"
-            android:textColor="@color/white"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            android:background="@color/green_normal"
-            />
+                android:id="@+id/pickupView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="8dp"
+                android:drawableStart="@drawable/ic_location_on_white_18dp"
+                android:drawablePadding="8dp"
+                android:text="User destination"
+                android:textSize="14sp"
+                android:textColor="@color/white"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                android:background="@color/green_normal"
+                />
 
-        <TextView
-            android:id="@+id/driverView"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:paddingEnd="8dp"
-            android:paddingStart="8dp"
-            android:paddingBottom="8dp"
-            android:drawableStart="@drawable/ic_directions_car_white_18dp"
-            android:drawablePadding="8dp"
-            android:text="Driver?"
-            android:textSize="14sp"
-            android:textColor="@color/white"
-            app:layout_constraintBottom_toTopOf="@+id/seatsView"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="1.0"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/destinationView"
-            android:background="@color/green_normal"/>
+            <TextView
+                android:id="@+id/driverView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingEnd="8dp"
+                android:paddingStart="8dp"
+                android:paddingBottom="8dp"
+                android:drawableStart="@drawable/ic_directions_car_white_18dp"
+                android:drawablePadding="8dp"
+                android:text="Driver?"
+                android:textSize="14sp"
+                android:textColor="@color/white"
+                app:layout_constraintBottom_toTopOf="@+id/seatsView"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_bias="1.0"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/destinationView"
+                android:background="@color/green_normal"/>
 
-        <TextView
-            android:id="@+id/seatsView"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:paddingStart="8dp"
-            android:paddingEnd="8dp"
-            android:paddingBottom="8dp"
-            android:drawableStart="@drawable/ic_event_seat_white_18dp"
-            android:drawablePadding="8dp"
-            android:text="How many seats?"
-            android:textSize="14sp"
-            android:textColor="@color/white"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/driverView"
-            android:background="@color/green_normal"/>
+            <TextView
+                android:id="@+id/seatsView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:paddingBottom="8dp"
+                android:drawableStart="@drawable/ic_event_seat_white_18dp"
+                android:drawablePadding="8dp"
+                android:text="How many seats?"
+                android:textSize="14sp"
+                android:textColor="@color/white"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/driverView"
+                android:background="@color/green_normal"/>
         </LinearLayout>
 
         <TextView
