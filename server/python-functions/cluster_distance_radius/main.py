@@ -54,6 +54,7 @@ def cluster_distance_radius(request):
     # 	event_uid = u'SBgh4MKtplFEbYXLvmMY'
     event_uid = request['eventUID']
     event_mode = request['mode']
+    event_optimization = request['optimization']
     event_ref = db.collection(u'events').document(event_uid)
     participants_ref = db.collection(u'events').document(event_uid).collection(u'participants')
     print(u'Completed event: {}'.format(event_uid))
@@ -112,6 +113,9 @@ def cluster_distance_radius(request):
         print("Grouping with fail-safe")
         group_cells()
     print(u'Final clusters: {}'.format(cluster))
+    if event_optimization:
+        # call waypoint optimization method
+        pass
     update_database()
     #  return cluster
     #  return 'OK'
@@ -249,12 +253,13 @@ def group_cells():
 #########################
 def update_database():
     event_ref.update({u'completed': True})
+    event_ref.update({u'cluster': firestore.DELETE_FIELD}) # make sure there is no old field (SHOULDN'T HAPPEN)
     for driver in cluster.keys():
         cluster_riders = []
         for rider in cluster.get(driver):
             rider_ref = db.collection(u'users').document(rider)
             cluster_riders.append(rider_ref)
-        event_ref.update({u'cluster.'+driver: cluster_riders})
+        event_ref.update({u'cluster.th'+driver: cluster_riders})
 
 
 #######################

@@ -1,13 +1,12 @@
 ﻿[1] TODOs nos cluster - improvements
-[2] clusters - testar se algum cluster ja foi criado? apagar o antigo se sim, ou excepçao?
-[2] EvenAdapter - fazer new EventAdapter { onChanged(){ adicionar novo elemento aos Eventos } }
+[3] EvenAdapter - fazer new EventAdapter { onChanged(){ adicionar novo elemento aos Eventos } }
 	Para impedir de apagar todos os eventos velhos e colocar novos
-[3] CreateEvent - melhorar fluxo de transições entre focusables. quanto um termina mas outro ainda esta livre. O Titulo nao e considerado. outros tbm nao?
-[6] Auth - analisar display name dos guests - usar null, usar guest blabla, usar UID, ...
-[8] Se o LatLngfor no oceano/propriedade privada/zona sem geolocations o retorno é null. nao da para converter LatLng <=> Adress
-[9] Se não houver internet para comunicar com o server - fazer Timeout? - já é verificado pelas funções do firebase?
-[11] O autocomplete retorna o máximo de 5 sugestões - Resenhar janela e tamanho do texto?
-[12] TextView de destino e de pick-up tem scroll manhoso
-[13] Guardar estado das actividades (Save State?) - principalmente na MainActivity 
-[14] Ordenaçao dos eventos nao é consistente - problema de leitura da DB?
-[16] TBD
+[4] CreateEvent - melhorar fluxo de transições entre focusables. quanto um termina mas outro ainda esta livre. O Titulo nao e considerado. outros tbm nao?
+[7] Auth - analisar display name dos guests - usar null, usar guest blabla, usar UID, ...
+[9] Se o LatLngfor no oceano/propriedade privada/zona sem geolocations o retorno é null. nao da para converter LatLng <=> Adress
+[10] Se não houver internet para comunicar com o server - fazer Timeout? - já é verificado pelas funções do firebase?
+[12] O autocomplete retorna o máximo de 5 sugestões - Resenhar janela e tamanho do texto?
+[13] TextView de destino e de pick-up tem scroll manhoso
+[14] Guardar estado das actividades (Save State?) - principalmente na MainActivity 
+[15] Ordenaçao dos eventos nao é consistente - problema de leitura da DB?
+[17] TBD
