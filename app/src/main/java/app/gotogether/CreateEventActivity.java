@@ -37,6 +37,7 @@ import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -45,6 +46,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewGroupOverlay;
 import android.view.ViewTreeObserver;
+import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.Button;
@@ -198,6 +200,9 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
                             hideKeyboard(CreateEventActivity.this);
                             CollapseAfterInput();
                             searching = -1;
+                            if (title == ""){
+                                titleET.requestFocus();
+                            }
                         }
                         break;
                     }
@@ -221,6 +226,9 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
                             hideKeyboard(CreateEventActivity.this);
                             CollapseAfterInput();
                             searching = -1;
+                            if (title == ""){
+                                titleET.requestFocus();
+                            }
                         }
                         break;
                     }
@@ -256,33 +264,20 @@ public class CreateEventActivity extends AppCompatActivity implements OnMapReady
                 }});
         }
 
-        //findViewById(R.id.destination_autocomplete).setBackgroundColor(getResources().getColor(R.color.white));
-
-        /*titleET.setOnEditorActionListener(new EditText.OnEditorActionListener() {
-            /**
-             * Called when an action is being performed.
-             *
-             * @param v        The view that was clicked.
-             * @param actionId Identifier of the action.  This will be either the
-             *                 identifier you supplied, or {@link EditorInfo#IME_NULL
-             *                 EditorInfo.IME_NULL} if being called due to the enter key
-             *                 being pressed.
-             * @param event    If triggered by an enter key, this is the event;
-             *                 otherwise, this is null.
-             * @return Return true if you have consumed the action, else false.
-             */
-            /*
+        titleET.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                if (actionId == EditorInfo.IME_ACTION_DONE) {
-                    title = v.getText().toString();
+                if(actionId==EditorInfo.IME_ACTION_DONE){
+                    //Clear focus from title's EditText
+                    titleET.clearFocus();
                     hideKeyboard(CreateEventActivity.this);
-                    v.clearFocus();
                     return true;
                 }
+                // false doesn't consume the action
                 return false;
             }
-        });*/
+        });
+
         titleET.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) { }

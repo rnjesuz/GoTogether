@@ -1,7 +1,6 @@
 ﻿[1] TODOs nos cluster - improvements
 [3] EvenAdapter - fazer new EventAdapter { onChanged(){ adicionar novo elemento aos Eventos } }
 	Para impedir de apagar todos os eventos velhos e colocar novos
-[4] CreateEvent - melhorar fluxo de transições entre focusables. quanto um termina mas outro ainda esta livre. O Titulo nao e considerado. outros tbm nao?
 [7] Auth - analisar display name dos guests - usar null, usar guest blabla, usar UID, ...
 [9] Se o LatLngfor no oceano/propriedade privada/zona sem geolocations o retorno é null. nao da para converter LatLng <=> Adress
 [10] Se não houver internet para comunicar com o server - fazer Timeout? - já é verificado pelas funções do firebase?
