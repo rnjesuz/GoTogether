@@ -354,6 +354,8 @@ class EventArrayAdapter extends ArrayAdapter<Event> implements ThreadCompleteLis
                     conn.connect();
                     String jsonParam = new JSONObject()
                             .put("eventUID", event.getId())
+                            .put("mode", "distance")
+                            .put("optimization", false)
                             .toString();
                     DataOutputStream os = new DataOutputStream(conn.getOutputStream());
                     os.writeBytes(jsonParam);

@@ -692,6 +692,8 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
                     conn.connect();
                     String jsonParam = new JSONObject()
                             .put("eventUID", eventUID)
+                            .put("mode", "distance")
+                            .put("optimization", false)
                             .toString();
                     DataOutputStream os = new DataOutputStream(conn.getOutputStream());
                     os.writeBytes(jsonParam);

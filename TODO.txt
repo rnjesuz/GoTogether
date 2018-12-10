@@ -8,5 +8,6 @@
 [13] TextView de destino e de pick-up tem scroll manhoso
 [14] Guardar estado das actividades (Save State?) - principalmente na MainActivity 
 [15] Ordenaçao dos eventos nao é consistente - problema de leitura da DB?
-[17] Clusters - mudar a subrotina de agrupar por distancia para verificar se a distancia compensa
+[!17!] Clusters - mudar a subrotina de agrupar por distancia para verificar se a distancia compensa
 [18] Clusters - remover variaveis globais
+[!19!] App - add PopUpWindow to ask for parameters
