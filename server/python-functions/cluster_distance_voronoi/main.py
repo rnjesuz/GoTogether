@@ -1,4 +1,5 @@
 import firebase_admin, google.cloud, googlemaps, json
+import binpacking
 from sortedcollections import ValueSortedDict
 from firebase_admin import credentials, firestore
 from google.cloud import exceptions
@@ -186,7 +187,41 @@ def group_best_match_drivers(DtoDDistance):
 
 ######################
 def group_cells_cars():
-    group_cells()
+    # order cars by number of empty seats
+    driver_seats = ValueSortedDict()
+    driver_passengers = {}
+    for driver in cluster.keys():
+        # get number of empty seats
+        cluster_list = cluster.get(driver)
+        cluster_list_length = len(cluster_list)
+        driver_seats[driver] = participants.get(driver).get_seats() - cluster_list_length
+        # get the number of passenger + the driver
+        driver_passengers[driver] = cluster_list_length + 1
+    grouping = True
+    while grouping:
+        # Run the bin packing algorithm with bins of capacity equal to that of the car with more available seats.
+        #    The car with the most empty seats must not be an item of the the bin packing
+        copy_driver_passengers = driver_passengers.copy()
+        del copy_driver_passengers[list(driver_seats.keys())[-1]]
+        #    Calculate the bin packing solution
+        bins = binpacking.to_constant_volume(copy_driver_passengers, list(driver_seats.values())[-1])
+        # Of the bins produced by the algorithm, choose the bin with more items in it.
+        biggest_bin = max(enumerate(bins), key=lambda tup: len(tup[1]))[1]
+        # Remove the grouped cars (the bin + the items) from the sorted list and from the unplaced items.
+        for driver in biggest_bin.keys():
+            del driver_seats[driver]
+            del driver_passengers[driver]
+        # Update cluster. The biggest bin as passengers of the driver with more empty seats
+        for old_driver in biggest_bin:  # join cars
+            for rider in cluster.get(old_driver):
+                cluster[list(driver_seats.keys())[-1]].append(rider)
+            cluster[list(driver_seats.keys())[-1]].append(old_driver)
+            # remove old car from available clusters
+            del cluster[old_driver]
+        # Repeat the bin packing algorithm with the next emptiest car and with the remaining passenger groups,
+        # until no more packing is possible.
+        if not copy_driver_passengers:  # evaluates to true when empty
+            grouping = False  # end loop
 
 
 ######################

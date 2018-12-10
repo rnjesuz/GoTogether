@@ -1,4 +1,5 @@
 import firebase_admin, google.cloud, googlemaps, json
+import binpacking
 from sortedcollections import ValueSortedDict
 from firebase_admin import credentials, firestore
 from google.cloud import exceptions
@@ -23,7 +24,6 @@ RtoDRouteShare = {}
 participants = {}
 participantsDirections = {}
 
-cluster = {}
 
 
 ######################
@@ -32,7 +32,7 @@ def cluster_route(request):
     global drivers, driversDistance, driversDirections
     global riders, ridersDistance, ridersDirections
     global participants, participantsDirections
-    global RtoDRouteShare, cluster
+    global RtoDRouteShare
 
     drivers = []
     driversDirections = {}
@@ -92,24 +92,23 @@ def cluster_route(request):
         for driver in driversDistance.keys():
             RtoDRouteShare[rider][driver] = get_shared_path(rider, driver)
 
-
     print("Shared Nodes: {}".format(RtoDRouteShare))
-    group_best_match_riders()
+    group_best_match_riders(cluster)
     print("Route clusters: {}".format(cluster))
     if event_mode == 'cars':
         print("Grouping cells by reducing number of cars.")
-        group_cells_cars()
+        group_cells_cars(cluster)
     elif event_mode == 'distance':
         print("Grouping cells by reducing distance travelled")
-        group_cells_distance()
+        group_cells_distance(cluster)
     else:  # fail-safe
         print("Grouping with fail-safe")
-        group_cells()
+        group_cells(cluster)
     print(u'Final clusters: {}'.format(cluster))
     if event_optimization:
         # call waypoint optimization method
         pass
-    update_database()
+    update_database(cluster)
     # return cluster
     # return 'OK'
     # data = {'response': 'OK'}
@@ -129,7 +128,7 @@ def get_shared_path(first_participant, second_participant):
 
 
 ##########################
-def group_best_match_riders():
+def group_best_match_riders(cluster):
     global participants
     for rider in RtoDRouteShare:
         match = False
@@ -157,7 +156,7 @@ def group_best_match_riders():
 
 
 ######################
-def group_cells_distance():
+def group_cells_distance(cluster):
     # calculate route shared with other drivers, till the destination
     DtoDRouteShare = {}
     for driver in driversDistance.keys():
@@ -167,11 +166,11 @@ def group_cells_distance():
                 continue
             DtoDRouteShare[driver][other_driver] = get_shared_path(driver, other_driver)
     # group cars with the best available option
-    group_best_match_drivers(DtoDRouteShare)
+    group_best_match_drivers(DtoDRouteShare, cluster)
 
 
 ######################
-def group_best_match_drivers(DtoDRouteShare):
+def group_best_match_drivers(DtoDRouteShare, cluster):
     global participants
     for driver in DtoDRouteShare:
         match = False
@@ -204,12 +203,46 @@ def group_best_match_drivers(DtoDRouteShare):
 
 
 ######################
-def group_cells_cars():
-    group_cells()
+def group_cells_cars(cluster):
+    # order cars by number of empty seats
+    driver_seats = ValueSortedDict()
+    driver_passengers = {}
+    for driver in cluster.keys():
+        # get number of empty seats
+        cluster_list = cluster.get(driver)
+        cluster_list_length = len(cluster_list)
+        driver_seats[driver] = participants.get(driver).get_seats() - cluster_list_length
+        # get the number of passenger + the driver
+        driver_passengers[driver] = cluster_list_length + 1
+    grouping = True
+    while grouping:
+        # Run the bin packing algorithm with bins of capacity equal to that of the car with more available seats.
+        #    The car with the most empty seats must not be an item of the the bin packing
+        copy_driver_passengers = driver_passengers.copy()
+        del copy_driver_passengers[list(driver_seats.keys())[-1]]
+        #    Calculate the bin packing solution
+        bins = binpacking.to_constant_volume(copy_driver_passengers, list(driver_seats.values())[-1])
+        # Of the bins produced by the algorithm, choose the bin with more items in it.
+        biggest_bin = max(enumerate(bins), key = lambda tup: len(tup[1]))[1]
+        # Remove the grouped cars (the bin + the items) from the sorted list and from the unplaced items.
+        for driver in biggest_bin.keys():
+            del driver_seats[driver]
+            del driver_passengers[driver]
+        # Update cluster. The biggest bin as passengers of the driver with more empty seats
+        for old_driver in biggest_bin:  # join cars
+            for rider in cluster.get(old_driver):
+                cluster[list(driver_seats.keys())[-1]].append(rider)
+            cluster[list(driver_seats.keys())[-1]].append(old_driver)
+            # remove old car from available clusters
+            del cluster[old_driver]
+        # Repeat the bin packing algorithm with the next emptiest car and with the remaining passenger groups,
+        # until no more packing is possible.
+        if not copy_driver_passengers:  # evaluates to true when empty
+            grouping = False  # end loop
 
 
 ######################
-def group_cells():
+def group_cells(cluster):
     reset = True
     # TODO try to match full cars (2 empty + 2, instead of 2 empty +1)
     while reset:
@@ -250,7 +283,7 @@ def group_cells():
 
 
 #########################
-def update_database():
+def update_database(cluster):
     event_ref.update({u'completed': True})
     event_ref.update({u'cluster': firestore.DELETE_FIELD}) # make sure there is no old field (SHOULDN'T HAPPEN)
     for driver in cluster.keys():
