@@ -11,3 +11,5 @@
 [!17!] Clusters - mudar a subrotina de agrupar por distancia para verificar se a distancia compensa
 [18] Clusters - remover variaveis globais
 [!19!] App - add PopUpWindow to ask for parameters
+[!!20!!] cluster_distance_radius tem ciclo infinito a juntar carros. Testar com evento SBgh4MKtplFEbYXLvmMY
+[21] TBD
