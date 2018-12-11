@@ -12,6 +12,10 @@ import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.RequiresApi;
+import android.support.design.widget.CoordinatorLayout;
+import android.text.Html;
+import android.text.SpannableString;
+import android.text.Spanned;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -31,6 +35,7 @@ import android.widget.Toast;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.GeoPoint;
+import com.xw.repo.BubbleSeekBar;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -225,7 +230,7 @@ class EventArrayAdapter extends ArrayAdapter<Event> implements ThreadCompleteLis
                             eventView = view;
                             Log.d(TAG, "Event clicked: "+ event.getTitle() + "; At position: " + position);
                             disabledEvents.add(position);
-                            concludeEvent(event);
+                            showParametersPopUpWindow(event, parent);
                             return true;
                         default:
                             return false;
@@ -312,6 +317,118 @@ class EventArrayAdapter extends ArrayAdapter<Event> implements ThreadCompleteLis
 
         // Finally, show the popup window at the center location of root relative layout
         tPopupWindow.showAtLocation(parent, Gravity.CENTER, 0, 0);
+
+        // Dim the activity
+        ViewGroup root = (ViewGroup) parent.getRootView();
+        applyDim(root, 0.8f);
+    }
+
+    /**
+     * Shows a PopUp window with the sliders for clustering parameters
+     */
+    public void showParametersPopUpWindow(Event event,                                                                                                       ViewGroup parent) {
+        PopupWindow cPopupWindow;
+        // Initialize a new instance of LayoutInflater service
+        LayoutInflater inflater = (LayoutInflater) context.getSystemService(LAYOUT_INFLATER_SERVICE);
+
+        // Inflate the custom layout/view
+        View customView = inflater.inflate(R.layout.cluster_parameters_pop_up_window, null);
+
+        // Initialize a new instance of popup window
+        cPopupWindow = new PopupWindow(
+                customView,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                true
+        );
+
+        // Set an elevation value for popup window
+        // Call requires API level 21
+        if (Build.VERSION.SDK_INT >= 21) {
+            cPopupWindow.setElevation(5.0f);
+        }
+
+        // Get a reference for the custom view title
+        TextView titleText = (TextView) customView.findViewById(R.id.titleTV);
+        String htmlTitle = "<b>What do you wish to minimize?</b>";
+        Spanned s = Html.fromHtml(htmlTitle);
+        SpannableString sString = new SpannableString(s);
+        titleText.setText(sString);
+
+        // Get a reference for the distance slider
+        BubbleSeekBar distanceBar = (BubbleSeekBar) customView.findViewById(R.id.distanceBar);
+        // Get a reference for the distance slider
+        BubbleSeekBar carsBar = (BubbleSeekBar) customView.findViewById(R.id.carsBar);
+
+        // Changing progress of either bar influences the other
+        distanceBar.setOnProgressChangedListener(new BubbleSeekBar.OnProgressChangedListener() {
+            @Override
+            public void onProgressChanged(BubbleSeekBar bubbleSeekBar, int progress, float progressFloat, boolean fromUser) {
+                if (fromUser){
+                    int remainingProgress = 100 - progress;
+                    carsBar.setProgress(remainingProgress);
+                }
+            }
+            @Override
+            public void getProgressOnActionUp(BubbleSeekBar bubbleSeekBar, int progress, float progressFloat) { }
+            @Override
+            public void getProgressOnFinally(BubbleSeekBar bubbleSeekBar, int progress, float progressFloat, boolean fromUser) { }
+        });
+        carsBar.setOnProgressChangedListener(new BubbleSeekBar.OnProgressChangedListener() {
+            @Override
+            public void onProgressChanged(BubbleSeekBar bubbleSeekBar, int progress, float progressFloat, boolean fromUser) {
+                if (fromUser){
+                    int remainingProgress = 100 - progress;
+                    distanceBar.setProgress(remainingProgress);
+                }
+            }
+            @Override
+            public void getProgressOnActionUp(BubbleSeekBar bubbleSeekBar, int progress, float progressFloat) { }
+            @Override
+            public void getProgressOnFinally(BubbleSeekBar bubbleSeekBar, int progress, float progressFloat, boolean fromUser) { }
+        });
+
+        // Get a reference for the custom view confirm button
+        Button confirmButton = (Button) customView.findViewById(R.id.ib_confirm);
+        // Set a click listener for the popup window confirm button
+        confirmButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                // Restore activity to opaque
+                ViewGroup root = (ViewGroup) parent.getRootView();
+                clearDim(root);
+                // Dismiss the popup window
+                cPopupWindow.dismiss();
+                // conclude Event
+                concludeEvent(event);
+            }
+        });
+
+        // Get a reference for the custom view cancel button
+        Button cancelButton = (Button) customView.findViewById(R.id.ib_cancel);
+        // Set a click listener for the popup window cancel button
+        cancelButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                // Restore activity to opaque
+                ViewGroup root = (ViewGroup) parent.getRootView();
+                clearDim(root);
+                // Dismiss the popup window
+                cPopupWindow.dismiss();
+            }
+        });
+
+        // Detect a click outside the window - Dismiss is the default behaviour of outside click
+        cPopupWindow.setOnDismissListener(new PopupWindow.OnDismissListener() {
+            @Override
+            public void onDismiss() {
+                ViewGroup root = (ViewGroup) parent.getRootView();
+                clearDim(root);
+            }
+        });
+
+        // Finally, show the popup window at the center location of root relative layout
+        cPopupWindow.showAtLocation(parent, Gravity.CENTER, 0, 0);
 
         // Dim the activity
         ViewGroup root = (ViewGroup) parent.getRootView();

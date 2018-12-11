@@ -314,7 +314,7 @@ public class MainActivity extends  AppCompatActivity {
         RelativeLayout mConstraintLayout = (RelativeLayout) findViewById(R.id.MainActivityCL);
         PopupWindow cPopupWindow;
         // Initialize a new instance of LayoutInflater service
-        LayoutInflater inflater = (LayoutInflater) getApplicationContext().getSystemService(LAYOUT_INFLATER_SERVICE);
+        LayoutInflater inflater = (LayoutInflater) MainActivity.this.getSystemService(LAYOUT_INFLATER_SERVICE);
 
         // Inflate the custom layout/view
         View customView = inflater.inflate(R.layout.join_activity_input_window, null);
@@ -631,24 +631,11 @@ public class MainActivity extends  AppCompatActivity {
         RelativeLayout cConstraintLayout = (RelativeLayout) findViewById(R.id.MainActivityCL);
         PopupWindow cPopupWindow;
         // Initialize a new instance of LayoutInflater service
-        LayoutInflater inflater = (LayoutInflater) getApplicationContext().getSystemService(LAYOUT_INFLATER_SERVICE);
+        LayoutInflater inflater = (LayoutInflater) MainActivity.this.getSystemService(LAYOUT_INFLATER_SERVICE);
 
         // Inflate the custom layout/view
         View customView = inflater.inflate(R.layout.confirmation_pop_up_window, null);
 
-                /*
-                    public PopupWindow (View contentView, int width, int height)
-                        Create a new non focusable popup window which can display the contentView.
-                        The dimension of the window must be passed to this constructor.
-
-                        The popup does not provide any background. This should be handled by
-                        the content view.
-
-                    Parameters1
-                        contentView : the popup's content
-                        width : the popup's width
-                        height : the popup's height
-                */
         // Initialize a new instance of popup window
         cPopupWindow = new PopupWindow(
                 customView,
@@ -688,7 +675,7 @@ public class MainActivity extends  AppCompatActivity {
                 clearDim(root);
                 // Dismiss the popup window
                 cPopupWindow.dismiss();
-                // Confirm Event
+                // Sign out
                 AuthUI.getInstance()
                         .signOut(MainActivity.this)
                         .addOnCompleteListener(new OnCompleteListener<Void>() {

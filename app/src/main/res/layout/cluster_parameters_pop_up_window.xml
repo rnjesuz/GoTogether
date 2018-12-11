@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="2dp"
+    android:background="#ffffff"
+    >
+
+    <TextView
+        android:id="@+id/titleTV"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingTop="25dp"
+        android:paddingStart="25dp"
+        android:paddingEnd="25dp"
+        android:text="TextView"
+        android:gravity="center_horizontal"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <LinearLayout
+        android:id="@+id/slidersSection"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintTop_toBottomOf="@id/titleTV"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="16sp"
+        >
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Distance traveled:"/>
+
+        <com.xw.repo.BubbleSeekBar
+            android:id="@+id/distanceBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:bsb_track_color="@color/white_background_dark"
+            app:bsb_second_track_color="@color/green_normal"
+            app:bsb_auto_adjust_section_mark="true"
+            app:bsb_show_thumb_text="true"
+            app:bsb_thumb_text_size="18sp"
+            app:bsb_touch_to_seek="true"
+            app:bsb_show_section_mark="false"
+            app:bsb_progress="50"
+            android:layout_margin="16sp"
+            />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Number of cars:"/>
+
+        <com.xw.repo.BubbleSeekBar
+            android:id="@+id/carsBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:bsb_track_color="@color/white_background_dark"
+            app:bsb_second_track_color="@color/green_normal"
+            app:bsb_auto_adjust_section_mark="true"
+            app:bsb_show_thumb_text="true"
+            app:bsb_thumb_text_size="18sp"
+            app:bsb_touch_to_seek="true"
+            app:bsb_show_section_mark="false"
+            app:bsb_progress="50"
+            android:layout_margin="16sp"
+            />
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/ib_cancel"
+        android:layout_width="122dp"
+        android:layout_height="wrap_content"
+        android:layout_alignStart="@+id/slidersSection"
+        android:layout_below="@+id/slidersSection"
+        android:layout_marginTop="8dp"
+        android:background="@null"
+        android:text="Cancel"
+        android:textAllCaps="false"
+        android:textColor="@color/green_complementary"
+        app:layout_constraintEnd_toStartOf="@+id/ib_confirm"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/slidersSection" />
+
+    <Button
+        android:id="@+id/ib_confirm"
+        android:layout_width="122dp"
+        android:layout_height="wrap_content"
+        android:layout_alignEnd="@+id/slidersSection"
+        android:layout_below="@+id/slidersSection"
+        android:background="@null"
+        android:text="Confirm"
+        android:textAllCaps="false"
+        android:textColor="@color/green_normal"
+        app:layout_constraintBaseline_toBaselineOf="@+id/ib_cancel"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/ib_cancel" />
+</android.support.constraint.ConstraintLayout>
