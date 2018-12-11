@@ -1,5 +1,6 @@
 import firebase_admin, google.cloud, googlemaps, json
 import binpacking
+import copy
 from sortedcollections import ValueSortedDict
 from firebase_admin import credentials, firestore
 from google.cloud import exceptions
@@ -55,6 +56,10 @@ def cluster_route(request):
     # 	event_uid = u'SBgh4MKtplFEbYXLvmMY'
     event_uid = request['eventUID']
     event_mode = request['mode']
+    cars_parameter = request['cars']
+    print('Prioritization of minimizing cars: ' + str(cars_parameter))
+    distance_parameter = request['distance']
+    print('Prioritization of minimizing distance: ' + str(distance_parameter))
     event_optimization = request['optimization']
     event_ref = db.collection(u'events').document(event_uid)
     participants_ref = db.collection(u'events').document(event_uid).collection(u'participants')
@@ -95,7 +100,8 @@ def cluster_route(request):
     print("Shared Nodes: {}".format(RtoDRouteShare))
     group_best_match_riders(cluster)
     print("Route clusters: {}".format(cluster))
-    if event_mode == 'cars':
+
+    '''if event_mode == 'cars':
         print("Grouping cells by reducing number of cars.")
         group_cells_cars(cluster)
     elif event_mode == 'distance':
@@ -108,7 +114,28 @@ def cluster_route(request):
     if event_optimization:
         # call waypoint optimization method
         pass
-    update_database(cluster)
+    update_database(cluster)'''
+
+    cluster_cars = group_cells_cars(copy.deepcopy(cluster))
+    print('cluster_cars: {}'.format(cluster_cars))
+    cluster_distance = group_cells_distance(copy.deepcopy(cluster))
+    print('cluster_distance: {}'.format(cluster_distance))
+    print('Initial values.')
+    initial_cars = len(cluster)
+    print('# Cars: ' + str(initial_cars) + '.')
+    initial_distance = calculate_cluster_distance(cluster, destination)
+    #
+    # f(x) = (cars_parameter*(len(x)/initial_cars)) + (distance_parameter*(calculate_cluster_distance(x)/initial_distance))
+    #
+    print('Calculating cluster minimizing cars.')
+    print('# Cars: ' + str(len(cluster_cars)) + '.')
+    f_cluster_cars =  (cars_parameter * (len(cluster_cars) / initial_cars)) + (distance_parameter * (calculate_cluster_distance(cluster_cars, destination) / initial_distance))
+    print('function_cluster_cars: ' + str(f_cluster_cars) + '.')
+    print('Calculating cluster minimizing distance.')
+    print('# Cars: ' + str(len(cluster_distance)) + '.')
+    f_cluster_distance = (cars_parameter * (len(cluster_distance) / initial_cars)) + (distance_parameter * (calculate_cluster_distance(cluster_distance, destination) / initial_distance))
+    print('function_cluster_distance: ' + str(f_cluster_distance) + '.')
+    update_database(cluster_cars) if f_cluster_cars < f_cluster_distance else update_database(cluster_distance)
     # return cluster
     # return 'OK'
     # data = {'response': 'OK'}
@@ -156,7 +183,7 @@ def group_best_match_riders(cluster):
 
 
 ######################
-def group_cells_distance(cluster):
+def group_cells_distance(cluster_distance):
     # calculate route shared with other drivers, till the destination
     DtoDRouteShare = {}
     for driver in driversDistance.keys():
@@ -166,11 +193,11 @@ def group_cells_distance(cluster):
                 continue
             DtoDRouteShare[driver][other_driver] = get_shared_path(driver, other_driver)
     # group cars with the best available option
-    group_best_match_drivers(DtoDRouteShare, cluster)
+    return group_best_match_drivers(DtoDRouteShare, cluster_distance)
 
 
 ######################
-def group_best_match_drivers(DtoDRouteShare, cluster):
+def group_best_match_drivers(DtoDRouteShare, cluster_distance):
     global participants
     for driver in DtoDRouteShare:
         match = False
@@ -184,36 +211,39 @@ def group_best_match_drivers(DtoDRouteShare, cluster):
                     best_match = new_driver
             participant = participants.get(best_match)
             seats = participant.get_seats()
-            if best_match in cluster:
-                cluster_length = len(cluster.get(best_match))
+            if best_match in cluster_distance:
+                cluster_length = len(cluster_distance.get(best_match))
             else:
                 cluster_length = seats
-            if seats > cluster_length + len(cluster.get(driver)) + 1:
+            if seats > cluster_length + len(cluster_distance.get(driver)) + 1:
                 # join cars
-                for rider in cluster.get(driver):
-                    cluster[best_match].append(rider)
-                cluster[best_match].append(driver)
+                for rider in cluster_distance.get(driver):
+                    cluster_distance[best_match].append(rider)
+                cluster_distance[best_match].append(driver)
                 # remove old car from available clusters
-                del cluster[driver]
+                del cluster_distance[driver]
                 match = True
             else:
                 del DtoDRouteShare[driver][best_match]
                 if not DtoDRouteShare[driver]:  # is empty
                     match = True
+    return cluster_distance
 
 
 ######################
-def group_cells_cars(cluster):
+def group_cells_cars(cluster_cars):
+    global participants
     # order cars by number of empty seats
     driver_seats = ValueSortedDict()
     driver_passengers = {}
-    for driver in cluster.keys():
+    for driver in cluster_cars.keys():
         # get number of empty seats
-        cluster_list = cluster.get(driver)
+        cluster_list = cluster_cars.get(driver)
         cluster_list_length = len(cluster_list)
         driver_seats[driver] = participants.get(driver).get_seats() - cluster_list_length
         # get the number of passenger + the driver
         driver_passengers[driver] = cluster_list_length + 1
+
     grouping = True
     while grouping:
         # Run the bin packing algorithm with bins of capacity equal to that of the car with more available seats.
@@ -230,15 +260,17 @@ def group_cells_cars(cluster):
             del driver_passengers[driver]
         # Update cluster. The biggest bin as passengers of the driver with more empty seats
         for old_driver in biggest_bin:  # join cars
-            for rider in cluster.get(old_driver):
-                cluster[list(driver_seats.keys())[-1]].append(rider)
-            cluster[list(driver_seats.keys())[-1]].append(old_driver)
+            for rider in cluster_cars.get(old_driver):
+                cluster_cars[list(driver_seats.keys())[-1]].append(rider)
+            cluster_cars[list(driver_seats.keys())[-1]].append(old_driver)
             # remove old car from available clusters
-            del cluster[old_driver]
+            del cluster_cars[old_driver]
         # Repeat the bin packing algorithm with the next emptiest car and with the remaining passenger groups,
         # until no more packing is possible.
         if not copy_driver_passengers:  # evaluates to true when empty
             grouping = False  # end loop
+
+    return cluster_cars
 
 
 ######################
@@ -280,6 +312,22 @@ def group_cells(cluster):
                             reset = False
                 if change:
                     break
+
+
+#########################
+def calculate_cluster_distance(cluster, destination):
+    global participants
+    total_distance = 0
+    for driver in cluster.keys():
+        waypoints = []
+        for rider in cluster.get(driver):
+            waypoints.append(participants.get(rider).start.get(u'street'))
+        origin = participants.get(driver).start.get(u'street')
+        direction_results = gmaps.directions(origin, destination, waypoints=waypoints)
+        total_distance += direction_results[0].get(u'legs')[0].get(u'distance').get(u'value')
+    print('Distance: ' + str(total_distance))
+    return total_distance
+
 
 
 #########################

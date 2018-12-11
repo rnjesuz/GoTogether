@@ -8,9 +8,7 @@
 [13] TextView de destino e de pick-up tem scroll manhoso
 [14] Guardar estado das actividades (Save State?) - principalmente na MainActivity 
 [15] Ordenaçao dos eventos nao é consistente - problema de leitura da DB?
-[!17!] Clusters - mudar a subrotina de agrupar por distancia para verificar se a distancia compensa
+[!!17!!] Clusters - mudar a subrotina de agrupar por distancia para verificar se a distancia compensa
 [18] Clusters - remover variaveis globais
-[!19!] App - add PopUpWindow to ask for parameters
-[!!20!!] cluster_distance_radius tem ciclo infinito a juntar carros. Testar com evento SBgh4MKtplFEbYXLvmMY
 [21] Add modules versions to server's function requirements.txt
-[22] TBD
+[22!] App - add cluster parameter to server's request JSON
