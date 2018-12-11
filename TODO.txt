@@ -12,3 +12,5 @@
 [18] Clusters - remover variaveis globais
 [21] Add modules versions to server's function requirements.txt
 [22!] App - add cluster parameter to server's request JSON
+[23!] Cluster - na subrotina de binpacking, em empate, desenpatar atraves de distancia
+[24] TBD
