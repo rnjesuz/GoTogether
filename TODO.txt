@@ -12,4 +12,5 @@
 [18] Clusters - remover variaveis globais
 [!19!] App - add PopUpWindow to ask for parameters
 [!!20!!] cluster_distance_radius tem ciclo infinito a juntar carros. Testar com evento SBgh4MKtplFEbYXLvmMY
-[21] TBD
+[21] Add modules versions to server's function requirements.txt
+[22] TBD

@@ -176,6 +176,7 @@ def group_cells_distance():
                 for i in range(drivers_range):
                     # it's the same individual
                     if driver is possible_drivers[i]:
+                        reset = False
                         continue
                     participant = participants.get(possible_drivers[i])
                     seats = participant.get_seats()
@@ -193,8 +194,9 @@ def group_cells_distance():
                             break
                         else:
                             reset = True
-                            print(u'NO Group! Insufficient seats')
+                            print(u'NO Group! Outside radius')
                     else:
+                        print(u'NO Group! Insufficient seats')
                         reset = False
                 else:
                     # Continue if the inner loop wasn't broken
