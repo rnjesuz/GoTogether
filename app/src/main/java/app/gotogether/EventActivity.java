@@ -680,7 +680,7 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
         });
     }
 
-    private void concludeEvent(){
+    private void concludeEvent(int distanceParameter, int carsParameter){
         Thread thread = new NotifyingThread() {
             @Override
             public void doRun() {
@@ -695,10 +695,10 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
                     conn.setDoOutput(true);
                     conn.setDoInput(true);
                     conn.connect();
-                    // TODO get progress from sliders and send as parameters
                     String jsonParam = new JSONObject()
                             .put("eventUID", eventUID)
-                            .put("mode", "distance")
+                            .put("distance", distanceParameter/100.0)
+                            .put("cars", carsParameter/100.0)
                             .put("optimization", false)
                             .toString();
                     DataOutputStream os = new DataOutputStream(conn.getOutputStream());
@@ -963,7 +963,7 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
                 // Dismiss the popup window
                 cPopupWindow.dismiss();
                 // conclude Event
-                concludeEvent();
+                concludeEvent(distanceBar.getProgress(), carsBar.getProgress());
             }
         });
 

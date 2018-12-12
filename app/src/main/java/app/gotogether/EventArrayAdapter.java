@@ -400,7 +400,7 @@ class EventArrayAdapter extends ArrayAdapter<Event> implements ThreadCompleteLis
                 // Dismiss the popup window
                 cPopupWindow.dismiss();
                 // conclude Event
-                concludeEvent(event);
+                concludeEvent(event, distanceBar.getProgress(), carsBar.getProgress());
             }
         });
 
@@ -440,7 +440,7 @@ class EventArrayAdapter extends ArrayAdapter<Event> implements ThreadCompleteLis
      * by sending and http request to the back-end
      * @param event the concluded event
      */
-    private void concludeEvent(Event event){
+    private void concludeEvent(Event event, int distanceParameter, int carsParameter){
         // change background to a intermediate / transparent green
         eventView.setBackgroundColor(context.getResources().getColor(R.color.green_normal_40_opacity));
         // match the background of the edit button and disable it
@@ -471,7 +471,8 @@ class EventArrayAdapter extends ArrayAdapter<Event> implements ThreadCompleteLis
                     conn.connect();
                     String jsonParam = new JSONObject()
                             .put("eventUID", event.getId())
-                            .put("mode", "distance")
+                            .put("distance", distanceParameter/100.0)
+                            .put("cars", carsParameter/100.0)
                             .put("optimization", false)
                             .toString();
                     DataOutputStream os = new DataOutputStream(conn.getOutputStream());
