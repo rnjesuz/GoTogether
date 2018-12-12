@@ -1,7 +1,8 @@
 # Function dependencies, for example:
 # package>=version
 firebase_admin
-google.cloud
+google-cloud
 googlemaps
 sortedcollections
 haversine
+binpacking

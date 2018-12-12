@@ -1,5 +1,9 @@
-import firebase_admin, google.cloud, googlemaps, json
+import firebase_admin
+import google.cloud
+import googlemaps
+import json
 import binpacking
+import copy
 from sortedcollections import ValueSortedDict
 from firebase_admin import credentials, firestore
 from google.cloud import exceptions
@@ -12,38 +16,22 @@ db = firestore.client()
 gmaps = googlemaps.Client(key='AIzaSyDSyIfDZVr7DMspukdJG00gzZUnPCCqguE')
 
 event_ref = None
-
-drivers = []
-driversDirections = {}
-driversDistance = ValueSortedDict()
-
-riders = []
-ridersDirections = {}
-ridersDistance = ValueSortedDict()
-
-RtoDRouteShare = {}
+destination = None
 
 participants = {}
-
-cluster = {}
 
 
 ######################
 def cluster_distance_radius(request):
     global event_ref
-    global drivers, driversDistance, driversDirections
-    global riders, ridersDistance, ridersDirections
-    global participants, RtoDRouteShare, cluster
+    global participants
+    global destination
 
     drivers = []
-    driversDirections = {}
-    driversDistance = ValueSortedDict()
+    drivers_distance = ValueSortedDict()
 
     riders = []
-    ridersDirections = {}
-    ridersDistance = ValueSortedDict()
-
-    RtoDRouteShare = {}
+    riders_distance = ValueSortedDict()
 
     participants = {}
 
@@ -54,11 +42,15 @@ def cluster_distance_radius(request):
     # if event_uid is None:
     # 	event_uid = u'SBgh4MKtplFEbYXLvmMY'
     event_uid = request['eventUID']
-    event_mode = request['mode']
+    cars_parameter = request['cars']
+    distance_parameter = request['distance']
     event_optimization = request['optimization']
     event_ref = db.collection(u'events').document(event_uid)
     participants_ref = db.collection(u'events').document(event_uid).collection(u'participants')
     print(u'Completed event: {}'.format(event_uid))
+    print('Prioritization of minimizing cars: ' + str(cars_parameter))
+    print('Prioritization of minimizing distance: ' + str(distance_parameter))
+    print('------------------------------')
     try:
         event = Event(**event_ref.get().to_dict())
         event_participants = participants_ref.get()
@@ -74,17 +66,17 @@ def cluster_distance_radius(request):
         distance_results = gmaps.distance_matrix(source, destination)  # TODO this can result ZERO_RESULTS
         if p.is_driver():
             drivers.append(p.id)
-            driversDistance[p.id] = distance_results.get(u'rows')[0].get(u'elements')[0].get(u'distance').get(u'value')
+            drivers_distance[p.id] = distance_results.get(u'rows')[0].get(u'elements')[0].get(u'distance').get(u'value')
             cluster[p.id] = []
         else:
             riders.append(p.id)
-            ridersDistance[p.id] = distance_results.get(u'rows')[0].get(u'elements')[0].get(u'distance').get(u'value')
+            riders_distance[p.id] = distance_results.get(u'rows')[0].get(u'elements')[0].get(u'distance').get(u'value')
         participants[p.id] = p
 
     radius = 5  # Kilometers
     matches = 0
-    while len(ridersDistance.keys()) > matches:
-        for driver in driversDistance:
+    while len(riders_distance.keys()) > matches:
+        for driver in drivers_distance:
             participant = participants.get(driver)
             seats = participant.get_seats()
             possible_riders = riders.copy()
@@ -92,7 +84,9 @@ def cluster_distance_radius(request):
             for i in range(riders_range):
                 driver_cluster_len = len(cluster.get(driver))
                 if driver_cluster_len < seats:
-                    if is_inside_radius(participants.get(driver).start.get(u'street'), participants.get(possible_riders[i]).start.get(u'street'), radius):
+                    if is_inside_radius(participants.get(driver).start.get(u'street'),
+                                        participants.get(possible_riders[i]).start.get(u'street'),
+                                        radius):
                         print(u'Group! Rider \'{}\' grouped with driver \'{}\'.'.format(possible_riders[i], driver))
                         cluster[driver].append(possible_riders[i])
                         riders.remove(possible_riders[i])
@@ -104,24 +98,47 @@ def cluster_distance_radius(request):
         radius = radius + 5  # increase radius by X Km and repeat
 
     print(u'Radial clusters: {}'.format(cluster))
-    if event_mode == 'cars':
-        print("Grouping cells by reducing number of cars.")
-        group_cells_cars()
-    elif event_mode == 'distance':
-        print("Grouping cells by reducing distance travelled")
-        group_cells_distance()
-    else:  # fail-safe
-        print("Grouping with fail-safe")
-        group_cells()
-    print(u'Final clusters: {}'.format(cluster))
+
+    print('------------------------------')
+    print('Initial values.')
+    initial_cars = len(cluster)
+    initial_distance = calculate_cluster_distance(cluster)
+    print('Distance: ' + str(initial_distance))
+    print('# Cars: ' + str(initial_cars) + '.')
+
+    # ----------------------------------
+    #
+    # f(x)=(cars_parameter*(len(x)/initial_cars))+(distance_parameter*(calculate_cluster_distance(x)/initial_distance))
+    #
+    print('------------------------------')
+    print('Calculating cluster minimizing cars.')
+    cluster_cars = group_cells_cars(copy.deepcopy(cluster))
+    print('cluster_cars: {}'.format(cluster_cars))
+    distance_cars = calculate_cluster_distance(cluster_cars)
+    print('Distance: ' + str(distance_cars))
+    print('# Cars: ' + str(len(cluster_cars)) + '.')
+    f_cluster_cars = (cars_parameter * (len(cluster_cars) / initial_cars)) + \
+                     (distance_parameter * (distance_cars / initial_distance))
+    print('function_cluster_cars: ' + str(f_cluster_cars) + '.')
+    print('------------------------------')
+    print('Calculating cluster minimizing distance.')
+    cluster_distance = group_cells_distance(copy.deepcopy(cluster), drivers_distance, drivers)
+    print('cluster_distance: {}'.format(cluster_distance))
+    distance_distance = calculate_cluster_distance(cluster_distance)
+    print('Distance: ' + str(distance_distance))
+    print('# Cars: ' + str(len(cluster_distance)) + '.')
+    f_cluster_distance = (cars_parameter * (len(cluster_distance) / initial_cars)) + \
+                         (distance_parameter * (distance_distance / initial_distance))
+    print('function_cluster_distance: ' + str(f_cluster_distance) + '.')
+
     if event_optimization:
-        # call waypoint optimization method
+        # call waypoint optimization method TODO
         pass
-    update_database()
-    #  return cluster
-    #  return 'OK'
-    #  data = {'response': 'OK'}
-    #  return json.dumps(data)
+    update_database(cluster_cars) if f_cluster_cars < f_cluster_distance else update_database(cluster_distance)
+    # return cluster
+    # return 'OK'
+    # data = {'response': 'OK'}
+    # return json.dumps(data))
 
 
 ######################
@@ -133,9 +150,9 @@ def is_inside_radius(driver_source, rider_source, radius):
     #                               rider_geocode_results[0].get(u'geometry').get(u'location').get(u'lat'),
     #                               rider_geocode_results[0].get(u'geometry').get(u'location').get(u'lng'))
     haversine_distance = haversine((driver_geocode_results[0].get(u'geometry').get(u'location').get(u'lat'),
-                                  driver_geocode_results[0].get(u'geometry').get(u'location').get(u'lng')),
-                                  (rider_geocode_results[0].get(u'geometry').get(u'location').get(u'lat'),
-                                  rider_geocode_results[0].get(u'geometry').get(u'location').get(u'lng')))
+                                    driver_geocode_results[0].get(u'geometry').get(u'location').get(u'lng')),
+                                   (rider_geocode_results[0].get(u'geometry').get(u'location').get(u'lat'),
+                                    rider_geocode_results[0].get(u'geometry').get(u'location').get(u'lng')))
     if radius >= haversine_distance:
         print(u'Radius of {} larger than Haversine distance of {}.'.format(radius, haversine_distance))
         return True
@@ -163,16 +180,16 @@ def haversine_formula(lon1, lat1, lon2, lat2):
 
 
 ######################
-def group_cells_distance():
+def group_cells_distance(cluster_distance, drivers_distance, drivers):
     radius = 10  # Kilometers
-    for driver in driversDistance:
+    for driver in drivers_distance:
         print('DRIVER: {}'.format(driver))
         if driver in drivers:
             reset = True
             while reset:
                 possible_drivers = drivers.copy()
                 drivers_range = len(possible_drivers)
-                driver_cluster_len = len(cluster.get(driver))
+                driver_cluster_len = len(cluster_distance.get(driver))
                 for i in range(drivers_range):
                     # it's the same individual
                     if driver is possible_drivers[i]:
@@ -180,46 +197,90 @@ def group_cells_distance():
                         continue
                     participant = participants.get(possible_drivers[i])
                     seats = participant.get_seats()
-                    if driver_cluster_len < seats - (len(cluster.get(possible_drivers[i])) + 1):
+                    if driver_cluster_len < seats - (len(cluster_distance.get(possible_drivers[i])) + 1):
                         if is_inside_radius(participants.get(driver).start.get(u'street'),
                                             participants.get(possible_drivers[i]).start.get(u'street'), radius):
-                            print(u'Group! Driver \'{}\' grouped with new driver \'{}\'.'.format(driver, possible_drivers[i]))
-                            for rider in cluster.get(driver) or []:
-                                cluster[possible_drivers[i]].append(rider)
-                            cluster[possible_drivers[i]].append(driver)
-                            drivers.remove(driver)
-                            del cluster[driver]
-                            reset = False
-                            # Break the inner loop
-                            break
+                            # TODO match if roundtrip is smaller
+                            # see if the cumulative distance of the join is better than the separate voyages
+                            if verify_cumulative_distance(cluster_distance, possible_drivers[i], driver):
+                                print(u'Group! Driver \'{}\' grouped with new driver \'{}\'.'
+                                      .format(driver, possible_drivers[i]))
+                                for rider in cluster_distance.get(driver) or []:
+                                    cluster_distance[possible_drivers[i]].append(rider)
+                                cluster_distance[possible_drivers[i]].append(driver)
+                                drivers.remove(driver)
+                                del cluster_distance[driver]
+                                reset = False
+                                # Break the inner loop
+                                break
+                            else:
+                                reset = False
+                                print(u'NO Group! Roundtrip is longer.')
                         else:
                             reset = True
-                            print(u'NO Group! Outside radius')
+                            # print(u'NO Group! Outside radius.')
                     else:
-                        print(u'NO Group! Insufficient seats')
                         reset = False
+                        print(u'NO Group! Insufficient seats.')
                 else:
                     # Continue if the inner loop wasn't broken
-                    print('Increasing radius')
+                    # print('Increasing radius')
                     radius = radius + 10  # increase radius by 2 Km and repeat
                     continue
                 # Inner loop was broken, break the outer
                 break
             print('Remaining drivers: {}'.format(drivers))
+    return cluster_distance
 
 
 ######################
-def group_cells_cars():
+def verify_cumulative_distance(cluster, new_driver, old_driver):
+    old_distance_old_driver = calculate_cluster_distance({new_driver: cluster.get(new_driver)})
+    old_distance_new_driver = calculate_cluster_distance({old_driver: cluster.get(old_driver)})
+    old_distance = old_distance_old_driver + old_distance_new_driver
+    # TODO does the dictionary for the new_distance always old?
+    new_distance = calculate_cluster_distance({new_driver: cluster.get(new_driver)+[old_driver]+cluster.get(old_driver)})
+    if old_distance < new_distance:
+        return False
+    else:
+        return True
+
+
+#########################
+def calculate_cluster_distance(cluster):
+    global participants, destination
+    total_distance = 0
+    for driver in cluster.keys():
+        waypoints = []
+        for rider in cluster.get(driver):
+            waypoints.append(participants.get(rider).start.get(u'street'))
+        origin = participants.get(driver).start.get(u'street')
+        print('origin: {}, waypoints: {}, destination: {}'.format(origin, waypoints, destination))
+        direction_results = gmaps.directions(origin, destination,
+                                             mode="driving", waypoints=waypoints, alternatives=True, avoid=None,
+                                             language=None, units="metric", region=None, departure_time=None,
+                                             arrival_time=None, optimize_waypoints=True, transit_mode=None,
+                                             transit_routing_preference=None, traffic_model=None)
+        # if there are waypoints then there are several legs to consider
+        for i in range(len(waypoints)+1):
+            total_distance += direction_results[0].get(u'legs')[i].get(u'distance').get(u'value')
+    return total_distance
+
+
+######################
+def group_cells_cars(cluster_cars):
+    global participants
     # order cars by number of empty seats
     driver_seats = ValueSortedDict()
     driver_passengers = {}
-    for driver in cluster.keys():
+    for driver in cluster_cars.keys():
         # get number of empty seats
-        cluster_list = cluster.get(driver)
+        cluster_list = cluster_cars.get(driver)
         cluster_list_length = len(cluster_list)
         driver_seats[driver] = participants.get(driver).get_seats() - cluster_list_length
         # get the number of passenger + the driver
         driver_passengers[driver] = cluster_list_length + 1
+
     grouping = True
     while grouping:
         # Run the bin packing algorithm with bins of capacity equal to that of the car with more available seats.
@@ -236,26 +297,28 @@ def group_cells_cars():
             del driver_passengers[driver]
         # Update cluster. The biggest bin as passengers of the driver with more empty seats
         for old_driver in biggest_bin:  # join cars
-            for rider in cluster.get(old_driver):
-                cluster[list(driver_seats.keys())[-1]].append(rider)
-            cluster[list(driver_seats.keys())[-1]].append(old_driver)
+            for rider in cluster_cars.get(old_driver):
+                cluster_cars[list(driver_seats.keys())[-1]].append(rider)
+            cluster_cars[list(driver_seats.keys())[-1]].append(old_driver)
             # remove old car from available clusters
-            del cluster[old_driver]
+            del cluster_cars[old_driver]
         # Repeat the bin packing algorithm with the next emptiest car and with the remaining passenger groups,
         # until no more packing is possible.
         if not copy_driver_passengers:  # evaluates to true when empty
             grouping = False  # end loop
 
+    return cluster_cars
+
 
 ######################
-def group_cells():
+def group_cells(cluster, drivers_distance):
     reset = True
     # TODO try to match full cars (2 empty + 2, instead of 2 empty +1)
     while reset:
-        for driver in driversDistance.keys():
+        for driver in drivers_distance.keys():
             if driver in cluster:
                 change = False
-                for next_driver in driversDistance.keys():
+                for next_driver in drivers_distance.keys():
                     if next_driver in cluster:
                         cluster_list = cluster.get(next_driver)
                         cluster_list_length = len(cluster_list)
@@ -268,7 +331,8 @@ def group_cells():
                             reset = False
                             continue
                         # driver has available seats
-                        elif (len(cluster.get(driver)))+1 <= (participants.get(next_driver).get_seats() - cluster_list_length):
+                        elif (len(cluster.get(driver)))+1 <=\
+                                (participants.get(next_driver).get_seats() - cluster_list_length):
                             # TODO match full car
                             # TODO only match if round trip isn't bigger than separate trip
                             # join cars
@@ -288,7 +352,7 @@ def group_cells():
 
 
 #########################
-def update_database():
+def update_database(cluster):
     event_ref.update({u'completed': True})
     event_ref.update({u'cluster': firestore.DELETE_FIELD}) # make sure there is no old field (SHOULDN'T HAPPEN)
     for driver in cluster.keys():
@@ -336,6 +400,7 @@ class Event(object):
     def __init__(self, **fields):
         self.__dict__.update(fields)
 
+
 #######################
 def read_json(file):
     try:
@@ -344,6 +409,7 @@ def read_json(file):
             return json.load(f)
     finally:
         print('Done reading')
+
 
 if __name__ == '__main__':
     return_dict = read_json("request.json")
