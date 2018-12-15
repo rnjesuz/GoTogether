@@ -12,3 +12,10 @@
 [22!] App - add cluster parameter to server's request JSON
 [23!] Cluster - na subrotina de binpacking, em empate, desenpatar atraves de distancia
 [24] AutoComplete suggestions - devolver em portugues (devolve lisbon em vez de Lisboa)
+[25] retroceder no evento quando a bottomsheet está em cima deveria baixar a bottomsheet (em vez de retroceder para a MainActivity)
+[26] O que acontece se alçguem for condutor com 0 lugares?
+[27] Campo "participants" na DB. É necessário? acho que não está a ser actualizado devidamente
+[28] JoinEventActivity não devia começar com o focus no input
+[29] UpdateEvent não mostra os participants - bug ou feature?
+[30] Concluir o evento com a bottomsheet extendida deveria baixar a bottomsheet
+[31] Cluster - imprimir informaçoes de cada condutor para debug - quantos lugares tem nbo inicio por exemplo
