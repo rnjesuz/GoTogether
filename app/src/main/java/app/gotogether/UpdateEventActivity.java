@@ -964,7 +964,7 @@ public class UpdateEventActivity extends AppCompatActivity implements OnMapReady
                 databaseWrite();
 
                 // TODO launch back to event activity
-                Intent intent = new Intent(UpdateEventActivity.this, OldEventActivity.class);
+                Intent intent = new Intent(UpdateEventActivity.this, EventActivity.class);
                 // add the uid
                 intent.putExtra("eventUID", eventUID);
                 // add the event owner
@@ -1197,7 +1197,7 @@ public class UpdateEventActivity extends AppCompatActivity implements OnMapReady
 
         //Launch new activity
         // Create intent
-        Intent intent = new Intent(UpdateEventActivity.this, OldEventActivity.class);
+        Intent intent = new Intent(UpdateEventActivity.this, EventActivity.class);
         // Add event uid
         intent.putExtra("eventUID", eventUID);
         // Title

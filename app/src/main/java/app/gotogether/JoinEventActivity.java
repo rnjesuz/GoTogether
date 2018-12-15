@@ -923,7 +923,7 @@ public class JoinEventActivity extends AppCompatActivity implements OnMapReadyCa
         
         //Launch new activity
         // TODO do split? if finalized : if not finalized - different activities based on each
-        Intent intent = new Intent(JoinEventActivity.this, OldEventActivity.class);
+        Intent intent = new Intent(JoinEventActivity.this, EventActivity.class);
         // Event's UID
         intent.putExtra("eventUID", eventUID);
         // add event owner
