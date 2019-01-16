@@ -11,12 +11,10 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
-import android.graphics.drawable.LayerDrawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.RequiresApi;
-import android.support.design.widget.BottomSheetBehavior;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.Snackbar;
 import android.support.design.widget.TabLayout;
@@ -31,7 +29,6 @@ import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.style.ImageSpan;
-import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -46,7 +43,6 @@ import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.PopupWindow;
 import android.widget.ProgressBar;
-import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -58,7 +54,6 @@ import com.akexorcist.googledirection.model.Leg;
 import com.akexorcist.googledirection.model.Route;
 import com.akexorcist.googledirection.model.Step;
 import com.akexorcist.googledirection.util.DirectionConverter;
-import com.firebase.ui.auth.AuthUI;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -77,8 +72,6 @@ import com.google.android.gms.tasks.Task;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.Query;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.functions.FirebaseFunctions;
 import com.google.firebase.functions.FirebaseFunctionsException;
@@ -104,6 +97,7 @@ import app.gotogether.PagerAdapter.TabItem;
 import app.gotogether.fragments.ClusterListFragment;
 import app.gotogether.fragments.ParticipantsListFragment;
 import biz.laenger.android.vpbs.BottomSheetUtils;
+import biz.laenger.android.vpbs.ViewPagerBottomSheetBehavior;
 
 public class EventActivity extends AppCompatActivity implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener, ParticipantsListFragment.OnCompleteListener, ClusterListFragment.OnCompleteListener, ThreadCompleteListener {
 
@@ -116,7 +110,7 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
     private HashMap<String, Marker> markers = new HashMap<>();
     private User user;
     private ArrayList<User> participants;
-    private static BottomSheetBehavior<View> bottomSheetBehavior;
+    private static ViewPagerBottomSheetBehavior<View> bottomSheetBehavior;
     private LatLngBounds bounds;
     private String title;
     private String eventUID;
@@ -175,10 +169,8 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
     private void setupBottomSheet() {
         LinearLayout bottomSheetFrame = findViewById(R.id.bottom_sheet);
         bottomSheetViewPager = findViewById(R.id.bottom_sheet_viewpager);
-        // bottomSheetToolbar = findViewById(R.id.bottom_sheet_toolbar);
         bottomSheetTabLayout = findViewById(R.id.bottom_sheet_tabs);
 
-        // bottomSheetToolbar.setTitle(R.string.bottom_sheet_title);
         if (complete){
             Log.d(TAG, "complete");
             concludingEvent = true;
@@ -193,8 +185,8 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
         bottomSheetTabLayout.setupWithViewPager(bottomSheetViewPager);
         BottomSheetUtils.setupViewPager(bottomSheetViewPager);
         // The View with the BottomSheetBehavior
-        bottomSheetBehavior = BottomSheetBehavior.from(bottomSheetFrame);
-        bottomSheetBehavior.setBottomSheetCallback(new BottomSheetBehavior.BottomSheetCallback() {
+        bottomSheetBehavior = ViewPagerBottomSheetBehavior.from(bottomSheetFrame);
+        bottomSheetBehavior.setBottomSheetCallback(new ViewPagerBottomSheetBehavior.BottomSheetCallback() {
             @Override
             public void onStateChanged(@NonNull View bottomSheet, int newState) {
                 // React to state change
@@ -212,27 +204,27 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
             public void onTabSelected(TabLayout.Tab tab) {
                 if(!concludingEvent) {
                     Log.d(TAG, "Tab Selected: expanding bottom sheet");
-                    bottomSheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+                    bottomSheetBehavior.setState(ViewPagerBottomSheetBehavior.STATE_EXPANDED);
                 }
             }
             @Override
             public void onTabUnselected(TabLayout.Tab tab) { }
             @Override
             public void onTabReselected(TabLayout.Tab tab) {
-                int state = BottomSheetBehavior.from(bottomSheetFrame).getState();
-                if (state == BottomSheetBehavior.STATE_EXPANDED) {
+                int state = ViewPagerBottomSheetBehavior.from(bottomSheetFrame).getState();
+                if (state == ViewPagerBottomSheetBehavior.STATE_EXPANDED) {
                     Log.d(TAG, "Tab RE-selected: collapsing bottom sheet");
-                    bottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
+                    bottomSheetBehavior.setState(ViewPagerBottomSheetBehavior.STATE_COLLAPSED);
                 }
-                else if (state == BottomSheetBehavior.STATE_COLLAPSED) {
+                else if (state == ViewPagerBottomSheetBehavior.STATE_COLLAPSED) {
                     Log.d(TAG, "Tab RE-selected: expanding bottom sheet");
-                    bottomSheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+                    bottomSheetBehavior.setState(ViewPagerBottomSheetBehavior.STATE_EXPANDED);
                 }
             }
         });
 
         // sheet starts collapsed
-        bottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
+        bottomSheetBehavior.setState(ViewPagerBottomSheetBehavior.STATE_COLLAPSED);
 
         // need a GlobalLayoutListener to wait for the view to be drawn
         final TabLayout tb = (TabLayout) findViewById(R.id.bottom_sheet_tabs);
@@ -318,7 +310,6 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
 
     public void onParticipantsListFragmentComplete() {
         ParticipantsListFragment fragment = (ParticipantsListFragment) sectionsPagerAdapter.getFragment(0);
-        // ParticipantsListFragment fragment = sectionsPagerAdapter.getpFragment();
         View inflatedView = fragment.getInflatedView();
 
         // the event part
@@ -376,8 +367,8 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
     public void onClusterListFragmentComplete() {
         ClusterListFragment fragment = (ClusterListFragment) sectionsPagerAdapter.getFragment(1);
         View inflatedView = fragment.getInflatedView();
-        // initialize the db 
-        FirebaseFirestore db = FirebaseFirestore.getInstance(); 
+        // initialize the db
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
         // Grab cluster from db
         DocumentReference eventRef = db.collection("events").document(eventUID);
         eventRef.get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
@@ -386,7 +377,7 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
                 if (task.isSuccessful()){
                     DocumentSnapshot document = task.getResult();
                     Map<String, ArrayList<DocumentReference>> cluster = (HashMap<String, ArrayList<DocumentReference>>) document.get("cluster");
-                    Query participantsRefs = db.collection("users").whereArrayContains("events", eventRef);
+                    /*Query participantsRefs = db.collection("users").whereArrayContains("events", eventRef);
                     participantsRefs.get().addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
                         @Override
                         public void onComplete(@NonNull Task<QuerySnapshot> task) {
@@ -394,6 +385,7 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
                                 // Get the username of all the participants
                                 HashMap<String, String> participantsUID = new HashMap<>();
                                 for (QueryDocumentSnapshot participant: task.getResult()){
+                                    Log.d(TAG, "participant: "+participant);
                                     participantsUID.put(participant.getId(), participant.getString("username"));
                                 }
                                 // Compare who are the drivers and who are the riders
@@ -430,6 +422,8 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
                                     }
                                     riders.add(ridersUsername);
                                 }
+                                Log.d(TAG, "drivers: "+drivers);
+                                Log.d(TAG, "riders: "+riders);
                                 // Instantiate adapter
                                 RecyclerView clustersList = inflatedView.findViewById(R.id.bottom_sheet_drivers);
                                 DriverInEventAdapter driverDescriptionAdapter = new DriverInEventAdapter(drivers, riders, null, EventActivity.this);
@@ -449,7 +443,73 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
                                 Log.d(TAG, "Query failed with ", task.getException());
                             }
                         }
-                    });
+                    });*/
+                    eventRef.collection("participants").get()
+                            .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+                                @Override
+                                public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                                    if (task.isSuccessful()) {
+                                        // Get the username of all the participants
+                                        HashMap<String, String> participantsUID = new HashMap<>();
+                                        for (DocumentSnapshot participant : task.getResult()) {Log.d(TAG, "participant: "+participant);
+                                            participantsUID.put(participant.getId(), participant.getString("username"));
+                                        }
+                                        // Compare who are the drivers and who are the riders
+                                        ArrayList<String> drivers = new ArrayList<>();
+                                        ArrayList<ArrayList<String>> riders = new ArrayList<>();
+                                        // Get all the drivers
+                                        for (String driverUID: cluster.keySet()){
+                                            ArrayList<String> ridersUsername = new ArrayList<>();
+                                            Boolean isUserRoute = false;
+
+                                            // change the map marker relating to this driver
+                                            changeDriverMarker(driverUID);
+
+                                            ArrayList<DocumentReference> ridersRef = cluster.get(driverUID);
+                                            drivers.add(participantsUID.get(driverUID));
+                                            if (driverUID.equals(user.getId())){
+                                                myRouteCluster.add(driverUID);
+                                                isUserRoute = true;
+                                            }
+                                            // Get username of riders of said driver
+                                            ArrayList<String> riderUID = new ArrayList<>();
+                                            for (DocumentReference riderRef: ridersRef){
+                                                String uid = riderRef.getId();
+                                                riderUID.add(uid);
+                                                ridersUsername.add(participantsUID.get(uid));
+                                                if (isUserRoute){
+                                                    myRouteCluster.add(riderRef.getId());
+                                                }
+                                                if (riderRef.getId().equals(user.getId())){
+                                                    myRouteCluster.add(driverUID);
+                                                    myRouteCluster.addAll(riderUID);
+                                                    isUserRoute = true;
+                                                }
+                                            }
+                                            riders.add(ridersUsername);
+                                        }
+                                        Log.d(TAG, "drivers: "+drivers);
+                                        Log.d(TAG, "riders: "+riders);
+                                        // Instantiate adapter
+                                        RecyclerView clustersList = inflatedView.findViewById(R.id.bottom_sheet_drivers);
+                                        DriverInEventAdapter driverDescriptionAdapter = new DriverInEventAdapter(drivers, riders, null, EventActivity.this);
+                                        clustersList.setAdapter(driverDescriptionAdapter);
+                                        // Set the layout manager
+                                        clustersList.setLayoutManager(new LinearLayoutManager(EventActivity.this));
+
+                                        // Draw the user Route on the map
+                                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) { // needs api N
+                                            drawRoute();
+                                        }
+                                        // make the cluster tab the selected one
+                                        bottomSheetViewPager.setCurrentItem(1);
+                                        // signal event concluded
+                                        concludingEvent = false;
+                                    } else {
+                                        Log.d(TAG, "Error getting subcollection.", task.getException());
+                                    }
+                                }
+                            });
                 } else {
                     Log.d(TAG, "Event get failed with ", task.getException());
                 }
@@ -460,9 +520,7 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
     private void addTab(TabItem item) {
         runOnUiThread(() -> {
             sectionsPagerAdapter.addTabPage(item);
-            //bottomSheetTabLayout.addTab(bottomSheetTabLayout.newTab());
             bottomSheetTabLayout.setupWithViewPager(bottomSheetViewPager);
-            // make the cluster tab the selected one
         });
     }
 
@@ -747,14 +805,14 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
     /** Center map on the user marker
      * Initiated by a button in the bottom sheet */
     public void goMarkerUser(){
-        bottomSheetBehavior.setState(4); // collapse the sheet
+        bottomSheetBehavior.setState(ViewPagerBottomSheetBehavior.STATE_COLLAPSED); // collapse the sheet
         mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(startLatLng, 17));
     }
 
     /** Center map on the destination marker
      * Initiated by a button in the bottom sheet */
     public void goMarkerDestination(){
-        bottomSheetBehavior.setState(4); // collapse the sheet
+        bottomSheetBehavior.setState(ViewPagerBottomSheetBehavior.STATE_COLLAPSED); // collapse the sheet
         mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(destinationLatLng, 17));
     }
 
@@ -762,7 +820,7 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
      * Initiated by a button in the bottom sheet
      * @param participant the participant to center on */
     public static void goMarkerParticipant(User participant){
-        bottomSheetBehavior.setState(4); // collapse the sheet
+        bottomSheetBehavior.setState(ViewPagerBottomSheetBehavior.STATE_COLLAPSED); // collapse the sheet
         mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(participant.getStartLatLng(), 17));
     }
 

@@ -79,6 +79,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/driverView"
         android:background="@color/white_background"
-        android:gravity="center_vertical"/>
+        android:gravity="center_vertical"
+        android:visibility="visible"/>
 
 </android.support.constraint.ConstraintLayout>

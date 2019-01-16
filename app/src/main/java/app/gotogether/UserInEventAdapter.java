@@ -73,7 +73,7 @@ public class UserInEventAdapter extends RecyclerView.Adapter<UserInEventAdapter.
                 }
             });
             nameView.setText(user.getUsername());
-            destinationView.setText(new SpannableString(Html.fromHtml("<b>Destination: </b>"+ user.getStartAddress())));
+            destinationView.setText(new SpannableString(Html.fromHtml("<b>Pickup: </b>"+ user.getStartAddress())));
             if (user.isDriver()){
                 driverView.setText(new SpannableString(Html.fromHtml("<b>Driver: </b>Available")));
                 seatsView.setText(new SpannableString(Html.fromHtml("<b>Empty seats: </b>"+ user.getSeats())));

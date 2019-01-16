@@ -42,7 +42,7 @@ public class DriverInEventAdapter extends RecyclerView.Adapter<DriverInEventAdap
 
     @Override
     public void onBindViewHolder(ViewHolder holder, int position) {
-        holder.setData(mDriversUsername.get(position), mRidersUsername.get(position));
+        holder.setData(mDriversUsername.get(position), mRidersUsername.get(position), groupCounter+position);
     }
 
     @Override
@@ -70,10 +70,10 @@ public class DriverInEventAdapter extends RecyclerView.Adapter<DriverInEventAdap
             groupView = view.findViewById(R.id.groupView);
         }
 
-        public void setData(String username, ArrayList<String> ridersUsername) {
+        public void setData(String username, ArrayList<String> ridersUsername, int groupNumber) {
             this.username = username;
             this.ridersUsername = ridersUsername;
-            groupView.setText("Group "+groupCounter++);
+            groupView.setText(String.format(context.getString(R.string.group_number), groupNumber));
             usernameView.setText(username);
             ridersDescriptionAdapter = new RiderInEventAdapter(ridersUsername, null);
             ridersView.setAdapter(ridersDescriptionAdapter);

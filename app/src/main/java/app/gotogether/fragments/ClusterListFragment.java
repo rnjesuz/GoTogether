@@ -18,7 +18,6 @@ public class ClusterListFragment extends Fragment {
     }
 
     private View inflatedView;
-
     private OnCompleteListener mListener;
 
     @Override
@@ -42,4 +41,5 @@ public class ClusterListFragment extends Fragment {
     public View getInflatedView() {
         return inflatedView;
     }
+
 }

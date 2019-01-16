@@ -45,9 +45,10 @@
     <string name="conclude_event">Conclude Event</string>
     <string name="options">Options</string>
 
-    <string name="view_pager_bottom_sheet_behavior" translatable="false">biz.laenger.android.vpbs.ViewPagerBottomSheetBehavior</string>
+    <!--<string name="view_pager_bottom_sheet_behavior" translatable="false">biz.laenger.android.vpbs.ViewPagerBottomSheetBehavior</string>-->
     <string name="tab_participants">participants</string>
     <string name="tab_cluster">cluster</string>
+    <string name="group_number">Group %1$d</string>
 
     <!-- Strings related to Settings -->
 

@@ -9,7 +9,6 @@ import android.support.v4.app.FragmentPagerAdapter;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.style.ImageSpan;
-import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -88,4 +87,5 @@ public class PagerAdapter extends FragmentPagerAdapter {
         tabItemsArray.add(item);
         notifyDataSetChanged();
     }
+
 }
