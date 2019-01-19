@@ -303,14 +303,27 @@ def group_cells_cars(cluster_cars):
 
     grouping = True
     while grouping:
+
+        # TODO remover -> if not driver_passengers:  # evaluates to true when empty
+        if not driver_seats:  # evaluates to true when empty
+            grouping = False  # end loop
+            continue  # exit current iteration
+
         # Run the bin packing algorithm with bins of capacity equal to that of the car with more available seats.
         #    The car with the most empty seats must not be an item of the the bin packing
         copy_driver_passengers = driver_passengers.copy()
         new_driver = list(driver_seats.keys())[-1]
         del copy_driver_passengers[new_driver]
         #    Calculate the bin packing solution
+        print('driver_passengers: {}'.format(copy_driver_passengers))
+        print('seats: {}'.format(driver_seats))
         bins = binpacking.to_constant_volume(copy_driver_passengers, list(driver_seats.values())[-1])
         print('Possible bins for {}: {}'.format(new_driver, bins))
+        if not bins[0]:  # if the first position is empty it means ALL the values given are bigger than then bin size
+            del driver_seats[new_driver]  # so we remove this driver from cars with available seats
+            continue
+
+        '''
         # Of the bins produced by the algorithm, choose the bin with more items in it.
 
         #             MOST EFFICIENT
@@ -327,24 +340,10 @@ def group_cells_cars(cluster_cars):
         #
         _max = max(map(len, bins))
         # TODO remove the dict from bellow. i only need the bin not it's position.
-        # TODO (cont) i only need the position in the new array, not it's positionin the original array
+        # TODO (cont) i only need the position in the new array, not it's position in the original array
         # TODO change the last line of the if statement (with the tuple conversion)
-        # biggest_bins = dict(i for i in enumerate(bins) if len(i[-1]) == _max)
-
-
-
-        result = {}
-        count = 0
-        for i in bins:
-            sum = 0
-            for j in i.values():
-                sum += j
-            result[count] = sum
-            count += 1
-        a = [u for u,v in result.items() if float(v) >= max(result.values())]
-        biggest_bins = [bins[x] for x in a]
-        # TODO os cíclos agr teem de ser diferentes
-
+        biggest_bins = dict(i for i in enumerate(bins) if len(i[-1]) == _max)
+        
         print('bins: {}'.format(biggest_bins))
         # If multiple solutions exist...
         if len(biggest_bins) > 1:
@@ -357,9 +356,45 @@ def group_cells_cars(cluster_cars):
                 bin_distances.append(calculate_cluster_distance(cluster_bins))
             print("distances; {}".format(bin_distances))
             # ... and pick the one with the smallest distance (if draw between several - choose any)
+            print(tuple(biggest_bins.items())[bin_distances.index(min(bin_distances))][1])
             better_bin = tuple(biggest_bins.items())[bin_distances.index(min(bin_distances))][1]
         else:
-            better_bin = next(iter(biggest_bins.values()))
+            better_bin = next(iter(biggest_bins.values()))'''
+
+
+
+
+        result = {}
+        count = 0
+        for i in bins:
+            sum = 0
+            for j in i.values():
+                # if we considered a car that had more people than available seats ...
+                if j > list(driver_seats.values())[-1]:
+                    continue # ... we skip it
+                sum += j
+            result[count] = sum
+            count += 1
+        a = [u for u,v in result.items() if float(v) >= max(result.values())]
+        biggest_bins = [bins[x] for x in a]
+        # TODO os cíclos agr teem de ser diferentes
+
+        print('bins: {}'.format(biggest_bins))
+        # If multiple solutions exist...
+        if len(biggest_bins) > 1:
+            # ... compare them by distance...
+            bin_distances = []
+            for bin in biggest_bins:
+                cluster_bins = {new_driver: []}
+                for participant in bin.keys():
+                    cluster_bins[new_driver].append(participant)
+                # TODO isto so esta a contar com apanhar o condutor. é preciso contar com a distancia dos passageiros tbm!!
+                bin_distances.append(calculate_cluster_distance(cluster_bins))
+            print("distances: {}".format(bin_distances))
+            # ... and pick the one with the smallest distance (if draw between several - choose any)
+            better_bin = tuple(biggest_bins)[bin_distances.index(min(bin_distances))]
+        else:
+            better_bin = next(iter(biggest_bins))
         # Remove the grouped cars (the bin + the items) from the sorted list and from the unplaced items.
         for driver in better_bin.keys():
             del driver_seats[driver]
@@ -377,8 +412,6 @@ def group_cells_cars(cluster_cars):
         print(cluster_cars)
         # Repeat the bin packing algorithm with the next emptiest car and with the remaining passenger groups,
         # until no more packing is possible.
-        if not driver_passengers:  # evaluates to true when empty
-            grouping = False  # end loop
 
     return cluster_cars
 
