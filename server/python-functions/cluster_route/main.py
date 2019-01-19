@@ -133,10 +133,13 @@ def cluster_route(request):
     if event_optimization:
         # call waypoint optimization method TODO
         pass
+    print('------------------------------')
     if f_cluster_cars < f_cluster_distance:
+        print('Choosing f_cars')
         print('Final Cluster: {}'.format(cluster_cars))
         update_database(cluster_cars)
     else:
+        print('Choosing f_distance')
         print('Final Cluster: {}'.format(cluster_distance))
         update_database(cluster_distance)
     # return cluster
@@ -205,7 +208,23 @@ def group_cells_distance(cluster_distance, drivers_distance):
 ######################
 def group_best_match_drivers(cluster_distance, driver_to_driver_route_share):
     global participants
-    for driver in driver_to_driver_route_share:
+
+    # order cars by number of empty seats
+    driver_seats = ValueSortedDict()
+    for driver in driver_to_driver_route_share.keys():
+        # get number of empty seats
+        cluster_list = cluster_distance.get(driver)
+        cluster_list_length = len(cluster_list)
+        driver_seats[driver] = participants.get(driver).get_seats() - cluster_list_length
+    print(driver_seats)
+
+    # TODO optimize cycles
+    # for driver in driver_to_driver_route_share:
+    for driver in driver_seats:
+        print('1: {}'.format(driver_seats))
+        if driver not in cluster_distance:
+            print('saltei')
+            continue
         match = False
         while not match:
             best_route = 0
@@ -246,6 +265,7 @@ def group_best_match_drivers(cluster_distance, driver_to_driver_route_share):
                 del driver_to_driver_route_share[driver][best_match]
                 if not driver_to_driver_route_share[driver]:  # is empty
                     match = True
+            print('2: {}'.format(driver_seats))
     return cluster_distance
 
 
@@ -290,7 +310,7 @@ def group_cells_cars(cluster_cars):
         del copy_driver_passengers[new_driver]
         #    Calculate the bin packing solution
         bins = binpacking.to_constant_volume(copy_driver_passengers, list(driver_seats.values())[-1])
-        print('Possible bins: {}: {}'.format(new_driver, bins))
+        print('Possible bins for {}: {}'.format(new_driver, bins))
         # Of the bins produced by the algorithm, choose the bin with more items in it.
 
         #             MOST EFFICIENT
@@ -306,20 +326,40 @@ def group_cells_cars(cluster_cars):
         #                   result = {i: d}
         #
         _max = max(map(len, bins))
-        biggest_bins = dict(i for i in enumerate(bins) if len(i[-1]) == _max)
+        # TODO remove the dict from bellow. i only need the bin not it's position.
+        # TODO (cont) i only need the position in the new array, not it's positionin the original array
+        # TODO change the last line of the if statement (with the tuple conversion)
+        # biggest_bins = dict(i for i in enumerate(bins) if len(i[-1]) == _max)
+
+
+
+        result = {}
+        count = 0
+        for i in bins:
+            sum = 0
+            for j in i.values():
+                sum += j
+            result[count] = sum
+            count += 1
+        a = [u for u,v in result.items() if float(v) >= max(result.values())]
+        biggest_bins = [bins[x] for x in a]
+        # TODO os cíclos agr teem de ser diferentes
+
+        print('bins: {}'.format(biggest_bins))
         # If multiple solutions exist...
         if len(biggest_bins) > 1:
             # ... compare them by distance...
             bin_distances = []
-            cluster_bins = {new_driver: []}
             for bin in biggest_bins.values():
+                cluster_bins = {new_driver: []}
                 for participant in bin.keys():
                     cluster_bins[new_driver].append(participant)
                 bin_distances.append(calculate_cluster_distance(cluster_bins))
+            print("distances; {}".format(bin_distances))
             # ... and pick the one with the smallest distance (if draw between several - choose any)
-            better_bin = biggest_bins[bin_distances.index(min(bin_distances))]
+            better_bin = tuple(biggest_bins.items())[bin_distances.index(min(bin_distances))][1]
         else:
-            better_bin = biggest_bins[0]
+            better_bin = next(iter(biggest_bins.values()))
         # Remove the grouped cars (the bin + the items) from the sorted list and from the unplaced items.
         for driver in better_bin.keys():
             del driver_seats[driver]
@@ -334,6 +374,7 @@ def group_cells_cars(cluster_cars):
             cluster_cars[new_driver].append(old_driver)
             # remove old car from available clusters
             del cluster_cars[old_driver]
+        print(cluster_cars)
         # Repeat the bin packing algorithm with the next emptiest car and with the remaining passenger groups,
         # until no more packing is possible.
         if not driver_passengers:  # evaluates to true when empty
@@ -414,6 +455,7 @@ def calculate_cluster_distance(cluster):
 #########################
 def update_database(cluster):
     event_ref.update({u'completed': True})
+
     event_ref.update({u'cluster': firestore.DELETE_FIELD})  # make sure there is no old field (SHOULDN'T HAPPEN)
     for driver in cluster.keys():
         cluster_riders = []
