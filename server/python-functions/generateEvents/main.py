@@ -3,6 +3,7 @@ import googlemaps
 import random
 from firebase_admin import credentials
 from firebase_admin import firestore
+from random import randint
 
 gmaps = googlemaps.Client(key='AIzaSyDSyIfDZVr7DMspukdJG00gzZUnPCCqguE')
 
@@ -53,7 +54,6 @@ def generateEvents():
         p_data["events"] = [eventRef]
         participantRef.set(data)
 
-        drivers.append(participantRef)
 
         participantInDocRef = eventRef.collection("participants").document(participant_name)
         participant_latitude = getRandomNumber(minX, maxX)
@@ -61,8 +61,9 @@ def generateEvents():
 
         p_data = {}
         if getRandomBoolean():
+            drivers.append(participantRef)
             p_data["driver"] = True
-            p_data["seats"] = getRandomNumber(0, 7)
+            p_data["seats"] = getRandomInt(1, 7)
             p_data["username"] = participant_name
             participantMap = {}
             participantMap["LatLng"] = firestore.GeoPoint(participant_latitude, participant_longitude)
@@ -87,8 +88,11 @@ def generateEvents():
 def getRandomNumber(min, max):
     return random.uniform(min, max)
 
+def getRandomInt(min, max):
+    return randint(min, max)
+
 def getRandomBoolean():
-    bool(random.getrandbits(1))
+    return bool(random.getrandbits(1))
 
 def streetFromLatlng(latitude, longitude):
     return gmaps.reverse_geocode((latitude, longitude))[0][u'formatted_address']
