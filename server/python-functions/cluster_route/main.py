@@ -212,17 +212,16 @@ def group_best_match_drivers(cluster_distance, driver_to_driver_route_share):
 
     # order cars by number of empty seats
     driver_seats = ValueSortedDict()
-    for driver in driver_to_driver_route_share.keys():
+    for driver in cluster_distance.keys():
         # get number of empty seats
         cluster_list = cluster_distance.get(driver)
         cluster_list_length = len(cluster_list)
         driver_seats[driver] = participants.get(driver).get_seats() - cluster_list_length
-    print(driver_seats)
+    print("Car VACANCY: {}".format(dict(driver_seats)))
 
     # TODO optimize cycles
     # for driver in driver_to_driver_route_share:
-    for driver in driver_seats:
-        print('1: {}'.format(driver_seats))
+    for driver in reversed(driver_seats):
         if driver not in cluster_distance:
             continue
         match = False
@@ -265,7 +264,6 @@ def group_best_match_drivers(cluster_distance, driver_to_driver_route_share):
                 del driver_to_driver_route_share[driver][best_match]
                 if not driver_to_driver_route_share[driver]:  # is empty
                     match = True
-            print('2: {}'.format(driver_seats))
     return cluster_distance
 
 
@@ -279,6 +277,7 @@ def verify_cumulative_distance(cluster, new_driver, old_driver):
     # TODO does the dictionary for the new_distance always old?
     print("        Joined distance:")
     new_distance = calculate_cluster_distance({new_driver: cluster.get(new_driver)+[old_driver]+cluster.get(old_driver)})
+    print("        Total: " + str(new_distance))
     if old_distance < new_distance:
         print('    A: Separate')
         return False
@@ -301,6 +300,8 @@ def group_cells_cars(cluster_cars):
         driver_seats[driver] = participants.get(driver).get_seats() - cluster_list_length
         # get the number of passenger + the driver
         driver_passengers[driver] = cluster_list_length + 1
+    print("car OCCUPANCY: {}".format(driver_passengers))
+    print("Car VACANCY: {}".format(dict(driver_seats)))
 
     grouping = True
     while grouping:
@@ -353,9 +354,12 @@ def group_cells_cars(cluster_cars):
             better_bin = tuple(best_bins)[bin_distances.index(min(bin_distances))]
         else:
             better_bin = next(iter(best_bins))
-        driver_of_bin = tuple(better_bin.keys())[0]
-        print_cluster = [driver_of_bin] + cluster_cars[driver_of_bin]
+        print_cluster = []
+        for i in range(0, better_bin.keys().__len__()):
+            driver_of_bin = tuple(better_bin.keys())[i]
+            print_cluster += [driver_of_bin] + cluster_cars[driver_of_bin]
         print("Best bin for {}: {}".format(new_driver, print_cluster))
+
         # Remove the grouped cars (the bin + the items) from the sorted list and from the unplaced items.
         for driver in better_bin.keys():
             del driver_seats[driver]
