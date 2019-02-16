@@ -270,7 +270,7 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
             }
         }
 
-        GoogleDirection.withServerKey(getResources().getString(R.string.google_api_key))
+        GoogleDirection.withServerKey(getResources().getString(R.string.google_maps_key))
                 .from(routeStartLatLng)
                 .and(waypoints)
                 .to(destinationLatLng)
@@ -377,73 +377,6 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
                 if (task.isSuccessful()){
                     DocumentSnapshot document = task.getResult();
                     Map<String, ArrayList<DocumentReference>> cluster = (HashMap<String, ArrayList<DocumentReference>>) document.get("cluster");
-                    /*Query participantsRefs = db.collection("users").whereArrayContains("events", eventRef);
-                    participantsRefs.get().addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
-                        @Override
-                        public void onComplete(@NonNull Task<QuerySnapshot> task) {
-                            if (task.isSuccessful()){
-                                // Get the username of all the participants
-                                HashMap<String, String> participantsUID = new HashMap<>();
-                                for (QueryDocumentSnapshot participant: task.getResult()){
-                                    Log.d(TAG, "participant: "+participant);
-                                    participantsUID.put(participant.getId(), participant.getString("username"));
-                                }
-                                // Compare who are the drivers and who are the riders
-                                ArrayList<String> drivers = new ArrayList<>();
-                                ArrayList<ArrayList<String>> riders = new ArrayList<>();
-                                // Get all the drivers
-                                for (String driverUID: cluster.keySet()){
-                                    ArrayList<String> ridersUsername = new ArrayList<>();
-                                    Boolean isUserRoute = false;
-
-                                    // change the map marker relating to this driver
-                                    changeDriverMarker(driverUID);
-
-                                    ArrayList<DocumentReference> ridersRef = cluster.get(driverUID);
-                                    drivers.add(participantsUID.get(driverUID));
-                                    if (driverUID.equals(user.getId())){
-                                        myRouteCluster.add(driverUID);
-                                        isUserRoute = true;
-                                    }
-                                    // Get username of riders of said driver
-                                    ArrayList<String> riderUID = new ArrayList<>();
-                                    for (DocumentReference riderRef: ridersRef){
-                                        String uid = riderRef.getId();
-                                        riderUID.add(uid);
-                                        ridersUsername.add(participantsUID.get(uid));
-                                        if (isUserRoute){
-                                            myRouteCluster.add(riderRef.getId());
-                                        }
-                                        if (riderRef.getId().equals(user.getId())){
-                                            myRouteCluster.add(driverUID);
-                                            myRouteCluster.addAll(riderUID);
-                                            isUserRoute = true;
-                                        }
-                                    }
-                                    riders.add(ridersUsername);
-                                }
-                                Log.d(TAG, "drivers: "+drivers);
-                                Log.d(TAG, "riders: "+riders);
-                                // Instantiate adapter
-                                RecyclerView clustersList = inflatedView.findViewById(R.id.bottom_sheet_drivers);
-                                DriverInEventAdapter driverDescriptionAdapter = new DriverInEventAdapter(drivers, riders, null, EventActivity.this);
-                                clustersList.setAdapter(driverDescriptionAdapter);
-                                // Set the layout manager
-                                clustersList.setLayoutManager(new LinearLayoutManager(EventActivity.this));
-
-                                // Draw the user Route on the map
-                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) { // needs api N
-                                    drawRoute();
-                                }
-                                // make the cluster tab the selected one
-                                bottomSheetViewPager.setCurrentItem(1);
-                                // signal event concluded
-                                concludingEvent = false;
-                            } else {
-                                Log.d(TAG, "Query failed with ", task.getException());
-                            }
-                        }
-                    });*/
                     eventRef.collection("participants").get()
                             .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
                                 @Override
@@ -458,7 +391,9 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
                                         ArrayList<String> drivers = new ArrayList<>();
                                         ArrayList<ArrayList<String>> riders = new ArrayList<>();
                                         // Get all the drivers
+                                        Log.d("Routeee", ""+myRouteCluster);
                                         for (String driverUID: cluster.keySet()){
+                                            Log.d("Routeee", ""+myRouteCluster);
                                             ArrayList<String> ridersUsername = new ArrayList<>();
                                             Boolean isUserRoute = false;
 
@@ -487,6 +422,7 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
                                                 }
                                             }
                                             riders.add(ridersUsername);
+                                            Log.d("Routeee", ""+myRouteCluster);
                                         }
                                         Log.d(TAG, "drivers: "+drivers);
                                         Log.d(TAG, "riders: "+riders);
@@ -696,11 +632,20 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
      * Concludes the event
      * sends an http request to server
      */
-    private void concludeEvent2() {
+    private void concludeEvent2(int distanceParameter, int carsParameter) {
+
+        // Start progress bar for undetermined time
+        mapFragment.getView().setVisibility(View.INVISIBLE);
+        progressBar = findViewById(R.id.progress_circle);
+        progressBar.setVisibility(View.VISIBLE);
+
         HashMap<String, Object> data = new HashMap<>();
         data.put("eventUID", eventUID);
+        data.put("distance", distanceParameter/100.0);
+        data.put("cars", carsParameter/100.0);
+        data.put("optimization", false);
 
-        mFunctions.getHttpsCallable("cluster_distance_route")
+        mFunctions.getHttpsCallable("cluster_route")
                 .call(data)
                 .continueWith(new Continuation<HttpsCallableResult, Void>() {
                     @Override
@@ -714,10 +659,11 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
                         //return (String) result;
                         return null;
                     }
-                }).addOnCompleteListener(new OnCompleteListener<Void>() {
+                })
+                .addOnCompleteListener(new OnCompleteListener<Void>() {
             @Override
             public void onComplete(@NonNull Task<Void> task) {
-                if (!task.isSuccessful()) { // not successful
+                if (!task.isSuccessful()) { // Failure
                     Exception e = task.getException();
                     if (e instanceof FirebaseFunctionsException) {
                         FirebaseFunctionsException ffe = (FirebaseFunctionsException) e;
@@ -730,7 +676,17 @@ public class EventActivity extends AppCompatActivity implements OnMapReadyCallba
 
                 } else { // Successful
                     Snackbar.make(findViewById(android.R.id.content), "Success: ", Snackbar.LENGTH_SHORT).show();
-                    //setupBottomSheet();
+                    complete = true;
+                    invalidateOptionsMenu();
+                    addTab(TabItem.CLUSTER);
+                    // Stop progress bar
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            progressBar.setVisibility(View.GONE);
+                            mapFragment.getView().setVisibility(View.VISIBLE);
+                        }
+                    });
                 }
                 // String result = (String) task.getResult();
                 Log.d("-----TEST-----", "SUCCESS1");
