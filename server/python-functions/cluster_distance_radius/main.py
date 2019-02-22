@@ -117,10 +117,12 @@ def cluster_distance_radius(request):
                         riders.remove(possible_riders[i])
                         matches += 1
                     else:
-                        print(u'NO Group! Insufficient seats')
+                        print(u'NO Group! Outside radius')
+                else:
+                    print(u'NO Group! Insufficient seats')
         print('Remaining riders: {}'.format(riders))
         print('Increasing radius')
-        radius = radius + 5  # increase radius by X Km and repeat
+        radius += 5  # increase radius by X Km and repeat
 
     print(u'Radial clusters: {}'.format(cluster))
 
@@ -459,7 +461,24 @@ def order_by_heuristic(driver, driver_passengers_tuple):
     :return: the new set, ordered, with the new heuristic values
     :rtype list of tuples
     """
-    pass
+
+    index = 0
+    radius = 5
+    # get radius value to encompass the possible match
+    for match in driver_passengers_tuple:
+        if driver == match[0]:
+            continue
+        while not is_inside_radius(participants.get(driver).start.get(u'street'),
+                                   participants.get(match).start.get(u'street'),
+                                   radius):
+            radius += 5
+        driver_passengers_tuple[index] = (*driver_passengers_tuple[index], radius)
+        index += 1
+    # Order the tuple
+    #     The key = lambda x: (x[1], x[2]) should be read as:
+    #     "firstly order by the seats in x[1] and then by the radius value in x[2]".
+    driver_passengers_tuple = sorted(driver_passengers_tuple, key=lambda x: (x[1], x[2]))
+    return driver_passengers_tuple
 
 
 ######################

@@ -657,8 +657,8 @@ def order_by_heuristic(driver, driver_passengers_tuple):
         index += 1
     print("depois da heuristica: {}".format(driver_passengers_tuple))
     # Order the tuple
-    #     The key = lambda x: (x[1], len(x[0])) should be read as:
-    #     "firstly order by the seats in x[1] and then by the shared route value in x[0]".
+    #     The key = lambda x: (x[1], x[2]) should be read as:
+    #     "firstly order by the seats in x[1] and then by the shared route value in x[2]".
     driver_passengers_tuple = sorted(driver_passengers_tuple, key=lambda x: (x[1], x[2]))
     print("depois da ordenaçao: {}".format(driver_passengers_tuple))
     return driver_passengers_tuple
