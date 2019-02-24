@@ -109,8 +109,8 @@ def cluster_distance_radius(request):
             for i in range(riders_range):
                 driver_cluster_len = len(cluster.get(driver))
                 if driver_cluster_len < seats:
-                    if is_inside_radius(participants.get(driver).start.get(u'street'),
-                                        participants.get(possible_riders[i]).start.get(u'street'),
+                    if is_inside_radius(participants.get(driver).start.get(u'LatLng'),
+                                        participants.get(possible_riders[i]).start.get(u'LatLng'),
                                         radius):
                         print(u'Group! Rider \'{}\' grouped with driver \'{}\'.'.format(possible_riders[i], driver))
                         cluster[driver].append(possible_riders[i])
@@ -145,7 +145,7 @@ def cluster_distance_radius(request):
                      (distance_parameter * (distance_cars / initial_distance))
     print('------------------------------')
     print('Calculating cluster minimizing DISTANCE.')
-    cluster_distance = group_cells_distance(copy.deepcopy(cluster), drivers_distance)
+    cluster_distance = group_cells_distance(copy.deepcopy(cluster), drivers_distance, drivers)
     distance_distance = calculate_cluster_distance(cluster_distance)
     f_cluster_distance = (cars_parameter * (len(cluster_distance) / initial_cars)) + \
                          (distance_parameter * (distance_distance / initial_distance))
@@ -187,16 +187,14 @@ def cluster_distance_radius(request):
 
 ######################
 def is_inside_radius(driver_source, rider_source, radius):
-    driver_geocode_results = gmaps.geocode(driver_source)
-    rider_geocode_results = gmaps.geocode(rider_source)
+    # driver_geocode_results = gmaps.geocode(driver_source)
+    # rider_geocode_results = gmaps.geocode(rider_source)
     # haversine_distance = haversine_formula(driver_geocode_results[0].get(u'geometry').get(u'location').get(u'lat'),
     #                               driver_geocode_results[0].get(u'geometry').get(u'location').get(u'lng'),
     #                               rider_geocode_results[0].get(u'geometry').get(u'location').get(u'lat'),
     #                               rider_geocode_results[0].get(u'geometry').get(u'location').get(u'lng'))
-    haversine_distance = haversine((driver_geocode_results[0].get(u'geometry').get(u'location').get(u'lat'),
-                                    driver_geocode_results[0].get(u'geometry').get(u'location').get(u'lng')),
-                                   (rider_geocode_results[0].get(u'geometry').get(u'location').get(u'lat'),
-                                    rider_geocode_results[0].get(u'geometry').get(u'location').get(u'lng')))
+    haversine_distance = haversine((driver_source.latitude, driver_source.longitude),
+                                   (rider_source.latitude, rider_source.longitude))
     if radius >= haversine_distance:
         print(u'Radius of {} larger than Haversine distance of {}.'.format(radius, haversine_distance))
         return True
@@ -242,8 +240,8 @@ def group_cells_distance(cluster_distance, drivers_distance, drivers):
                     participant = participants.get(possible_drivers[i])
                     seats = participant.get_seats()
                     if driver_cluster_len < seats - (len(cluster_distance.get(possible_drivers[i])) + 1):
-                        if is_inside_radius(participants.get(driver).start.get(u'street'),
-                                            participants.get(possible_drivers[i]).start.get(u'street'), radius):
+                        if is_inside_radius(participants.get(driver).start.get(u'LatLng'),
+                                            participants.get(possible_drivers[i]).start.get(u'LatLng'), radius):
                             # TODO match if roundtrip is smaller
                             # see if the cumulative distance of the join is better than the separate voyages
                             if verify_cumulative_distance(cluster_distance, possible_drivers[i], driver):
@@ -464,15 +462,19 @@ def order_by_heuristic(driver, driver_passengers_tuple):
 
     index = 0
     radius = 5
-    # get radius value to encompass the possible match
+    driver_geopoint = participants.get(driver).start.get(u'LatLng')
+    # Get radius value that encompasses the possible match
     for match in driver_passengers_tuple:
         if driver == match[0]:
             continue
-        while not is_inside_radius(participants.get(driver).start.get(u'street'),
-                                   participants.get(match).start.get(u'street'),
-                                   radius):
-            radius += 5
-        driver_passengers_tuple[index] = (*driver_passengers_tuple[index], radius)
+        match_geopoint = participants.get(match[0]).start.get(u'LatLng')
+        # Get the haversine formula between driver and match
+        distance = haversine((driver_geopoint.latitude, driver_geopoint.longitude),
+                             (match_geopoint.latitude, match_geopoint.longitude))
+        # Round up to the next multiple of 'radius'. Multiples of 'radius' stay the same
+        radius_distance = ((distance+(radius-1))//radius)*radius
+        # Create new tuple with 'radius_distance' in the last position
+        driver_passengers_tuple[index] = (*driver_passengers_tuple[index], radius_distance)
         index += 1
     # Order the tuple
     #     The key = lambda x: (x[1], x[2]) should be read as:
