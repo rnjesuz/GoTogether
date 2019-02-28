@@ -258,6 +258,27 @@ def haversine_formula(lon1, lat1, lon2, lat2):
 
 ######################
 def group_cells_distance(cluster_distance, drivers_distance, drivers):
+    radius_step = 10  # Kilometers
+    remaining_drivers = drivers.copy()
+    for driver in drivers:
+        if driver not in remaining_drivers:
+            continue
+        radius_distances = calculate_radius(radius_step, driver, remaining_drivers)
+        for possible_driver, radius in radius_distances.items():
+            seats = participants.get(possible_driver).get_seats()
+            if seats >= len(cluster_distance.get(possible_driver)) + len(cluster_distance.get(driver)) + 1:
+                if verify_cumulative_distance(cluster_distance, possible_driver, driver):
+                    for rider in cluster_distance.get(driver):
+                        cluster_distance[possible_driver].append(rider)
+                    cluster_distance[possible_driver].append(driver)
+                    remaining_drivers.remove(driver)
+                    del cluster_distance[driver]
+                    break
+    return cluster_distance
+
+
+######################
+def group_c_distance(cluster_distance, drivers_distance, drivers):
     radius = 10  # Kilometers
     for driver in drivers_distance:
         print('DRIVER: {}'.format(driver))
