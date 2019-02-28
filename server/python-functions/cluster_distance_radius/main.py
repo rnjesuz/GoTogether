@@ -91,15 +91,29 @@ def cluster_distance_radius(request):
         distance_results = gmaps.distance_matrix(source, destination)  # TODO this can result ZERO_RESULTS
         if p.is_driver():
             drivers.append(p.id)
-            # drivers_distance[p.id] = distance_results.get(u'rows')[0].get(u'elements')[0].get(u'distance').get(u'value')
+            drivers_distance[p.id] = distance_results.get(u'rows')[0].get(u'elements')[0].get(u'distance').get(u'value')
             cluster[p.id] = []
         else:
             riders.append(p.id)
             # riders_distance[p.id] = distance_results.get(u'rows')[0].get(u'elements')[0].get(u'distance').get(u'value')
         participants[p.id] = p
 
+    radius_step = 5  # Kilometers
+    possible_riders = riders.copy()
+    for rider in possible_riders:
+        rider_to_driver_radius = calculate_radius(radius_step, rider, drivers)
+        for driver, radius in rider_to_driver_radius.items():
+            seats = participants.get(driver).get_seats()
+            if seats > len(cluster.get(driver)):
+                print(u'Group! Rider \'{}\' grouped with driver \'{}\'.'.format(rider, driver))
+                print(u'At radius: {}'.format(radius))
+                cluster[driver].append(rider)
+                break
+
+    '''
     radius = 5  # Kilometers
     matches = 0
+    print(len(riders))
     while len(riders) > matches:
         for driver in drivers:
             participant = participants.get(driver)
@@ -109,6 +123,7 @@ def cluster_distance_radius(request):
             for i in range(riders_range):
                 driver_cluster_len = len(cluster.get(driver))
                 if driver_cluster_len < seats:
+                    print(u'Rider ' + possible_riders[i])
                     if is_inside_radius(participants.get(driver).start.get(u'LatLng'),
                                         participants.get(possible_riders[i]).start.get(u'LatLng'),
                                         radius):
@@ -116,6 +131,7 @@ def cluster_distance_radius(request):
                         cluster[driver].append(possible_riders[i])
                         riders.remove(possible_riders[i])
                         matches += 1
+                        print(u'matches {}'.format(matches))
                     else:
                         print(u'NO Group! Outside radius')
                 else:
@@ -123,6 +139,9 @@ def cluster_distance_radius(request):
         print('Remaining riders: {}'.format(riders))
         print('Increasing radius')
         radius += 5  # increase radius by X Km and repeat
+        print('{} > {}'.format(len(riders), matches))
+        '''
+
 
     print(u'Radial clusters: {}'.format(cluster))
 
@@ -183,6 +202,22 @@ def cluster_distance_radius(request):
     # return 'OK'
     # data = {'response': 'OK'}
     # return json.dumps(data)
+
+
+######################
+def calculate_radius(radius_step, rider_uid, drivers):
+    rider_geopoint = participants.get(rider_uid).start.get(u'LatLng')
+    rider_to_driver_radius = ValueSortedDict()
+    for driver in drivers:
+        driver_geopoint = participants.get(driver).start.get(u'LatLng')
+        # Get the haversine formula between driver and match
+        distance = haversine((driver_geopoint.latitude, driver_geopoint.longitude),
+                             (rider_geopoint.latitude, rider_geopoint.longitude))
+        # Round up to the next multiple of 'radius'. Multiples of 'radius' stay the same
+        radius_distance = ((distance+(radius_step-1))//radius_step)*radius_step
+        # Store the values
+        rider_to_driver_radius[driver] = radius_distance
+    return rider_to_driver_radius
 
 
 ######################
@@ -461,7 +496,7 @@ def order_by_heuristic(driver, driver_passengers_tuple):
     """
 
     index = 0
-    radius = 5
+    radius = 10
     driver_geopoint = participants.get(driver).start.get(u'LatLng')
     # Get radius value that encompasses the possible match
     for match in driver_passengers_tuple:
