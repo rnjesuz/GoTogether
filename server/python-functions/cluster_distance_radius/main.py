@@ -261,19 +261,29 @@ def group_cells_distance(cluster_distance, drivers_distance, drivers):
     radius_step = 10  # Kilometers
     remaining_drivers = drivers.copy()
     for driver in drivers:
+        print('DRIVER: {}'.format(driver))
         if driver not in remaining_drivers:
             continue
-        radius_distances = calculate_radius(radius_step, driver, remaining_drivers)
+        remaining_drivers_minus_driver = list(remaining_drivers)
+        remaining_drivers_minus_driver.remove(driver)
+        radius_distances = calculate_radius(radius_step, driver, remaining_drivers_minus_driver)
         for possible_driver, radius in radius_distances.items():
+            print('POSSIBLE DRIVER: {}'.format(possible_driver))
             seats = participants.get(possible_driver).get_seats()
             if seats >= len(cluster_distance.get(possible_driver)) + len(cluster_distance.get(driver)) + 1:
                 if verify_cumulative_distance(cluster_distance, possible_driver, driver):
-                    for rider in cluster_distance.get(driver):
+                    print(u'Group! Driver \'{}\' grouped with new driver \'{}\'.'
+                          .format(driver, possible_driver))
+                    for rider in cluster_distance.get(driver) or []:
                         cluster_distance[possible_driver].append(rider)
                     cluster_distance[possible_driver].append(driver)
                     remaining_drivers.remove(driver)
                     del cluster_distance[driver]
                     break
+                else:
+                    print(u'NO Group! Roundtrip is longer.')
+            else:
+                print(u'NO Group! Insufficient seats.')
     return cluster_distance
 
 
@@ -371,22 +381,41 @@ def verify_cumulative_distance(cluster, new_driver, old_driver):
 
 #########################
 def calculate_cluster_distance(cluster):
+    """
+    Calculates the total travelled distance of the provided cluster
+
+    For each driver of the cluster, we calculate the travelled distance
+        We start the route at the driver's location, pick-up all the passengers and end the route at the destination
+        Waypoint order is internally optimized by Google's API
+    All distances are added together for total distance travelled
+
+    :param cluster: the cluster matching riders to drivers
+    :type cluster: dict
+    :return: the total distance travelled by the each driver of the cluster
+    :rtype int
+    """
     global participants, destination
     total_distance = 0
     for driver in cluster.keys():
+        # print("        Travelled by: " + driver)
         waypoints = []
         for rider in cluster.get(driver):
-            waypoints.append(participants.get(rider).start.get(u'street'))
-        origin = participants.get(driver).start.get(u'street')
-        print('origin: {}, waypoints: {}, destination: {}'.format(origin, waypoints, destination))
+            waypoint_geopoint = participants.get(rider).start.get(u'LatLng')
+            waypoints.append((waypoint_geopoint.latitude, waypoint_geopoint.longitude))
+        origin_geopoint = participants.get(driver).start.get(u'LatLng')
+        origin = (origin_geopoint.latitude, origin_geopoint.longitude)
+        # print('            Starting in: {}, Picking-up in: {}, Arriving in: {}'.format(origin, waypoints, destination))
         direction_results = gmaps.directions(origin, destination,
-                                             mode="driving", waypoints=waypoints, alternatives=True, avoid=None,
-                                             language=None, units="metric", region=None, departure_time=None,
-                                             arrival_time=None, optimize_waypoints=True, transit_mode=None,
-                                             transit_routing_preference=None, traffic_model=None)
+                                             mode="driving",
+                                             waypoints=waypoints,
+                                             units="metric",
+                                             optimize_waypoints=True)
         # if there are waypoints then there are several legs to consider
-        for i in range(len(waypoints)+1):
-            total_distance += direction_results[0].get(u'legs')[i].get(u'distance').get(u'value')
+        distance = 0
+        for i in range(len(waypoints) + 1):
+            distance += direction_results[0].get(u'legs')[i].get(u'distance').get(u'value')
+        # print("            Distance:" + str(distance))
+        total_distance += distance
     return total_distance
 
 
