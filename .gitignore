@@ -24,7 +24,11 @@
 /server/python-functions/cluster_route/env
 /server/python-functions/cluster_route/.idea
 /server/python-functions/cluster_route/ServiceAccountKey.json
-/server/python-functions/generateEvents/env
-/server/python-functions/generateEvents/serviceAccount.json
 /server/python-functions/cluster_route/request.json
+/server/python-functions/generateEvents/env
+/server/python-functions/generateEvents/.idea
+/server/python-functions/generateEvents/ServiceAccountKey.json
+/server/python-functions/MIP solver/env
+/server/python-functions/MIP solver/.idea
+/server/python-functions/MIP solver/ServiceAccountKey.json
 /app/google-services.json
