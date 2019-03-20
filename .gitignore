@@ -31,4 +31,8 @@
 /server/python-functions/MIP solver/env
 /server/python-functions/MIP solver/.idea
 /server/python-functions/MIP solver/ServiceAccountKey.json
+/server/python-functions/cluster_lip/env
+/server/python-functions/cluster_lip/.idea
+/server/python-functions/cluster_lip/ServiceAccountKey.json
+/server/python-functions/cluster_lip/request.json
 /app/google-services.json
