@@ -8,7 +8,7 @@ from random import randint
 gmaps = googlemaps.Client(key='AIzaSyDSyIfDZVr7DMspukdJG00gzZUnPCCqguE')
 
 # Use a service account
-cred = credentials.Certificate('serviceAccount.json')
+cred = credentials.Certificate('ServiceAccountKey.json')
 firebase_admin.initialize_app(cred)
 
 db = firestore.client()

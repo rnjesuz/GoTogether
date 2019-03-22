@@ -9,6 +9,7 @@ from sortedcollections import ValueSortedDict
 from firebase_admin import credentials, firestore
 from google.cloud import exceptions
 from ortools.linear_solver import pywraplp
+from math import radians, cos, sin, asin, sqrt
 
 
 cred = credentials.Certificate("./ServiceAccountKey.json")
@@ -52,9 +53,11 @@ def cluster_lip(request):
     global destination
 
     drivers = []
+    drivers_id = []
     drivers_distance = ValueSortedDict()
 
     riders = []
+    riders_id = []
     riders_distance = ValueSortedDict()
 
     rider_to_driver_route_share = {}
@@ -93,18 +96,29 @@ def cluster_lip(request):
         direction_results = gmaps.directions(source, destination)  # TODO this may probably also return ZERO_RESULTS
         if p.is_driver():
             drivers.append(p)
+            drivers_id.append(p.id)
             # driversDistance[p.id]= distance_results.get(u'rows')[0].get(u'elements')[0].get(u'distance').get(u'value')
             drivers_distance[p.id] = direction_results[0].get(u'legs')[0].get(u'distance').get(u'value')
             # driversDirections[p.id] = direction_results
             cluster[p.id] = []
         else:
             riders.append(p)
+            riders_id.append(p.id)
             # ridersDistance[p.id] = distance_results.get(u'rows')[0].get(u'elements')[0].get(u'distance').get(u'value')
             riders_distance[p.id] = direction_results[0].get(u'legs')[0].get(u'distance').get(u'value')
             # ridersDirections[p.id] = direction_results
             cluster_riders[p.id] = []
         participants[p.id] = p
         participants_directions[p.id] = direction_results
+
+    for rider in riders_distance.keys():
+        rider_to_driver_route_share[rider] = {}
+        for driver in drivers_distance.keys():
+            rider_to_driver_route_share[rider][driver] = get_shared_path(rider, driver)
+
+    print("Shared Nodes: {}".format(rider_to_driver_route_share))
+    group_best_match_riders(cluster, rider_to_driver_route_share)
+    print("Route clusters: {}".format(cluster))
 
     print('------------------------------')
     print('Calculating INITIAL values.')
@@ -127,8 +141,8 @@ def cluster_lip(request):
                      (distance_parameter * (distance_cars / initial_distance))
     print('------------------------------')
     print('Calculating cluster minimizing DISTANCE.')
-    cluster_distance = group_cells_distance(drivers, riders)
-    distance_distance = calculate_cluster_distance(cluster_distance)
+    distance_distance, cluster_distance = group_cells_distance_real(drivers_id, riders_id)
+    # distance_distance = calculate_cluster_distance(cluster_distance)
     f_cluster_distance = (cars_parameter * (len(cluster_distance) / initial_cars)) + \
                          (distance_parameter * (distance_distance / initial_distance))
 
@@ -168,31 +182,110 @@ def cluster_lip(request):
     # return json.dumps(data)
 
 
-def group_cells_distance(drivers, riders):
-    participants = drivers + riders
+###########################
+def get_shared_path(first_participant, second_participant):
+    """
+    Calculates value of shared route between two participants (from their locations till the destination)
+
+    Get the route between the first participant till the destination. We get the set of steps the participant traverses
+    Get the route between the second participant till the destination. We get the set of steps the participant traverses
+    Compare routes, and calculate number of identical steps
+    Divide by the total number of steps from the first participant
+        (The idea is to see how much of the total 1st participant's route, is shared by the 2nd participant)
+
+    :param first_participant: The unique identifier for the first participant
+    :type first_participant: str
+    :param second_participant: The unique identifier for the second participant
+    :type second_participant: str
+    :return: The value of shared route
+    :rtype: float
+    """
+    share = 0
+    f_directions = participants_directions.get(first_participant)[0].get('legs')[0].get('steps')
+    s_directions = participants_directions.get(second_participant)[0].get('legs')[0].get('steps')
+    # TODO can this be done with "contains"?
+    for r_steps in range(len(f_directions)):
+        for d_steps in range(len(s_directions)):
+            if (f_directions[r_steps].get('start_location') == s_directions[d_steps].get('start_location')) and \
+                    (f_directions[r_steps].get('end_location') == s_directions[d_steps].get('end_location')):
+                share = share + 1
+    # The optimal group will be the one whose route has the biggest percentage of route share
+    # Thus, we return shared_nodes / len(nodes_of_my_route)
+    # print('who {}, to who {}, what {}'.format(first_participant, second_participant, share/len(s_directions)))
+    return share / len(f_directions)
+
+
+##########################
+def group_best_match_riders(cluster, rider_to_driver_route_share):
+    """
+    Matches riders with drivers based on the heuristic
+    The 'cluster' is updated directly with the new matches
+
+    :param cluster: The cluster matching riders to drivers
+    :type cluster: dict
+    :param rider_to_driver_route_share: the set with values of how much route is shared between riders and drivers
+    :type rider_to_driver_route_share: dict
+    :return: None
+    """
+    global participants
+    for rider in rider_to_driver_route_share:
+        match = False
+        while not match:
+            best_route = 0
+            best_match = None
+            for driver in rider_to_driver_route_share[rider]:
+                if rider_to_driver_route_share[rider][driver] > best_route:
+                    best_route = rider_to_driver_route_share[rider][driver]
+                    best_match = driver
+            if best_match in cluster:
+                cluster_length = len(cluster.get(best_match))
+            else:
+                cluster_length = 0
+            participant = participants.get(best_match)
+            seats = participant.get_seats()
+            if seats > cluster_length:  # if they're <= the new rider won't fit
+                cluster[best_match].append(rider)
+                match = True
+            else:
+                del rider_to_driver_route_share[rider][best_match]
+                if not rider_to_driver_route_share[rider]:  # is empty
+                    match = True
+
+
+#########################
+def group_cells_distance_real(drivers, riders):
+    global participants
+
+    cluster_participants = drivers + riders
     drivers_seats = []
     for driver in drivers:
-        drivers_seats.append(driver.get_seats())
+        drivers_seats.append(participants.get(driver).get_seats())
     solver = pywraplp.Solver('SolveIntegerProblem',
                              pywraplp.Solver.CBC_MIXED_INTEGER_PROGRAMMING)
     # all possible combinations S of 1 driver and up to x riders, where x = empty seats.
     possible_combinations = []
+    comb_len = 0
     for index in range(len(drivers)):
         # for each driver get every possible combination of passengers (which includes riders and drivers)
-        remaining_participants = [x for i, x in enumerate(participants) if i != index]
+        remaining_participants = [x for i, x in enumerate(cluster_participants) if i != index]
         possible_combinations.append([])
         for seats in range(0, drivers_seats[index]+1):
-            possible_combinations[index] += [tuple([drivers[index]]+list(tup)) for tup in combinations(remaining_participants, seats)]
+            combination = [tuple([drivers[index]]+list(tup)) for tup in combinations(remaining_participants, seats)]
+            possible_combinations[index] += combination
+            comb_len += len(combination)
 
     # print("Possible combinations: {}".format(possible_combinations))
 
     # the total distance of the shortest route with the driver picking up all riders and taking them to the destination
     distances = []
+    dist_calc = 1
     for i in range(len(drivers)):
         distances.append([])
         for j in range(len(possible_combinations[i])):
-            distance = calculate_combination_distance(possible_combinations[i][j])
+            distance = calculate_combination_distance_real(possible_combinations[i][j])
             distances[i].append(distance)
+            print('%d/%d' % (dist_calc, comb_len))
+            dist_calc += 1
 
     # Binary integer variables for the problem (0 or 1)
     # 1 means the combination was chose
@@ -214,15 +307,89 @@ def group_cells_distance(drivers, riders):
     # SOLVE
     sol = solver.Solve()
 
-    print('Total cost = ', solver.Objective().Value())
+    cluster_distance = {}
+    total_cost = solver.Objective().Value()
+    print('Total cost = ', total_cost)
     print()
     for i in range(len(drivers)):
         for j in range(len(possible_combinations[i])):
             if x[i, j].solution_value() > 0:
                 print('Combination {}. Cost {}'.format(possible_combinations[i][j], distances[i][j]))
+                cluster_distance[possible_combinations[i][j][0]] = list(possible_combinations[i][j][1:])
 
     print()
     print("Time = ", solver.WallTime(), " milliseconds")
+    return total_cost, cluster_distance
+
+
+#########################
+def group_cells_distance_haversine(drivers, riders):
+    global participants
+
+    cluster_participants = drivers + riders
+    drivers_seats = []
+    for driver in drivers:
+        drivers_seats.append(participants.get(driver).get_seats())
+    solver = pywraplp.Solver('SolveIntegerProblem',
+                             pywraplp.Solver.CBC_MIXED_INTEGER_PROGRAMMING)
+    # all possible combinations S of 1 driver and up to x riders, where x = empty seats.
+    possible_combinations = []
+    comb_len = 0
+    for index in range(len(drivers)):
+        # for each driver get every possible combination of passengers (which includes riders and drivers)
+        remaining_participants = [x for i, x in enumerate(cluster_participants) if i != index]
+        possible_combinations.append([])
+        for seats in range(0, drivers_seats[index]+1):
+            permutation = [tuple([drivers[index]]+list(tup)) for tup in permutations(remaining_participants, seats)]
+            possible_combinations[index] += permutation
+            comb_len += len(permutation)
+
+    # print("Possible combinations: {}".format(possible_combinations))
+
+    # the total distance of the shortest route with the driver picking up all riders and taking them to the destination
+    distances = []
+    dist_calc = 1
+    for i in range(len(drivers)):
+        distances.append([])
+        for j in range(len(possible_combinations[i])):
+            distance = calculate_combination_distance_haversine(possible_combinations[i][j])
+            distances[i].append(distance)
+            print('%d/%d' % (dist_calc, comb_len))
+            dist_calc += 1
+
+    # Binary integer variables for the problem (0 or 1)
+    # 1 means the combination was chose
+    x = {}
+    for i in range(len(drivers)):
+        for j in range(len(possible_combinations[i])):
+            x[i, j] = solver.BoolVar('x[%i,%i]' % (i, j))
+
+    # OBJECTIVE
+    # Minimize the total distance covered
+    solver.Minimize(solver.Sum([distances[i][j] * x[i, j] for i in range(len(drivers))
+                                for j in range(len(possible_combinations[i]))]))
+
+    # CONSTRAINTS
+    # Each participant is selected exactly once
+    for participant in participants:
+        solver.Add(solver.Sum([x[i, j] for i in range(len(drivers)) for j in range(len(possible_combinations[i])) if participant in possible_combinations[i][j]]) == 1)
+
+    # SOLVE
+    sol = solver.Solve()
+
+    cluster_distance = {}
+    total_cost = solver.Objective().Value()
+    print('Total cost = ', total_cost)
+    print()
+    for i in range(len(drivers)):
+        for j in range(len(possible_combinations[i])):
+            if x[i, j].solution_value() > 0:
+                print('Combination {}. Cost {}'.format(possible_combinations[i][j], distances[i][j]))
+                cluster_distance[possible_combinations[i][j][0]] = list(possible_combinations[i][j][1:])
+
+    print()
+    print("Time = ", solver.WallTime(), " milliseconds")
+    return total_cost, cluster_distance
 
 
 #########################
@@ -231,7 +398,12 @@ def combinations(items, howmany):
 
 
 #########################
-def calculate_combination_distance(combination):
+def permutations(items, howmany):
+    return list(itertools.permutations(items, min(howmany, len(items))))
+
+
+#########################
+def calculate_combination_distance_real(combination):
     """
     Calculates the distance travveled by the participants of the provided combination
 
@@ -250,16 +422,13 @@ def calculate_combination_distance(combination):
     :rtype: int
     """
     global participants, destination
-    print('destination {}'.format(destination))
     distance = 0
     waypoints = []
     for rider in combination[1:]:
-        waypoint_geopoint = rider.start.get(u'LatLng')
+        waypoint_geopoint = participants.get(rider).start.get(u'LatLng')
         waypoints.append((waypoint_geopoint.latitude, waypoint_geopoint.longitude))
-    print('waypoints {}'.format(waypoints))
-    origin_geopoint = combination[0].start.get(u'LatLng')
+    origin_geopoint = participants.get(combination[0]).start.get(u'LatLng')
     origin = (origin_geopoint.latitude, origin_geopoint.longitude)
-    print('origin {}'.format(origin))
     direction_results = gmaps.directions(origin, destination,
                                          mode="driving",
                                          waypoints=waypoints,
@@ -269,6 +438,52 @@ def calculate_combination_distance(combination):
     for i in range(len(waypoints)+1):
         distance += direction_results[0].get(u'legs')[i].get(u'distance').get(u'value')
     return distance
+
+
+#########################
+def calculate_combination_distance_haversine(combination):
+    global participants, destination
+    distance = 0
+    for i in range(0,len(combination)):
+        participant1_id = combination[i]
+        participant1 = participants.get(participant1_id)
+        if i+1 == len(combination):
+            distance += haversine_formula(participant1.start.get(u'LatLng').latitude,
+                                          participant1.start.get(u'LatLng').longitude,
+                                          destination[0],
+                                          destination[1])
+        else:
+            participant2_id = combination[i+1]
+            participant2 = participants.get(participant2_id)
+            distance += haversine_formula(participant1.start.get(u'LatLng').latitude,
+                                          participant1.start.get(u'LatLng').longitude,
+                                          participant2.start.get(u'LatLng').latitude,
+                                          participant2.start.get(u'LatLng').longitude)
+    return distance
+
+
+######################
+def haversine_formula(lat1, lon1, lat2, lon2):
+    """
+    Calculate the great circle distance between two points
+    on the earth (specified in decimal degrees)
+
+    :param lat1: latitude of the first point
+    :param lon1: longitude of the first point
+    :param lat2: latitude of the second point
+    :param lon2: longitude of the second point
+    :return: haversine distance between both points
+    """
+
+    # convert decimal degrees to radians
+    lat1, lon1, lat2, lon2 = map(radians, (lat1, lon1, lat2, lon2))
+    # haversine formula
+    lon = lon2 - lon1
+    lat = lat2 - lat1
+    a = sin(lat / 2) ** 2 + cos(lat1) * cos(lat2) * sin(lon / 2) ** 2
+    c = 2 * asin(sqrt(a))
+    r = 6371.008  # Radius of earth in kilometers. Use 3956 for miles
+    return c * r
 
 
 #########################
@@ -383,7 +598,30 @@ def group_cells_cars(cluster_cars):
 
 #########################
 def order_by_heuristic(driver, driver_passengers_tuple):
-    # TODO n tenho como fazer... n tenho heuristica...
+    """
+       Orders the set after calculating values based on the heuristic
+
+       Calculates the heuristic value between the driver and each element of the set
+       Adds each calculated value to the last position of each element of the set
+       Orders the set based on its stored parameter first and then the heuristic value
+
+       :param driver: the unique identifier of the driver
+       :type driver: str
+       :param driver_passengers_tuple: a list of tuples containing several participants and their seats
+       :return: the new set, ordered, with the new heuristic values
+       :rtype list of tuples
+       """
+    index = 0
+    # get shared route between driver and possible matches
+    for match in driver_passengers_tuple:
+        if driver == match[0]:
+            continue
+        driver_passengers_tuple[index] = (*driver_passengers_tuple[index], get_shared_path(driver, match[0]))
+        index += 1
+    # Order the tuple
+    #     The key = lambda x: (x[1], x[2]) should be read as:
+    #     "firstly order by the seats in x[1] and then by the shared route value in x[2]".
+    driver_passengers_tuple = sorted(driver_passengers_tuple, key=lambda x: (x[1], x[2]))
     return driver_passengers_tuple
 
 
