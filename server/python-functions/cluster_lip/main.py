@@ -256,43 +256,66 @@ def group_best_match_riders(cluster, rider_to_driver_route_share):
 def group_cells_distance_real(drivers, riders):
     global participants
 
+    # ILP solver
+    solver = pywraplp.Solver('SolveIntegerProblem',
+                             pywraplp.Solver.CBC_MIXED_INTEGER_PROGRAMMING)
+
     cluster_participants = drivers + riders
+    number_participants = len(cluster_participants)
+    waypoints = cluster_participants + ["destination"]
+    number_waypoints = number_participants + 1
+    # How many seats does each car have
     drivers_seats = []
     for driver in drivers:
         drivers_seats.append(participants.get(driver).get_seats())
-    solver = pywraplp.Solver('SolveIntegerProblem',
-                             pywraplp.Solver.CBC_MIXED_INTEGER_PROGRAMMING)
-    # all possible combinations S of 1 driver and up to x riders, where x = empty seats.
+    # Matrix to store distances between every participant (number_participants x (number_participants + destination))
+    participant_distance_matrix = {}
+    for participant in cluster_participants:
+        # Populated with 0's
+        participant_distance_matrix[participant] = dict(zip(waypoints, [0] * number_waypoints))
+    # Set matrix values to proper distances
+    matrix_diagonal = 1
+    for i in range(number_participants):
+        participant1 = participants.get(cluster_participants[i])
+        participant1_start = participant1.start.get(u'LatLng')
+        participant1_source = (participant1_start.latitude, participant1_start.longitude)
+        for j in range(matrix_diagonal, number_participants):
+            participant2 = participants.get(cluster_participants[j])
+            participant2_start = participant2.start.get(u'LatLng')
+            participant2_source = (participant2_start.latitude, participant2_start.longitude)
+            # Calculate distance from Participant 1 to Participant 2
+            distance = gmaps.directions(participant1_source, participant2_source)[0].get(u'legs')[0].get(u'distance').get(u'value')
+            participant_distance_matrix[cluster_participants[i]][cluster_participants[j]] = distance
+            # The euclidean distance i->j is the same as j->i
+            participant_distance_matrix[cluster_participants[j]][cluster_participants[i]] = distance
+        participant_distance_matrix[cluster_participants[i]]["destination"] = gmaps.directions(participant1_source, destination)[0].get(u'legs')[0].get(u'distance').get(u'value')
+        matrix_diagonal += 1
+
+    # All possible combinations S of 1 driver and up to x riders, where x = empty seats.
     possible_combinations = []
+    # Distances travelled in every driver's combinations
+    distances = []
+    # Map for each combination
+    x = {}
     comb_len = 0
     for index in range(len(drivers)):
-        # for each driver get every possible combination of passengers (which includes riders and drivers)
+        # Remove self from calculations
         remaining_participants = [x for i, x in enumerate(cluster_participants) if i != index]
         possible_combinations.append([])
+        # For each driver get every possible combination of passengers (which includes riders and drivers)
+        # From 0 passengers (only the driver) to a full car
         for seats in range(0, drivers_seats[index]+1):
             combination = [tuple([drivers[index]]+list(tup)) for tup in combinations(remaining_participants, seats)]
             possible_combinations[index] += combination
             comb_len += len(combination)
-
-    # print("Possible combinations: {}".format(possible_combinations))
-
-    # the total distance of the shortest route with the driver picking up all riders and taking them to the destination
-    distances = []
-    dist_calc = 1
-    for i in range(len(drivers)):
         distances.append([])
-        for j in range(len(possible_combinations[i])):
-            distance = calculate_combination_distance_real(possible_combinations[i][j])
-            distances[i].append(distance)
-            print('%d/%d' % (dist_calc, comb_len))
-            dist_calc += 1
-
-    # Binary integer variables for the problem (0 or 1)
-    # 1 means the combination was chose
-    x = {}
-    for i in range(len(drivers)):
-        for j in range(len(possible_combinations[i])):
-            x[i, j] = solver.BoolVar('x[%i,%i]' % (i, j))
+        for j in range(0, len(possible_combinations[index])):
+            # The total distance of the shortest route travelled by the combination
+            distance = calculate_matrix_distance(possible_combinations[index][j], participant_distance_matrix)
+            distances[index].append(distance)
+            # Binary integer variables for the problem (0 or 1)
+            # 1 means the combination was chose
+            x[index, j] = solver.BoolVar('x[%i,%i]' % (index, j))
 
     # OBJECTIVE
     # Minimize the total distance covered
@@ -324,45 +347,169 @@ def group_cells_distance_real(drivers, riders):
 
 #########################
 def group_cells_distance_haversine(drivers, riders):
-    global participants
+    global participants, destination
+
+    # ILP solver
+    solver = pywraplp.Solver('SolveIntegerProblem',
+                             pywraplp.Solver.CBC_MIXED_INTEGER_PROGRAMMING)
 
     cluster_participants = drivers + riders
+    number_participants = len(cluster_participants)
+    waypoints = cluster_participants + ["destination"]
+    number_waypoints = number_participants + 1
+    # How many seats does each car have
     drivers_seats = []
     for driver in drivers:
         drivers_seats.append(participants.get(driver).get_seats())
-    solver = pywraplp.Solver('SolveIntegerProblem',
-                             pywraplp.Solver.CBC_MIXED_INTEGER_PROGRAMMING)
-    # all possible combinations S of 1 driver and up to x riders, where x = empty seats.
+    # Matrix to store distances between every participant (number_participants x (number_participants + destination))
+    participant_distance_matrix = {}
+    for participant in cluster_participants:
+        # Populated with 0's
+        participant_distance_matrix[participant] = dict(zip(waypoints, [0] * number_waypoints))
+    # Set matrix values to proper distances
+    matrix_diagonal = 1
+    for i in range(number_participants):
+        participant1 = participants.get(cluster_participants[i])
+        participant1_start = participant1.start.get(u'LatLng')
+        for j in range(matrix_diagonal, number_participants):
+            participant2 = participants.get(cluster_participants[j])
+            participant2_start = participant2.start.get(u'LatLng')
+            # Calculate distance from Participant 1 to Participant 2
+            distance = haversine_formula(participant1_start.latitude,
+                                         participant1_start.longitude,
+                                         participant2_start.latitude,
+                                         participant2_start.longitude)
+            participant_distance_matrix[cluster_participants[i]][cluster_participants[j]] = distance
+            # The euclidean distance i->j is the same as j->i
+            participant_distance_matrix[cluster_participants[j]][cluster_participants[i]] = distance
+        participant_distance_matrix[cluster_participants[i]]["destination"] = haversine_formula(participant1_start.latitude,
+                                                                                                participant1_start.longitude,
+                                                                                                destination[0],
+                                                                                                destination[1])
+        matrix_diagonal += 1
+
+    # All possible combinations S of 1 driver and up to x riders, where x = empty seats.
     possible_combinations = []
+    # Distances travelled in every driver's combinations
+    distances = []
+    # Map for each combination
+    x = {}
     comb_len = 0
     for index in range(len(drivers)):
-        # for each driver get every possible combination of passengers (which includes riders and drivers)
+        # Remove self from calculations
         remaining_participants = [x for i, x in enumerate(cluster_participants) if i != index]
         possible_combinations.append([])
+        # For each driver get every possible combination of passengers (which includes riders and drivers)
+        # From 0 passengers (only the driver) to a full car
         for seats in range(0, drivers_seats[index]+1):
             permutation = [tuple([drivers[index]]+list(tup)) for tup in permutations(remaining_participants, seats)]
             possible_combinations[index] += permutation
             comb_len += len(permutation)
-
-    # print("Possible combinations: {}".format(possible_combinations))
-
-    # the total distance of the shortest route with the driver picking up all riders and taking them to the destination
-    distances = []
-    dist_calc = 1
-    for i in range(len(drivers)):
         distances.append([])
-        for j in range(len(possible_combinations[i])):
-            distance = calculate_combination_distance_haversine(possible_combinations[i][j])
-            distances[i].append(distance)
-            print('%d/%d' % (dist_calc, comb_len))
-            dist_calc += 1
+        for j in range(0, len(possible_combinations[index])):
+            # The total distance of the shortest route travelled by the combination
+            distance = calculate_matrix_distance(possible_combinations[index][j], participant_distance_matrix)
+            distances[index].append(distance)
+            # Binary integer variables for the problem (0 or 1)
+            # 1 means the combination was chose
+            x[index, j] = solver.BoolVar('x[%i,%i]' % (index, j))
 
-    # Binary integer variables for the problem (0 or 1)
-    # 1 means the combination was chose
-    x = {}
+    # OBJECTIVE
+    # Minimize the total distance covered
+    solver.Minimize(solver.Sum([distances[i][j] * x[i, j] for i in range(len(drivers))
+                                for j in range(len(possible_combinations[i]))]))
+
+    # CONSTRAINTS
+    # Each participant is selected exactly once
+    for participant in participants:
+        solver.Add(solver.Sum([x[i, j] for i in range(len(drivers)) for j in range(len(possible_combinations[i])) if participant in possible_combinations[i][j]]) == 1)
+
+    # SOLVE
+    sol = solver.Solve()
+
+    cluster_distance = {}
+    total_cost = solver.Objective().Value()
+    print('Total cost = ', total_cost)
+    print()
     for i in range(len(drivers)):
         for j in range(len(possible_combinations[i])):
-            x[i, j] = solver.BoolVar('x[%i,%i]' % (i, j))
+            if x[i, j].solution_value() > 0:
+                print('Combination {}. Cost {}'.format(possible_combinations[i][j], distances[i][j]))
+                cluster_distance[possible_combinations[i][j][0]] = list(possible_combinations[i][j][1:])
+
+    print()
+    print("Time = ", solver.WallTime(), " milliseconds")
+    return total_cost, cluster_distance
+
+
+#########################
+def group_cells_distance_euclidean(drivers, riders):
+    global participants, destination
+
+    # ILP solver
+    solver = pywraplp.Solver('SolveIntegerProblem',
+                             pywraplp.Solver.CBC_MIXED_INTEGER_PROGRAMMING)
+
+    cluster_participants = drivers + riders
+    number_participants = len(cluster_participants)
+    waypoints = cluster_participants + ["destination"]
+    number_waypoints = number_participants + 1
+    # How many seats does each car have
+    drivers_seats = []
+    for driver in drivers:
+        drivers_seats.append(participants.get(driver).get_seats())
+    # Matrix to store distances between every participant (number_participants x (number_participants + destination))
+    participant_distance_matrix = {}
+    for participant in cluster_participants:
+        # Populated with 0's
+        participant_distance_matrix[participant] = dict(zip(waypoints, [0]*number_waypoints))
+    # Set matrix values to proper distances
+    matrix_diagonal = 1
+    for i in range(number_participants):
+        participant1 = participants.get(cluster_participants[i])
+        participant1_start = participant1.start.get(u'LatLng')
+        for j in range(matrix_diagonal, number_participants):
+            participant2 = participants.get(cluster_participants[j])
+            participant2_start = participant2.start.get(u'LatLng')
+            # Calculate distance from Participant 1 to Participant 2
+            distance = euclidean_formula(participant1_start.latitude,
+                                         participant1_start.longitude,
+                                         participant2_start.latitude,
+                                         participant2_start.longitude)
+            participant_distance_matrix[cluster_participants[i]][cluster_participants[j]] = distance
+            # The euclidean distance i->j is the same as j->i
+            participant_distance_matrix[cluster_participants[j]][cluster_participants[i]] = distance
+        participant_distance_matrix[cluster_participants[i]]["destination"] = euclidean_formula(participant1_start.latitude,
+                                                                                                participant1_start.longitude,
+                                                                                                destination[0],
+                                                                                                destination[1])
+        matrix_diagonal += 1
+
+    # All possible combinations S of 1 driver and up to x riders, where x = empty seats.
+    possible_combinations = []
+    # Distances travelled in every driver's combinations
+    distances = []
+    # Map for each combination
+    x = {}
+    comb_len = 0
+    for index in range(len(drivers)):
+        # Remove self from calculations
+        remaining_participants = [x for i, x in enumerate(cluster_participants) if i != index]
+        possible_combinations.append([])
+        # For each driver get every possible combination of passengers (which includes riders and drivers)
+        # From 0 passengers (only the driver) to a full car
+        for seats in range(0, drivers_seats[index]+1):
+            permutation = [tuple([drivers[index]]+list(tup)) for tup in permutations(remaining_participants, seats)]
+            possible_combinations[index] += permutation
+            comb_len += len(permutation)
+        distances.append([])
+        for j in range(0, len(possible_combinations[index])):
+            # The total distance of the shortest route travelled by the combination
+            distance = calculate_matrix_distance(possible_combinations[index][j], participant_distance_matrix)
+            distances[index].append(distance)
+            # Binary integer variables for the problem (0 or 1)
+            # 1 means the combination was chose
+            x[index, j] = solver.BoolVar('x[%i,%i]' % (index, j))
 
     # OBJECTIVE
     # Minimize the total distance covered
@@ -400,6 +547,25 @@ def combinations(items, howmany):
 #########################
 def permutations(items, howmany):
     return list(itertools.permutations(items, min(howmany, len(items))))
+
+
+#########################
+def calculate_matrix_distance(combination, participant_distance_matrix):
+    """
+    Calculates the distance to travel to every element of the combination and then the destination
+
+    :param combination: The participants of the route (driver + riders)
+    :param participant_distance_matrix: A matrix of distances between each pair of participants.
+                                        And from each participant to the destination.
+    :return: The distance travelled by the combination
+    """
+
+    combination_size = len(combination)
+    distance = 0
+    for participant in range(combination_size - 1):
+        distance += participant_distance_matrix[combination[participant]][combination[participant + 1]]
+    distance += participant_distance_matrix[combination[-1]]["destination"]
+    return distance
 
 
 #########################
@@ -484,6 +650,45 @@ def haversine_formula(lat1, lon1, lat2, lon2):
     c = 2 * asin(sqrt(a))
     r = 6371.008  # Radius of earth in kilometers. Use 3956 for miles
     return c * r
+
+
+#########################
+def calculate_combination_distance_euclidean(combination):
+    global participants, destination
+    distance = 0
+    for i in range(0, len(combination)):
+        participant1_id = combination[i]
+        participant1 = participants.get(participant1_id)
+        # If last rider then calculate distance to destination
+        if i + 1 == len(combination):
+            distance += euclidean_formula(participant1.start.get(u'LatLng').latitude,
+                                          participant1.start.get(u'LatLng').longitude,
+                                          destination[0],
+                                          destination[1])
+        # Else calculate from current participant to next one in the combination
+        else:
+            participant2_id = combination[i + 1]
+            participant2 = participants.get(participant2_id)
+            distance += euclidean_formula(participant1.start.get(u'LatLng').latitude,
+                                          participant1.start.get(u'LatLng').longitude,
+                                          participant2.start.get(u'LatLng').latitude,
+                                          participant2.start.get(u'LatLng').longitude)
+    return distance
+
+
+#########################
+def euclidean_formula(lat1, lon1, lat2, lon2):
+    """
+    Calculates the Euclidean (direct) distance between two points
+
+    :param lat1: Latitude of the first point
+    :param lon1: Longitude of the first point
+    :param lat1: Latitude of the second point
+    :param lon1: Longitude of the second point
+    :return: The distance between point1 an point2
+    """
+
+    return sqrt(((lat1-lat2)**2) + ((lon1-lon2)**2))
 
 
 #########################

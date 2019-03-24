@@ -6,26 +6,33 @@ def main():
     solver = pywraplp.Solver('SolveIntegerProblem',
                              pywraplp.Solver.CBC_MIXED_INTEGER_PROGRAMMING)
 
-    #drivers = ["Andy", "Buzz", "Scar", "Alladin", "Jasmin", "Ariel", "Sora", "Kairi"]
-    drivers = ["Andy", "Buzz", "Scar"]
+    drivers = ["Andy", "Buzz", "Scar", "Alladin", "Jasmin", "Ariel", "Sora", "Kairi"]
+    # drivers = ["Andy", "Buzz", "Scar"]
     drivers_seats = [3, 2, 5, 4, 3, 0, 1, 4]
-    #riders = ["Woody", "Olaf", "Jack", "Flint", "Linguini", "Remy", "Simba", "Sebastian"]
-    riders = ["Woody"]
+    riders = ["Woody", "Olaf", "Jack", "Flint", "Linguini", "Remy", "Simba", "Sebastian"]
+    # riders = ["Woody"]
     participants = drivers + riders
     print("Participants: {}".format(participants))
 
     # all possible combinations S of 1 driver and up to x riders, where x = empty seats.
     possible_combinations = []
+    distances = []
+    x = {}
     for index in range(len(drivers)):
         # for each driver get every possible combination of passengers (which includes riders and drivers)
         remaining_participants = [x for i, x in enumerate(participants) if i != index]
         possible_combinations.append([])
+        distances.append([])
         for seats in range(0, drivers_seats[index]+1):
-            possible_combinations[index] += [tuple([drivers[index]]+list(tup)) for tup in combinations(remaining_participants, seats)]
+            permutation = [tuple([drivers[index]]+list(tup)) for tup in combinations(remaining_participants, seats)]
+            possible_combinations[index] += permutation
+        for j in range(0, len(possible_combinations[index])):
+            distances[index].append(random.randint(0, 200000))
+            x[index, j] = solver.BoolVar('x[%i,%i]' % (index, j))
 
     print("Possible combinations: {}".format(possible_combinations))
 
-    # the total distance of the shortest route with the driver picking up all riders and taking them to the destination
+    '''# the total distance of the shortest route with the driver picking up all riders and taking them to the destination
     distances = []
     for i in range(len(drivers)):
         distances.append([])
@@ -39,7 +46,7 @@ def main():
     for i in range(len(drivers)):
         for j in range(len(possible_combinations[i])):
             x[i, j] = solver.BoolVar('x[%i,%i]' % (i, j))
-    print("x: {}".format(x))
+    print("x: {}".format(x))'''
 
     # Objective
     # Minimize the total distance covered
