@@ -141,7 +141,7 @@ def cluster_lip(request):
                      (distance_parameter * (distance_cars / initial_distance))
     print('------------------------------')
     print('Calculating cluster minimizing DISTANCE.')
-    distance_distance, cluster_distance = group_cells_distance_real(drivers_id, riders_id)
+    distance_distance, cluster_distance = group_cells_distance_euclidean(drivers_id, riders_id)
     # distance_distance = calculate_cluster_distance(cluster_distance)
     f_cluster_distance = (cars_parameter * (len(cluster_distance) / initial_cars)) + \
                          (distance_parameter * (distance_distance / initial_distance))
@@ -260,6 +260,7 @@ def group_cells_distance_real(drivers, riders):
     solver = pywraplp.Solver('SolveIntegerProblem',
                              pywraplp.Solver.CBC_MIXED_INTEGER_PROGRAMMING)
 
+    number_drivers = len(drivers)
     cluster_participants = drivers + riders
     number_participants = len(cluster_participants)
     waypoints = cluster_participants + ["destination"]
@@ -298,18 +299,19 @@ def group_cells_distance_real(drivers, riders):
     # Map for each combination
     x = {}
     comb_len = 0
-    for index in range(len(drivers)):
+    for index in range(number_drivers):
         # Remove self from calculations
         remaining_participants = [x for i, x in enumerate(cluster_participants) if i != index]
         possible_combinations.append([])
         # For each driver get every possible combination of passengers (which includes riders and drivers)
         # From 0 passengers (only the driver) to a full car
         for seats in range(0, drivers_seats[index]+1):
-            combination = [tuple([drivers[index]]+list(tup)) for tup in combinations(remaining_participants, seats)]
+            combination = [tuple([drivers[index]]+list(tup)) for tup in permutations(remaining_participants, seats)]
             possible_combinations[index] += combination
             comb_len += len(combination)
         distances.append([])
-        for j in range(0, len(possible_combinations[index])):
+        number_combinations = len(possible_combinations[index])
+        for j in range(0, number_combinations):
             # The total distance of the shortest route travelled by the combination
             distance = calculate_matrix_distance(possible_combinations[index][j], participant_distance_matrix)
             distances[index].append(distance)
@@ -334,8 +336,9 @@ def group_cells_distance_real(drivers, riders):
     total_cost = solver.Objective().Value()
     print('Total cost = ', total_cost)
     print()
-    for i in range(len(drivers)):
-        for j in range(len(possible_combinations[i])):
+    for i in range(number_drivers):
+        number_combinations = len(possible_combinations[i])
+        for j in range(number_combinations):
             if x[i, j].solution_value() > 0:
                 print('Combination {}. Cost {}'.format(possible_combinations[i][j], distances[i][j]))
                 cluster_distance[possible_combinations[i][j][0]] = list(possible_combinations[i][j][1:])
@@ -353,6 +356,7 @@ def group_cells_distance_haversine(drivers, riders):
     solver = pywraplp.Solver('SolveIntegerProblem',
                              pywraplp.Solver.CBC_MIXED_INTEGER_PROGRAMMING)
 
+    number_drivers = len(drivers)
     cluster_participants = drivers + riders
     number_participants = len(cluster_participants)
     waypoints = cluster_participants + ["destination"]
@@ -395,7 +399,7 @@ def group_cells_distance_haversine(drivers, riders):
     # Map for each combination
     x = {}
     comb_len = 0
-    for index in range(len(drivers)):
+    for index in range(number_drivers):
         # Remove self from calculations
         remaining_participants = [x for i, x in enumerate(cluster_participants) if i != index]
         possible_combinations.append([])
@@ -406,7 +410,8 @@ def group_cells_distance_haversine(drivers, riders):
             possible_combinations[index] += permutation
             comb_len += len(permutation)
         distances.append([])
-        for j in range(0, len(possible_combinations[index])):
+        number_combinations = len(possible_combinations[index])
+        for j in range(0, number_combinations):
             # The total distance of the shortest route travelled by the combination
             distance = calculate_matrix_distance(possible_combinations[index][j], participant_distance_matrix)
             distances[index].append(distance)
@@ -431,8 +436,9 @@ def group_cells_distance_haversine(drivers, riders):
     total_cost = solver.Objective().Value()
     print('Total cost = ', total_cost)
     print()
-    for i in range(len(drivers)):
-        for j in range(len(possible_combinations[i])):
+    for i in range(number_drivers):
+        number_combinations = len(possible_combinations[i])
+        for j in range(number_combinations):
             if x[i, j].solution_value() > 0:
                 print('Combination {}. Cost {}'.format(possible_combinations[i][j], distances[i][j]))
                 cluster_distance[possible_combinations[i][j][0]] = list(possible_combinations[i][j][1:])
@@ -450,6 +456,7 @@ def group_cells_distance_euclidean(drivers, riders):
     solver = pywraplp.Solver('SolveIntegerProblem',
                              pywraplp.Solver.CBC_MIXED_INTEGER_PROGRAMMING)
 
+    number_drivers = len(drivers)
     cluster_participants = drivers + riders
     number_participants = len(cluster_participants)
     waypoints = cluster_participants + ["destination"]
@@ -492,7 +499,7 @@ def group_cells_distance_euclidean(drivers, riders):
     # Map for each combination
     x = {}
     comb_len = 0
-    for index in range(len(drivers)):
+    for index in range(number_drivers):
         # Remove self from calculations
         remaining_participants = [x for i, x in enumerate(cluster_participants) if i != index]
         possible_combinations.append([])
@@ -503,7 +510,8 @@ def group_cells_distance_euclidean(drivers, riders):
             possible_combinations[index] += permutation
             comb_len += len(permutation)
         distances.append([])
-        for j in range(0, len(possible_combinations[index])):
+        number_combinations = len(possible_combinations[index])
+        for j in range(0, number_combinations):
             # The total distance of the shortest route travelled by the combination
             distance = calculate_matrix_distance(possible_combinations[index][j], participant_distance_matrix)
             distances[index].append(distance)
@@ -528,8 +536,9 @@ def group_cells_distance_euclidean(drivers, riders):
     total_cost = solver.Objective().Value()
     print('Total cost = ', total_cost)
     print()
-    for i in range(len(drivers)):
-        for j in range(len(possible_combinations[i])):
+    for i in range(number_drivers):
+        number_combinations = len(possible_combinations[i])
+        for j in range(number_combinations):
             if x[i, j].solution_value() > 0:
                 print('Combination {}. Cost {}'.format(possible_combinations[i][j], distances[i][j]))
                 cluster_distance[possible_combinations[i][j][0]] = list(possible_combinations[i][j][1:])
