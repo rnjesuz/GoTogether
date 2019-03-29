@@ -255,7 +255,7 @@ def group_best_match_riders(cluster, rider_to_driver_route_share):
 
 #########################
 def group_cells_distance(cluster_distance, drivers_distance):
-    """Solve the CVRP problem."""
+    """Solve the COVRP problem."""
 
     # Instantiate the data problem.
     data = create_data()
@@ -263,7 +263,6 @@ def group_cells_distance(cluster_distance, drivers_distance):
     # Create the routing index manager.
     manager = pywrapcp.RoutingIndexManager(
         len(data['distance_matrix']), data['num_vehicles'], data['starts'], data['ends'])
-
     # Create Routing Model.
     routing = pywrapcp.RoutingModel(manager)
 
@@ -273,6 +272,8 @@ def group_cells_distance(cluster_distance, drivers_distance):
         # Convert from routing variable Index to distance matrix NodeIndex.
         from_node = manager.IndexToNode(from_index)
         to_node = manager.IndexToNode(to_index)
+        #print('distance from_index: {} to index: {}'.format(from_index, to_index))
+        #print('distance: {}'.format(data['distance_matrix'][from_node][to_node]))
         return data['distance_matrix'][from_node][to_node]
 
     transit_callback_index = routing.RegisterTransitCallback(distance_callback)
@@ -285,6 +286,8 @@ def group_cells_distance(cluster_distance, drivers_distance):
         """Returns the demand of the node."""
         # Convert from routing variable Index to demands NodeIndex.
         from_node = manager.IndexToNode(from_index)
+        #print('demand from_index: {}'.format(from_index))
+        #print('demand: {}'.format(data['demands'][from_node]))
         return data['demands'][from_node]
 
     demand_callback_index = routing.RegisterUnaryTransitCallback(demand_callback)
@@ -321,31 +324,56 @@ def create_data():
     capacities = []
     # Start location of each driver
     starts = []
-
     # The dictionary to store data
     data = {}
     data['API_key'] = API_key
-
     # destination goes first (index 0)
     addresses.append(destination)
+    demands.append(0)
     number_drivers = 0
+    drivers_addresses = []
+    drivers_demands = []
+    participants_id = []
+    drivers_id = []
     for index, participant_id in enumerate(participants):
         participant = participants.get(participant_id)
         participant_start = participant.start.get('LatLng')
         addresses.append((participant_start.latitude, participant_start.longitude))
-        demands.append(1)
+        participants_id.append(participant_id)
         if participant.is_driver():
-            starts.append(index)
-            capacities.append(participant.get_seats())
+            drivers_addresses.append((participant_start.latitude, participant_start.longitude))
+            drivers_demands.append(1)
+            drivers_id.append(participant_id)
+            print('vehicle',index+1)
+            demands.append(0)
+            starts.append(index+1)
+            capacities.append(participant.get_seats()+1)
             number_drivers += 1
+        else:
+            demands.append(1)
+    addresses += drivers_addresses
+    demands += drivers_demands
+    participants_id += drivers_id
     data['starts'] = starts
+    # Ids of the participants
+    data['ids'] = participants_id
     # End location of each driver
     data['ends'] = [0]*number_drivers  # They all end on 'destination'
     data['addresses'] = addresses
     data['demands'] = demands
     data['vehicle_capacities'] = capacities
     data['num_vehicles'] = number_drivers
-    data['distance_matrix'] = create_distance_matrix(data)
+    distance_matrix = create_distance_matrix(data)
+    distance_matrix[0] = [0]*len(addresses)
+    data['distance_matrix'] = distance_matrix
+    print('ids: {}'.format(participants_id))
+    print('addresses: {}'.format(addresses))
+    print('distance_matrix: {}'.format(distance_matrix))
+    print('demands : {}'.format(demands))
+    print('vehicle_capacities : {}'.format(capacities))
+    print('num_vehicles : {}'.format(number_drivers))
+    print('starts: {}'.format(starts))
+    print('ends: {}'.format([0]*number_drivers))
     return data
 
 
@@ -418,13 +446,14 @@ def print_solution(data, manager, routing, assignment):
         while not routing.IsEnd(index):
             node_index = manager.IndexToNode(index)
             route_load += data['demands'][node_index]
-            plan_output += ' {0} Load({1}) -> '.format(node_index, route_load)
+            # plan_output += ' {0} Load({1}) -> '.format(node_index, route_load)
+            plan_output += ' {0} Load({1}) -> '.format(data['ids'][node_index-1], route_load)
             previous_index = index
             index = assignment.Value(routing.NextVar(index))
             route_distance += routing.GetArcCostForVehicle(
                 previous_index, index, vehicle_id)
-        plan_output += ' {0} Load({1})\n'.format(
-            manager.IndexToNode(index), route_load)
+        # plan_output += ' {0} Load({1})\n'.format(manager.IndexToNode(index), route_load)
+        plan_output += ' {0} Load({1})\n'.format('Destination', route_load)
         plan_output += 'Distance of the route: {}m\n'.format(route_distance)
         plan_output += 'Load of the route: {}\n'.format(route_load)
         print(plan_output)
