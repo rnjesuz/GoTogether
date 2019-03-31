@@ -124,6 +124,7 @@ def cluster_route(request):
     if event_optimization:
         # call waypoint optimization method TODO
         pass
+    
     print('------------------------------')
     print('Final Cluster: {}'.format(cluster_distance))
     print('Final Distance: {}'.format(distance_distance))

@@ -98,6 +98,7 @@ def cluster_vrp(request):
     if event_optimization:
         # call waypoint optimization method TODO
         pass
+    
     print('------------------------------')
     print('Final Cluster: {}'.format(cluster))
     print('Final Distance: {}'.format(distance_distance))

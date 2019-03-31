@@ -108,8 +108,9 @@ def cluster_lip(request):
         # call waypoint optimization method TODO
         pass
 
+    print('------------------------------')
     print('Final Cluster: {}'.format(cluster_distance))
-    print('Final distance: {}'.format(distance_cluster))
+    print('Final Distance: {}'.format(distance_cluster))
     update_database(cluster_distance)
     # return cluster
     # return 'OK'
