@@ -39,4 +39,12 @@
 /server/python-functions/cluster_vrp/.idea
 /server/python-functions/cluster_vrp/ServiceAccountKey.json
 /server/python-functions/cluster_vrp/request.json
+/server/python-functions/cluster/env
+/server/python-functions/cluster/.idea
+/server/python-functions/cluster/ServiceAccountKey.json
+/server/python-functions/cluster/request.json
+/server/python-functions/cluster_bin_packing/env
+/server/python-functions/cluster_bin_packing/.idea
+/server/python-functions/cluster_bin_packing/ServiceAccountKey.json
+/server/python-functions/cluster_bin_packing/request.json
 /app/google-services.json

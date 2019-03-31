@@ -90,14 +90,19 @@ def cluster_route(request):
         p = Participant(**participant.to_dict())
         p.set_id(participant.id)
         source = (p.start.get(u'LatLng').latitude, p.start.get('LatLng').longitude)
+        # distance_results = gmaps.distance_matrix(source, destination)  # TODO this can result ZERO_RESULTS
         direction_results = gmaps.directions(source, destination)  # TODO this may probably also return ZERO_RESULTS
         if p.is_driver():
-            # drivers.append(p)
+            drivers.append(p)
+            # driversDistance[p.id]= distance_results.get(u'rows')[0].get(u'elements')[0].get(u'distance').get(u'value')
             drivers_distance[p.id] = direction_results[0].get(u'legs')[0].get(u'distance').get(u'value')
+            # driversDirections[p.id] = direction_results
             cluster[p.id] = []
         else:
-            # riders.append(p)
+            riders.append(p)
+            # ridersDistance[p.id] = distance_results.get(u'rows')[0].get(u'elements')[0].get(u'distance').get(u'value')
             riders_distance[p.id] = direction_results[0].get(u'legs')[0].get(u'distance').get(u'value')
+            # ridersDirections[p.id] = direction_results
         participants[p.id] = p
         participants_directions[p.id] = direction_results
 
@@ -110,24 +115,85 @@ def cluster_route(request):
     group_best_match_riders(cluster, rider_to_driver_route_share)
     print("Route clusters: {}".format(cluster))
 
-    print('Minimizing distance with ROUTE heuristic.')
+    print('------------------------------')
+    print('Calculating INITIAL values.')
+    initial_cars = len(cluster)
+    print('Initial number of  cars: ' + str(initial_cars) + '.')
+    initial_distance = calculate_cluster_distance(cluster)
+    print('Total initial distance: ' + str(initial_distance))
+
+    # ----------------------------------
+    #
+    # f(x)=(cars_parameter*(len(x)/initial_cars))+(distance_parameter*(distance(x)/initial_distance))
+    #
+    print('------------------------------')
+    print('Calculating cluster minimizing CARS.')
+    cluster_cars = group_cells_cars(copy.deepcopy(cluster))
+    distance_cars = calculate_cluster_distance(cluster_cars)
+    f_cluster_cars = (cars_parameter * (len(cluster_cars) / initial_cars)) + \
+                     (distance_parameter * (distance_cars / initial_distance))
+    print('------------------------------')
+    print('Calculating cluster minimizing DISTANCE.')
     cluster_distance = group_cells_distance(copy.deepcopy(cluster), drivers_distance)
     distance_distance = calculate_cluster_distance(cluster_distance)
+    f_cluster_distance = (cars_parameter * (len(cluster_distance) / initial_cars)) + \
+                         (distance_parameter * (distance_distance / initial_distance))
+
     '''
     cluster_distance1rv = group_cells_distance2(copy.deepcopy(cluster), drivers_distance)
-    distance_distance = calculate_cluster_distance(cluster_distance1rv)
+    distance_distance1rv = calculate_cluster_distance(cluster_distance1rv)
 
     cluster_distance2 = group_cells_distance3(copy.deepcopy(cluster), drivers_distance)
-    distance_distance = calculate_cluster_distance(cluster_distance2)
+    distance_distance2 = calculate_cluster_distance(cluster_distance2)
+    '''
+
+    print('------------------------------')
+    print('Initial values.')
+    print("Route clusters: {}".format(cluster))
+    print('# Cars: ' + str(initial_cars) + '.')
+    print('Distance: ' + str(initial_distance))
+    print('------------------------------')
+    print('Cluster by min of cars')
+    print('Cluster: {}'.format(cluster_cars))
+    print('# of Cars: ' + str(len(cluster_cars)) + '.')
+    print('Distance: ' + str(distance_cars))
+    print('function_cluster_cars: ' + str(f_cluster_cars) + '.')
+    print('------------------------------')
+    print('Cluster by min distance')
+    print('Cluster: {}'.format(cluster_distance))
+    print('# Cars: ' + str(len(cluster_distance)) + '.')
+    print('Distance: ' + str(distance_distance))
+    print('function_cluster_distance: ' + str(f_cluster_distance) + '.')
+    '''
+    print("-------..,,,,,....------")
+    print('----distance 1 reg----')
+    print('Cluster: {}'.format(cluster_distance))
+    print('# Cars: ' + str(len(cluster_distance)) + '.')
+    print('Distance: ' + str(distance_distance))
+
+    print('----distance 1 reversed----')
+    print('Cluster: {}'.format(cluster_distance1rv))
+    print('# Cars: ' + str(len(cluster_distance1rv)) + '.')
+    print('Distance: ' + str(distance_distance1rv))
+
+    print('----distance 2 reg----')
+    print('Cluster: {}'.format(cluster_distance2))
+    print('# Cars: ' + str(len(cluster_distance2)) + '.')
+    print('Distance: ' + str(distance_distance2))
     '''
 
     if event_optimization:
         # call waypoint optimization method TODO
         pass
     print('------------------------------')
-    print('Final Cluster: {}'.format(cluster_distance))
-    print('Final Distance: {}'.format(distance_distance))
-    update_database(cluster_distance)
+    if f_cluster_cars < f_cluster_distance:
+        print('Choosing f_cars')
+        print('Final Cluster: {}'.format(cluster_cars))
+        update_database(cluster_cars)
+    else:
+        print('Choosing f_distance')
+        print('Final Cluster: {}'.format(cluster_distance))
+        update_database(cluster_distance)
     # return cluster
     # return 'OK'
     # data = {'response': 'OK'}
