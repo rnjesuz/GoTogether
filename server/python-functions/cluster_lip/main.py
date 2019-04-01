@@ -100,8 +100,8 @@ def cluster_lip(request):
 
     print('Minimizing distance with ILP.')
     distance_distance, cluster_distance = group_cells_distance_euclidean(drivers_id, riders_id)
-    # distance_distance, cluster_distance = group_cells_distance_euclidean(drivers_id, riders_id)
-    # distance_distance, cluster_distance = group_cells_distance_euclidean(drivers_id, riders_id)
+    # distance_distance, cluster_distance = group_cells_distance_haversine(drivers_id, riders_id)
+    # distance_distance, cluster_distance = group_cells_distance_real(drivers_id, riders_id)
     distance_cluster = calculate_cluster_distance(cluster_distance)
 
     if event_optimization:

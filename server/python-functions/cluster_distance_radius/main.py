@@ -133,7 +133,7 @@ def calculate_radius(radius_step, rider_uid, drivers):
     for driver in drivers:
         driver_geopoint = participants.get(driver).start.get(u'LatLng')
         # Get the haversine formula between driver and match
-        distance = haversine_formula(driver_geopoint.latitude, driver_geopoint.longitude,
+        distance = euclidean_formula(driver_geopoint.latitude, driver_geopoint.longitude,
                                      rider_geopoint.latitude, rider_geopoint.longitude)
         # Round up to the next multiple of 'radius'. Multiples of 'radius' stay the same
         radius_distance = ((distance+(radius_step-1))//radius_step)*radius_step

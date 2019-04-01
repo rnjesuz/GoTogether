@@ -96,16 +96,19 @@ def cluster_distance_voronoi(request):
         participants[p.id] = p
 
     for rider in riders:
-        source = participants.get(rider).start.get(u'street')
+        source_LatLng = participants.get(rider).start.get(u'LatLng')
+        source = (source_LatLng.latitude, source_LatLng.longitude)
         rider_to_driver_distance[rider] = {}
         for driver in drivers:
-            destination = participants.get(driver).start.get(u'street')
+            destination_LatLng = participants.get(driver).start.get(u'LatLng')
+            destination = (destination_LatLng.latitude, destination_LatLng.longitude)
             rider_to_driver_distance[rider][driver] = gmaps.distance_matrix(source, destination).get(u'rows')[0].get(u'elements')[0].get(u'distance').get(u'value')  # TODO this can result ZERO_RESULTS
 
     print("Distances: {}".format(rider_to_driver_distance))
     group_best_match_riders(cluster, rider_to_driver_distance)
     print(u'Voronoi cluster: {}'.format(cluster))
 
+    print('------------------------------')
     print('Minimizing distance with VORONOI CELLS heuristic.')
     cluster_distance = group_cells_distance(copy.deepcopy(cluster), drivers)
     distance_distance = calculate_cluster_distance(cluster_distance)
@@ -168,11 +171,13 @@ def group_cells_distance(cluster_distance, drivers):
     driver_to_driver_distance = {}
     for driver in drivers:
         driver_to_driver_distance[driver] = {}
-        source = participants.get(driver).start.get('street')
+        source_LatLng = participants.get(driver).start.get('LatLng')
+        source = (source_LatLng.latitude, source_LatLng.longitude)
         for other_driver in drivers:
             if driver is other_driver:
                 continue
-            participant_location = participants.get(other_driver).start.get('street')
+            participant_location_LatLng = participants.get(other_driver).start.get('LatLng')
+            participant_location = (participant_location_LatLng.latitude, participant_location_LatLng.longitude)
             driver_to_driver_distance[driver][other_driver] = \
                 gmaps.distance_matrix(source, participant_location).get(u'rows')[0].get(u'elements')[0].get(u'distance').get(u'value')  # TODO this can result ZERO_RESULTS
     # group cars with the best available option

@@ -6,6 +6,7 @@ import binpacking
 import copy
 from sortedcollections import ValueSortedDict
 from firebase_admin import credentials, firestore
+from math import sqrt
 from google.cloud import exceptions
 
 cred = credentials.Certificate("./ServiceAccountKey.json")
@@ -21,7 +22,7 @@ participants_directions = {}
 
 
 ###########################
-def cluster_route(request):
+def cluster_bin_packing(request):
     """
     Calculates the best possible cluster, applying an heuristic based on percentage of route shared
 
@@ -52,12 +53,15 @@ def cluster_route(request):
     global destination
 
     drivers = []
+    drivers_id = []
     drivers_distance = ValueSortedDict()
 
     riders = []
+    riders_id = []
     riders_distance = ValueSortedDict()
 
     rider_to_driver_route_share = {}
+    rider_to_driver_distance = {}
 
     participants = {}
     participants_directions = {}
@@ -69,6 +73,7 @@ def cluster_route(request):
     # if event_uid is None:
     # 	event_uid = u'SBgh4MKtplFEbYXLvmMY'
     event_uid = request['eventUID']
+    group_method = request['group method']
     cars_parameter = request['cars']
     distance_parameter = request['distance']
     event_optimization = request['optimization']
@@ -93,27 +98,76 @@ def cluster_route(request):
         direction_results = gmaps.directions(source, destination)  # TODO this may probably also return ZERO_RESULTS
         if p.is_driver():
             drivers.append(p)
+            drivers_id.append(p.id)
             drivers_distance[p.id] = direction_results[0].get(u'legs')[0].get(u'distance').get(u'value')
             cluster[p.id] = []
         else:
             riders.append(p)
+            riders_id.append(p.id)
             riders_distance[p.id] = direction_results[0].get(u'legs')[0].get(u'distance').get(u'value')
         participants[p.id] = p
         participants_directions[p.id] = direction_results
 
-    for rider in riders_distance.keys():
-        rider_to_driver_route_share[rider] = {}
-        for driver in drivers_distance.keys():
-            rider_to_driver_route_share[rider][driver] = get_shared_path(rider, driver)
+    # Function that groups riders with drivers using the bin packing algorithm
+    def group_bin_packing():
+        pass
 
-    print("Shared Nodes: {}".format(rider_to_driver_route_share))
-    group_best_match_riders(cluster, rider_to_driver_route_share)
-    print("Route clusters: {}".format(cluster))
+    # Function that groups riders with drivers using an heuristic based on route shared
+    def group_route():
+        for rider in riders_distance.keys():
+            rider_to_driver_route_share[rider] = {}
+            for driver in drivers_distance.keys():
+                rider_to_driver_route_share[rider][driver] = get_shared_path(rider, driver)
+        print("Shared Nodes: {}".format(rider_to_driver_route_share))
+        group_best_match_riders(cluster, rider_to_driver_route_share)
+        print("Route clusters: {}".format(cluster))
 
-    # TODO
-    # TODO
-    # TODO
-    # use other heuristics!!
+    # Function that groups riders with drivers using an heuristic based on voronoi cells
+    def group_voronoi_cells():
+        for rider in riders_id:
+            source_LatLng = participants.get(rider).start.get(u'LatLng')
+            source = (source_LatLng.latitude, source_LatLng.longitude)
+            rider_to_driver_distance[rider] = {}
+            for driver in drivers_id:
+                destination_LatLng = participants.get(driver).start.get(u'LatLng')
+                destination = (destination_LatLng.latitude, destination_LatLng.longitude)
+                rider_to_driver_distance[rider][driver] = gmaps.distance_matrix(source, destination).get(u'rows')[0].get(u'elements')[0].get(u'distance').get(u'value')  # TODO this can result ZERO_RESULTS
+
+        print("Distances: {}".format(rider_to_driver_distance))
+        group_best_match_riders(cluster, rider_to_driver_distance)
+        print(u'Voronoi cluster: {}'.format(cluster))
+
+    # Function that groups riders with drivers using an heuristic based on radius
+    def group_radius():
+        radius_step = 5  # Kilometers
+        possible_riders = riders_id.copy()
+        for rider in possible_riders:
+            rider_to_driver_radius = calculate_radius(radius_step, rider, drivers_id)
+            for driver, radius in rider_to_driver_radius.items():
+                seats = participants.get(driver).get_seats()
+                if seats > len(cluster.get(driver)):
+                    print(u'Group! Rider \'{}\' grouped with driver \'{}\'.'.format(rider, driver))
+                    print(u'At radius: {}'.format(radius))
+                    cluster[driver].append(rider)
+                    break
+        print(u'Radial clusters: {}'.format(cluster))
+
+    # Default response used when the grouping method is invalid
+    def group_invalid():
+        print('Invalid method of grouping')
+        return
+
+    # Dictionary of function names
+    switcher = {
+        'bin packing': group_bin_packing,
+        'route': group_route,
+        'voronoi': group_voronoi_cells,
+        'radius': group_radius,
+        'invalid': group_invalid
+    }
+
+    # Get the grouping method from the switcher dictionary, and execute it
+    switcher.get(group_method, 'invalid')()
 
     print('------------------------------')
     print('Calculating cluster minimizing CARS.')
@@ -132,6 +186,35 @@ def cluster_route(request):
     # return 'OK'
     # data = {'response': 'OK'}
     # return json.dumps(data)
+
+
+######################
+def calculate_radius(radius_step, rider_uid, drivers):
+    rider_geopoint = participants.get(rider_uid).start.get(u'LatLng')
+    rider_to_driver_radius = ValueSortedDict()
+    for driver in drivers:
+        driver_geopoint = participants.get(driver).start.get(u'LatLng')
+        # Get the haversine formula between driver and match
+        distance = euclidean_formula(driver_geopoint.latitude, driver_geopoint.longitude,
+                                     rider_geopoint.latitude, rider_geopoint.longitude)
+        # Round up to the next multiple of 'radius'. Multiples of 'radius' stay the same
+        radius_distance = ((distance+(radius_step-1))//radius_step)*radius_step
+        # Store the values
+        rider_to_driver_radius[driver] = radius_distance
+    return rider_to_driver_radius
+
+
+def euclidean_formula(lat1, lon1, lat2, lon2):
+    """
+    Calculates the Euclidean (direct) distance between two points
+    :param lat1: Latitude of the first point
+    :param lon1: Longitude of the first point
+    :param lat1: Latitude of the second point
+    :param lon1: Longitude of the second point
+    :return: The distance between point1 an point2
+    """
+
+    return sqrt(((lat1-lat2)**2) + ((lon1-lon2)**2))
 
 
 ###########################
@@ -168,7 +251,7 @@ def get_shared_path(first_participant, second_participant):
 
 
 ##########################
-def group_best_match_riders(cluster, rider_to_driver_route_share):
+def group_best_match_riders(cluster, rider_to_driver_heuristic):
     """
     Matches riders with drivers based on the heuristic
     The 'cluster' is updated directly with the new matches
@@ -180,14 +263,14 @@ def group_best_match_riders(cluster, rider_to_driver_route_share):
     :return: None
     """
     global participants
-    for rider in rider_to_driver_route_share:
+    for rider in rider_to_driver_heuristic:
         match = False
         while not match:
-            best_route = 0
+            best_value = 0
             best_match = None
-            for driver in rider_to_driver_route_share[rider]:
-                if rider_to_driver_route_share[rider][driver] > best_route:
-                    best_route = rider_to_driver_route_share[rider][driver]
+            for driver in rider_to_driver_heuristic[rider]:
+                if rider_to_driver_heuristic[rider][driver] > best_value:
+                    best_value = rider_to_driver_heuristic[rider][driver]
                     best_match = driver
             if best_match in cluster:
                 cluster_length = len(cluster.get(best_match))
@@ -199,8 +282,8 @@ def group_best_match_riders(cluster, rider_to_driver_route_share):
                 cluster[best_match].append(rider)
                 match = True
             else:
-                del rider_to_driver_route_share[rider][best_match]
-                if not rider_to_driver_route_share[rider]:  # is empty
+                del rider_to_driver_heuristic[rider][best_match]
+                if not rider_to_driver_heuristic[rider]:  # is empty
                     match = True
 
 
@@ -490,4 +573,4 @@ def read_json(file):
 
 if __name__ == '__main__':
     return_dict = read_json("request.json")
-    cluster_route(return_dict)
+    cluster_bin_packing(return_dict)
