@@ -16,6 +16,7 @@ gmaps = googlemaps.Client(key='AIzaSyDSyIfDZVr7DMspukdJG00gzZUnPCCqguE')
 
 event_ref = None
 destination = None
+group_method = None
 
 participants = {}
 participants_directions = {}
@@ -24,23 +25,27 @@ participants_directions = {}
 ###########################
 def cluster_bin_packing(request):
     """
-    Calculates the best possible cluster, applying an heuristic based on percentage of route shared
+    Calculates the best possible cluster minimizing cars, using a bin packing methodology
 
     The algorithm splits participants in riders and drivers
-    Then, the riders are matched with the best available driver based on the heuristic
-    Then, drivers are matched between themselves:
-        A cluster is calculated to minimize cars using a bin-packing algorithm
-        A cluster is calculated to minimize total distance using the heuristic
-        A weight function is applied to each cluster
-        f(x)=(cars_parameter*(len(x)/initial_cars))+(distance_parameter*(distance(x)/initial_distance))
-        Both functions are compared and the best cluster is chosen
+    Then clustering is done based on the chosen group method:
+        - Bin packing
+        - Heuristics:   - Route shared
+                        - Radius
+                        - Voronoi cells
+    If bin packing is chosen:
+        The algorithm runs using riders and drivers simultaneously while grouping
+    If an heuristic was chosen:
+        The riders are matched with the best available driver based on the heuristic
+        Then, cars are matched between themselves using the bin packing method, to reduce vehicles
     The database is updated with the final cluster
 
     :param request: a formatted request with values for the algorithm
-            eventUID (String): The name of the event, from which to calculate the cluster
-            cars (float): How much weight given to minimizing number of cars. Cars = 100 - distance
-            distance (float): How much weight given to minimizing total distance traveled. Distance = 100 - cars
-            optimization (boolean): Optimize the order of the riders in each car? *TODO*
+        eventUID (String): The name of the event, from which to calculate the cluster
+        cars (float): How much weight given to minimizing number of cars. Cars = 100 - distance
+        distance (float): How much weight given to minimizing total distance traveled. Distance = 100 - cars
+        group method: (String): The chosen clustering method
+        optimization (boolean): Optimize the order of the riders in each car? *TODO*
     :type request: JSON
 
     :return: None
@@ -48,7 +53,7 @@ def cluster_bin_packing(request):
     TODOs
         Complete implementation of module using 'optimization' parameter
     """
-    global event_ref
+    global event_ref, group_method
     global participants, participants_directions
     global destination
 
@@ -110,10 +115,21 @@ def cluster_bin_packing(request):
 
     # Function that groups riders with drivers using the bin packing algorithm
     def group_bin_packing():
-        pass
+        print('Minimizing cars using BIN PACKING.')
+        group_cluster_bin_packing(cluster, riders_id)
+        distance = calculate_cluster_distance(cluster)
+        if event_optimization:
+            # call waypoint optimization method TODO
+            pass
+        print('------------------------------')
+        print('Final Cluster: {}'.format(cluster))
+        print('Final Distance: {}'.format(distance))
+        update_database(cluster)
+        exit(0)  # successful
 
     # Function that groups riders with drivers using an heuristic based on route shared
     def group_route():
+        print('Grouping riders with drivers using SHARED ROUTES')
         for rider in riders_distance.keys():
             rider_to_driver_route_share[rider] = {}
             for driver in drivers_distance.keys():
@@ -124,21 +140,23 @@ def cluster_bin_packing(request):
 
     # Function that groups riders with drivers using an heuristic based on voronoi cells
     def group_voronoi_cells():
+        print('Grouping riders with drivers using VORONOI CELLS')
         for rider in riders_id:
-            source_LatLng = participants.get(rider).start.get(u'LatLng')
-            source = (source_LatLng.latitude, source_LatLng.longitude)
+            source_lat_lng = participants.get(rider).start.get(u'LatLng')
+            source = (source_lat_lng.latitude, source_lat_lng.longitude)
             rider_to_driver_distance[rider] = {}
             for driver in drivers_id:
-                destination_LatLng = participants.get(driver).start.get(u'LatLng')
-                destination = (destination_LatLng.latitude, destination_LatLng.longitude)
+                destination_lat_lng = participants.get(driver).start.get(u'LatLng')
+                destination = (destination_lat_lng.latitude, destination_lat_lng.longitude)
                 rider_to_driver_distance[rider][driver] = gmaps.distance_matrix(source, destination).get(u'rows')[0].get(u'elements')[0].get(u'distance').get(u'value')  # TODO this can result ZERO_RESULTS
 
         print("Distances: {}".format(rider_to_driver_distance))
         group_best_match_riders(cluster, rider_to_driver_distance)
-        print(u'Voronoi cluster: {}'.format(cluster))
+        print('Voronoi cluster: {}'.format(cluster))
 
     # Function that groups riders with drivers using an heuristic based on radius
     def group_radius():
+        print('Grouping riders with drivers by RADIUS')
         radius_step = 5  # Kilometers
         possible_riders = riders_id.copy()
         for rider in possible_riders:
@@ -170,7 +188,7 @@ def cluster_bin_packing(request):
     switcher.get(group_method, 'invalid')()
 
     print('------------------------------')
-    print('Calculating cluster minimizing CARS.')
+    print('Minimizing cars using BIN PACKING.')
     cluster_cars = group_cells_cars(copy.deepcopy(cluster))
     distance_cars = calculate_cluster_distance(cluster_cars)
 
@@ -182,19 +200,27 @@ def cluster_bin_packing(request):
     print('Final Cluster: {}'.format(cluster_cars))
     print('Final Distance: {}'.format(distance_cars))
     update_database(cluster_cars)
-    # return cluster
-    # return 'OK'
-    # data = {'response': 'OK'}
-    # return json.dumps(data)
 
 
 ######################
 def calculate_radius(radius_step, rider_uid, drivers):
+    """
+    Calculates the radius interval between the rider and the drivers
+
+    :param radius_step: The incremental value for each radius interval
+    :type radius_step: int
+    :param rider_uid: The unique identifier of the pivot
+    :type rider_uid: str
+    :param drivers: List of participants for calculations
+    :type drivers: list
+    :return: Dictionary with the interval from the rider to the other participants
+    :rtype: dict
+    """
     rider_geopoint = participants.get(rider_uid).start.get(u'LatLng')
     rider_to_driver_radius = ValueSortedDict()
     for driver in drivers:
         driver_geopoint = participants.get(driver).start.get(u'LatLng')
-        # Get the haversine formula between driver and match
+        # Get the euclidean formula between driver and match
         distance = euclidean_formula(driver_geopoint.latitude, driver_geopoint.longitude,
                                      rider_geopoint.latitude, rider_geopoint.longitude)
         # Round up to the next multiple of 'radius'. Multiples of 'radius' stay the same
@@ -207,11 +233,17 @@ def calculate_radius(radius_step, rider_uid, drivers):
 def euclidean_formula(lat1, lon1, lat2, lon2):
     """
     Calculates the Euclidean (direct) distance between two points
+
     :param lat1: Latitude of the first point
+    :type lat1: float
     :param lon1: Longitude of the first point
-    :param lat1: Latitude of the second point
-    :param lon1: Longitude of the second point
+    :type lon1: float
+    :param lat2: Latitude of the second point
+    :type lat2: float
+    :param lon2: Longitude of the second point
+    :type lon2: float
     :return: The distance between point1 an point2
+    :rtype: float
     """
 
     return sqrt(((lat1-lat2)**2) + ((lon1-lon2)**2))
@@ -250,7 +282,6 @@ def get_shared_path(first_participant, second_participant):
     return share / len(f_directions)
 
 
-##########################
 def group_best_match_riders(cluster, rider_to_driver_heuristic):
     """
     Matches riders with drivers based on the heuristic
@@ -288,7 +319,139 @@ def group_best_match_riders(cluster, rider_to_driver_heuristic):
 
 
 #########################
+def group_cluster_bin_packing(cluster_cars, riders):
+    """
+    Applies a bin packing algorithm to match riders with drivers while minimizing the number of bins (cars)
+
+    :param cluster_cars: The collection of cars
+    :param riders: The participants who are riders
+    :return: The computed cluster
+    """
+    global participants
+    # order cars by number of empty seats
+    driver_seats = ValueSortedDict()
+    driver_passengers = {}
+    print("Starting cluster: {}".format(cluster_cars))
+    for driver in cluster_cars.keys():
+        # get number of empty seats
+        cluster_list = cluster_cars.get(driver)
+        cluster_list_length = len(cluster_list)
+        driver_seats[driver] = participants.get(driver).get_seats() - cluster_list_length
+        # get the number of passenger + the driver
+        driver_passengers[driver] = cluster_list_length + 1
+    print("car OCCUPANCY: {}".format(driver_passengers))
+    print("Car VACANCY: {}".format(dict(driver_seats)))
+
+    grouping = True
+    while grouping:
+
+        # check if there's any cars still available to group
+        if not driver_seats:  # evaluates to true when empty
+            grouping = False  # end loop
+            continue  # exit current iteration
+
+        # Run the bin packing algorithm with bins of capacity equal to that of the car with more available seats.
+        #    The car with the most empty seats must not be an item of the the bin packing
+        copy_driver_passengers = driver_passengers.copy()
+        new_driver = list(driver_seats.keys())[-1]
+        print('New driver: ', new_driver)
+        del copy_driver_passengers[new_driver]
+        driver_passengers_tuple = [(k, v) for k, v in copy_driver_passengers.items()]
+        driver_passengers_tuple += [(rider, 1) for rider in riders]
+        driver_passengers_tuple = order_by_heuristic(new_driver, driver_passengers_tuple)
+        print('Possible passengers: '.format(driver_passengers_tuple))
+        #    Calculate the bin packing solution
+        available_seats = list(driver_seats.values())[-1]
+        if (not driver_passengers_tuple) == False:
+            bins = binpacking.to_constant_volume(driver_passengers_tuple, available_seats, 1, -1, available_seats + 1)
+        else:
+            del driver_seats[new_driver]
+            continue
+        print('Created bins: {}'.format(bins))
+        # if the first position is empty it means ALL the values given are bigger than then bin size
+        # e.g. bin_size = 2 & bin_packing = [{}, {"A": 6}]
+        if not bins[0]:
+            del driver_seats[new_driver]  # so we remove this driver from cars with available seats
+            continue
+
+        possible_best_bin = {}
+        possible_best_bin_index = 0
+        for b in bins:
+            new_passengers = 0
+            for passengers in b:
+                # if the calculations had a car with more people than available seats ...
+                # e.g. bin_size = 2 & bin_packing = [{"A": 1}, {"B": 6}]
+                # bin_size = 2 & bin_packing = [{"A": 1, "B": 2}] ---> doesn't happen
+                if passengers[1] > available_seats:
+                    continue  # ... we skip it
+                new_passengers += passengers[1]
+            possible_best_bin[possible_best_bin_index] = new_passengers
+            possible_best_bin_index += 1
+        print('Possible best bin(s): {}'.format(possible_best_bin))
+        bins_with_more_passengers = [u for u, v in possible_best_bin.items() if
+                                     int(v) >= max(possible_best_bin.values())]
+        print('Bin(s) with more passengers: {}'.format(bins_with_more_passengers))
+        best_bins = [bins[x] for x in bins_with_more_passengers]
+        print('Best bin(s): {}'.format(best_bins))
+
+        # If multiple solutions exist...
+        if len(best_bins) > 1:
+            # ... compare them by distance...
+            bin_distances = []
+            for bin in best_bins:
+                cluster_bins = {new_driver: []}
+                for participant in bin:
+                    cluster_bins[new_driver].append(participant[0])  # picking up the driver
+                    if participants.get(participant[0]).is_driver():
+                        cluster_bins[new_driver] += cluster_cars[participant[0]]  # and it's passenger
+                bin_distances.append(calculate_cluster_distance(cluster_bins))
+            # ... and pick the one with the smallest distance (if tied between several - choose any)
+            better_bin = tuple(best_bins)[bin_distances.index(min(bin_distances))]
+        else:
+            better_bin = next(iter(best_bins))
+        print('Final bin: {}'.format(better_bin))
+        print_cluster = []
+        for i in range(0, better_bin.__len__()):
+            driver_of_bin = better_bin[i][0]
+            if participants.get(driver_of_bin).is_driver():
+                print_cluster += [driver_of_bin] + cluster_cars[driver_of_bin]
+            else:
+                print_cluster += [driver_of_bin]
+        print("Best bin for {}: {}".format(new_driver, print_cluster))
+
+        # Remove the grouped cars (the bin + the items) from the sorted list and from the unplaced items.
+        for driver in better_bin:
+            if participants.get(driver[0]).is_driver():
+                del driver_seats[driver[0]]
+                del driver_passengers[driver[0]]
+        # Remove the receiving driver from the sorted list and from the unplaced items.
+        del driver_seats[new_driver]
+        del driver_passengers[new_driver]
+        # Update cluster. The biggest bin as passengers of the driver with more empty seats
+        for old_driver in better_bin:  # join cars
+            cluster_cars[new_driver].append(old_driver[0])
+            if participants.get(old_driver[0]).is_driver():
+                for rider in cluster_cars.get(old_driver[0]):
+                    cluster_cars[new_driver].append(rider)
+                # remove old car from available clusters
+                del cluster_cars[old_driver[0]]
+            else:
+                riders.remove(old_driver[0])
+        # Repeat the bin packing algorithm with the next emptiest car and with the remaining passenger groups,
+        # until no more packing is possible.
+
+    print("Calculated cluster: {}".format(cluster_cars))
+    return cluster_cars
+
+
+#########################
 def group_cells_cars(cluster_cars):
+    """
+    Applies a bin packing algorithm to reduce number of bins (cars)
+
+    :param cluster_cars: The cluster to minimize
+    :return: The new minimized cluster
+    """
     global participants
     # order cars by number of empty seats
     driver_seats = ValueSortedDict()
@@ -397,10 +560,9 @@ def group_cells_cars(cluster_cars):
     return cluster_cars
 
 
-######################
 def order_by_heuristic(driver, driver_passengers_tuple):
     """
-    Orders the set after calculating values based on the heuristic
+    Orders the set after calculating values based on the chosen method (if it was an heuristic)
 
     Calculates the heuristic value between the driver and each element of the set
     Adds each calculated value to the last position of each element of the set
@@ -412,17 +574,37 @@ def order_by_heuristic(driver, driver_passengers_tuple):
     :return: the new set, ordered, with the new heuristic values
     :rtype list of tuples
     """
-    index = 0
-    # get shared route between driver and possible matches
-    for match in driver_passengers_tuple:
-        if driver == match[0]:
-            continue
-        driver_passengers_tuple[index] = (*driver_passengers_tuple[index], get_shared_path(driver, match[0]))
-        index += 1
-    # Order the tuple
-    #     The key = lambda x: (x[1], x[2]) should be read as:
-    #     "firstly order by the seats in x[1] and then by the shared route value in x[2]".
-    driver_passengers_tuple = sorted(driver_passengers_tuple, key=lambda x: (x[1], x[2]))
+    if group_method != 'bin packing':  # bin packing method doesn't have another ordering value
+        index = 0
+        # get shared route between driver and possible matches
+        for match in driver_passengers_tuple:
+            if driver == match[0]:
+                continue
+            if group_method == 'route':
+                driver_passengers_tuple[index] = (*driver_passengers_tuple[index], get_shared_path(driver, match[0]))
+
+            elif group_method == 'voronoi':
+                source = participants.get(driver).start.get(u'street')
+                destination = participants.get(match[0]).start.get(u'street')
+                distance_result = gmaps.distance_matrix(source, destination).get(u'rows')[0].get(u'elements')[0].get(u'distance').get(u'value')  # TODO this can result ZERO_RESULTS
+                driver_passengers_tuple[index] = (*driver_passengers_tuple[index], distance_result)
+
+            elif group_method == 'radius':
+                radius = 10  # Kilometers
+                participant_geopoint = participants.get(driver).start.get(u'LatLng')
+                match_geopoint = participants.get(match[0]).start.get(u'LatLng')
+                # Get the euclidean formula between participant and match
+                distance = euclidean_formula(participant_geopoint.latitude, participant_geopoint.longitude,
+                                             match_geopoint.latitude, match_geopoint.longitude)
+                # Round up to the next multiple of 'radius'. Multiples of 'radius' stay the same
+                radius_distance = ((distance + (radius - 1)) // radius) * radius
+                # Create new tuple with 'radius_distance' in the last position
+                driver_passengers_tuple[index] = (*driver_passengers_tuple[index], radius_distance)
+            index += 1
+        # Order the tuple
+        #     The key = lambda x: (x[1], x[2]) should be read as:
+        #     "firstly order by the seats in x[1] and then by the shared route value in x[2]".
+        driver_passengers_tuple = sorted(driver_passengers_tuple, key=lambda x: (x[1], x[2]))
     return driver_passengers_tuple
 
 
