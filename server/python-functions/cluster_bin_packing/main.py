@@ -117,15 +117,7 @@ def cluster_bin_packing(request):
     def group_bin_packing():
         print('Minimizing cars using BIN PACKING.')
         group_cluster_bin_packing(cluster, riders_id)
-        distance = calculate_cluster_distance(cluster)
-        if event_optimization:
-            # call waypoint optimization method TODO
-            pass
-        print('------------------------------')
-        print('Final Cluster: {}'.format(cluster))
-        print('Final Distance: {}'.format(distance))
-        update_database(cluster)
-        exit(0)  # successful
+        return calculate_cluster_distance(cluster)
 
     # Function that groups riders with drivers using an heuristic based on route shared
     def group_route():
@@ -137,6 +129,10 @@ def cluster_bin_packing(request):
         print("Shared Nodes: {}".format(rider_to_driver_route_share))
         group_best_match_riders(cluster, rider_to_driver_route_share)
         print("Route clusters: {}".format(cluster))
+        print('------------------------------')
+        print('Minimizing cars using BIN PACKING.')
+        group_cells_cars(cluster)
+        return calculate_cluster_distance(cluster)
 
     # Function that groups riders with drivers using an heuristic based on voronoi cells
     def group_voronoi_cells():
@@ -153,6 +149,10 @@ def cluster_bin_packing(request):
         print("Distances: {}".format(rider_to_driver_distance))
         group_best_match_riders(cluster, rider_to_driver_distance)
         print('Voronoi cluster: {}'.format(cluster))
+        print('------------------------------')
+        print('Minimizing cars using BIN PACKING.')
+        group_cells_cars(cluster)
+        return calculate_cluster_distance(cluster)
 
     # Function that groups riders with drivers using an heuristic based on radius
     def group_radius():
@@ -169,37 +169,35 @@ def cluster_bin_packing(request):
                     cluster[driver].append(rider)
                     break
         print(u'Radial clusters: {}'.format(cluster))
+        print('------------------------------')
+        print('Minimizing cars using BIN PACKING.')
+        group_cells_cars(cluster)
+        return calculate_cluster_distance(cluster)
 
     # Default response used when the grouping method is invalid
     def group_invalid():
         print('Invalid method of grouping')
-        return
+        exit(0)
 
     # Dictionary of function names
     switcher = {
         'bin packing': group_bin_packing,
         'route': group_route,
         'voronoi': group_voronoi_cells,
-        'radius': group_radius,
-        'invalid': group_invalid
+        'radius': group_radius
     }
 
     # Get the grouping method from the switcher dictionary, and execute it
-    switcher.get(group_method, 'invalid')()
-
-    print('------------------------------')
-    print('Minimizing cars using BIN PACKING.')
-    cluster_cars = group_cells_cars(copy.deepcopy(cluster))
-    distance_cars = calculate_cluster_distance(cluster_cars)
+    distance = switcher.get(group_method, group_invalid)()
 
     if event_optimization:
         # call waypoint optimization method TODO
         pass
 
     print('------------------------------')
-    print('Final Cluster: {}'.format(cluster_cars))
-    print('Final Distance: {}'.format(distance_cars))
-    update_database(cluster_cars)
+    print('Final Cluster: {}'.format(cluster))
+    print('Final Distance: {}'.format(distance))
+    update_database(cluster)
 
 
 ######################
