@@ -23,7 +23,7 @@ destination = None
 participants = {}
 participants_directions = {}
 
-def cluster_lip(request):
+def cluster_ilp(request):
     """
         Calculates the best possible cluster.
 
@@ -628,4 +628,4 @@ def read_json(file):
 
 if __name__ == '__main__':
     return_dict = read_json("request.json")
-    cluster_lip(return_dict)
+    cluster_ilp(return_dict)

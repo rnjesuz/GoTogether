@@ -124,7 +124,7 @@ def cluster_route(request):
     if event_optimization:
         # call waypoint optimization method TODO
         pass
-    
+
     print('------------------------------')
     print('Final Cluster: {}'.format(cluster_distance))
     print('Final Distance: {}'.format(distance_distance))
@@ -187,7 +187,7 @@ def group_best_match_riders(cluster, rider_to_driver_route_share):
             best_route = 0
             best_match = None
             for driver in rider_to_driver_route_share[rider]:
-                if rider_to_driver_route_share[rider][driver] > best_route:
+                if rider_to_driver_route_share[rider][driver] >= best_route:  # accept one even if all routes are 0
                     best_route = rider_to_driver_route_share[rider][driver]
                     best_match = driver
             if best_match in cluster:

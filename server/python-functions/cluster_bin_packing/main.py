@@ -298,7 +298,7 @@ def group_best_match_riders(cluster, rider_to_driver_heuristic):
             best_value = 0
             best_match = None
             for driver in rider_to_driver_heuristic[rider]:
-                if rider_to_driver_heuristic[rider][driver] > best_value:
+                if rider_to_driver_heuristic[rider][driver] >= best_value:  # accept one even if all values are 0
                     best_value = rider_to_driver_heuristic[rider][driver]
                     best_match = driver
             if best_match in cluster:
@@ -356,6 +356,7 @@ def group_cluster_bin_packing(cluster_cars, riders):
         del copy_driver_passengers[new_driver]
         driver_passengers_tuple = [(k, v) for k, v in copy_driver_passengers.items()]
         driver_passengers_tuple += [(rider, 1) for rider in riders]
+        #    Order the cars based on the heuristic
         driver_passengers_tuple = order_by_heuristic(new_driver, driver_passengers_tuple)
         print('Possible passengers: '.format(driver_passengers_tuple))
         #    Calculate the bin packing solution
@@ -477,6 +478,7 @@ def group_cells_cars(cluster_cars):
         #    The car with the most empty seats must not be an item of the the bin packing
         copy_driver_passengers = driver_passengers.copy()
         new_driver = list(driver_seats.keys())[-1]
+        print('New driver: ', new_driver)
         del copy_driver_passengers[new_driver]
         driver_passengers_tuple = [(k, v) for k, v in copy_driver_passengers.items()]
         #    Order the cars based on the heuristic
@@ -539,7 +541,11 @@ def group_cells_cars(cluster_cars):
 
         # Remove the grouped cars (the bin + the items) from the sorted list and from the unplaced items.
         for driver in better_bin:
-            del driver_seats[driver[0]]
+            try:
+                # The driver might've been removed earlier for being an unsuitable driver
+                del driver_seats[driver[0]]
+            except KeyError:
+                pass
             del driver_passengers[driver[0]]
         # Remove the receiving driver from the sorted list and from the unplaced items.
         del driver_seats[new_driver]

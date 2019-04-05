@@ -83,7 +83,7 @@ def cluster_distance_voronoi(request):
         print(u'No such document')
         return
 
-    destination = event.destination.get(u'street')
+    destination = (event.destination.get(u'LatLng').latitude, event.destination.get(u'LatLng').longitude)
     for participant in event_participants:
         p = Participant(**participant.to_dict())
         p.set_id(participant.id)
