@@ -14,7 +14,7 @@ firebase_admin.initialize_app(cred)
 db = firestore.client()
 
 
-def generateEvents():
+def generateMultipleEvents():
     # destination_latitude = 38.722252
     # destination_longitude = -9.139337
     # number_of_participants = int(input("Quantas pessoas? "))
@@ -132,4 +132,4 @@ def streetFromLatlng(latitude, longitude):
 
 
 if __name__ == '__main__':
-    generateEvents()
+    generateMultipleEvents()

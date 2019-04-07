@@ -408,7 +408,7 @@ def group_cluster_bin_packing(cluster_cars, riders):
             better_bin = tuple(best_bins)[bin_distances.index(min(bin_distances))]
         else:
             better_bin = next(iter(best_bins))
-        print('Final bin: {}'.format(better_bin))
+        print('Chosen bin: {}'.format(better_bin))
         print_cluster = []
         for i in range(0, better_bin.__len__()):
             driver_of_bin = better_bin[i][0]
@@ -421,7 +421,11 @@ def group_cluster_bin_packing(cluster_cars, riders):
         # Remove the grouped cars (the bin + the items) from the sorted list and from the unplaced items.
         for driver in better_bin:
             if participants.get(driver[0]).is_driver():
-                del driver_seats[driver[0]]
+                try:
+                    # The driver might've been removed earlier for being an unsuitable driver
+                    del driver_seats[driver[0]]
+                except KeyError:
+                    pass
                 del driver_passengers[driver[0]]
         # Remove the receiving driver from the sorted list and from the unplaced items.
         del driver_seats[new_driver]
@@ -483,7 +487,7 @@ def group_cells_cars(cluster_cars):
         driver_passengers_tuple = [(k, v) for k, v in copy_driver_passengers.items()]
         #    Order the cars based on the heuristic
         driver_passengers_tuple = order_by_heuristic(new_driver, driver_passengers_tuple)
-        print(driver_passengers_tuple)
+        print('Possible passengers: '.format(driver_passengers_tuple))
         #    Calculate the bin packing solution
         available_seats = list(driver_seats.values())[-1]
         if (not driver_passengers_tuple) == False:
@@ -491,7 +495,7 @@ def group_cells_cars(cluster_cars):
         else:
             del driver_seats[new_driver]
             continue
-        print(bins)
+        print('Created bins: {}'.format(bins))
         # if the first position is empty it means ALL the values given are bigger than then bin size
         # e.g. bin_size = 2 & bin_packing = [{}, {"A": 6}]
         if not bins[0]:
@@ -511,12 +515,12 @@ def group_cells_cars(cluster_cars):
                 new_passengers += passengers[1]
             possible_best_bin[possible_best_bin_index] = new_passengers
             possible_best_bin_index += 1
-        print(possible_best_bin)
+        print('Possible best bin(s): {}'.format(possible_best_bin))
         bins_with_more_passengers = [u for u, v in possible_best_bin.items() if
                                      int(v) >= max(possible_best_bin.values())]
-        print(bins_with_more_passengers)
+        print('Bin(s) with more passengers: {}'.format(bins_with_more_passengers))
         best_bins = [bins[x] for x in bins_with_more_passengers]
-        print(best_bins)
+        print('Best bin(s): {}'.format(best_bins))
 
         # If multiple solutions exist...
         if len(best_bins) > 1:
@@ -532,7 +536,7 @@ def group_cells_cars(cluster_cars):
             better_bin = tuple(best_bins)[bin_distances.index(min(bin_distances))]
         else:
             better_bin = next(iter(best_bins))
-        print(better_bin)
+        print('Chosen bin: {}'.format(better_bin))
         print_cluster = []
         for i in range(0, better_bin.__len__()):
             driver_of_bin = better_bin[i][0]
