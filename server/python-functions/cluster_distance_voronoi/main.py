@@ -7,6 +7,7 @@ import binpacking
 from sortedcollections import ValueSortedDict
 from firebase_admin import credentials, firestore
 from google.cloud import exceptions
+from math import sqrt
 
 cred = credentials.Certificate("./ServiceAccountKey.json")
 default_app = firebase_admin.initialize_app(cred)
@@ -17,6 +18,8 @@ event_ref = None
 destination = None
 
 participants = {}
+
+
 
 
 ######################
@@ -59,6 +62,7 @@ def cluster_distance_voronoi(request):
     rider_to_driver_distance = {}
 
     participants = {}
+    participants_id = []
 
     cluster = {}
 
@@ -87,48 +91,91 @@ def cluster_distance_voronoi(request):
     for participant in event_participants:
         p = Participant(**participant.to_dict())
         p.set_id(participant.id)
-        source = p.start.get(u'street')
         if p.is_driver():
             drivers.append(p.id)
             cluster[p.id] = []
         else:
             riders.append(p.id)
+        participants_id.append(p.id)
         participants[p.id] = p
 
-    for rider in riders:
+    '''for rider in riders:
         source_LatLng = participants.get(rider).start.get(u'LatLng')
         source = (source_LatLng.latitude, source_LatLng.longitude)
         rider_to_driver_distance[rider] = {}
         for driver in drivers:
             destination_LatLng = participants.get(driver).start.get(u'LatLng')
             destination = (destination_LatLng.latitude, destination_LatLng.longitude)
-            rider_to_driver_distance[rider][driver] = gmaps.distance_matrix(source, destination).get(u'rows')[0].get(u'elements')[0].get(u'distance').get(u'value')  # TODO this can result ZERO_RESULTS
+            rider_to_driver_distance[rider][driver] = euclidean_formula(source, destination)'''
 
-    print("Distances: {}".format(rider_to_driver_distance))
-    group_best_match_riders(cluster, rider_to_driver_distance)
+    number_participants = len(participants)
+    waypoints = participants.keys() + ["destination"]
+    number_waypoints = number_participants + 1
+    # Matrix to store distances between every participant (number_participants x (number_participants + destination))
+    participant_distance_matrix = {}
+    for participant in participants:
+        # Populated with 0's
+        participant_distance_matrix[participant] = dict(zip(waypoints, [0] * number_waypoints))
+    # Set matrix values to proper distances
+    matrix_diagonal = 1
+    for i in range(number_participants):
+        participant1 = participants.get(participants_id[i])
+        participant1_start = participant1.start.get(u'LatLng')
+        for j in range(matrix_diagonal, number_participants):
+            participant2 = participants.get(participants_id[j])
+            participant2_start = participant2.start.get(u'LatLng')
+            # Calculate distance from Participant 1 to Participant 2
+            distance = euclidean_formula(participant1_start.latitude,
+                                         participant1_start.longitude,
+                                         participant2_start.latitude,
+                                         participant2_start.longitude)
+            participant_distance_matrix[participants_id[i]][participants_id[j]] = distance
+            # The euclidean distance i->j is the same as j->i
+            participant_distance_matrix[participants_id[j]][participants_id[i]] = distance
+        participant_distance_matrix[participants_id[i]]["destination"] = euclidean_formula(participant1_start.latitude,
+                                                                                           participant1_start.longitude,
+                                                                                           destination[0],
+                                                                                           destination[1])
+        matrix_diagonal += 1
+
+    print("Distances: {}".format(participant_distance_matrix))
+    group_best_match_riders(cluster, participant_distance_matrix, riders, drivers)
     print(u'Voronoi cluster: {}'.format(cluster))
 
     print('------------------------------')
     print('Minimizing distance with VORONOI CELLS heuristic.')
-    cluster_distance = group_cells_distance(copy.deepcopy(cluster), drivers)
-    distance_distance = calculate_cluster_distance(cluster_distance)
+    group_cells_distance(cluster, drivers)
+    distance_distance = calculate_cluster_distance(cluster)
 
     if event_optimization:
         # call waypoint optimization method TODO
         pass
-    
+
     print('------------------------------')
-    print('Final Cluster: {}'.format(cluster_distance))
+    print('Final Cluster: {}'.format(cluster))
     print('Final Distance: {}'.format(distance_distance))
-    update_database(cluster_distance)
+    update_database(cluster)
     # return cluster
     # return 'OK'
     # data = {'response': 'OK'}
     # return json.dumps(data)
 
 
+#########################
+def euclidean_formula(lat1, lon1, lat2, lon2):
+    """
+    Calculates the Euclidean (direct) distance between two points
+    :param lat1: Latitude of the first point
+    :param lon1: Longitude of the first point
+    :param lat2: Latitude of the second point
+    :param lon2: Longitude of the second point
+    :return: The distance between point1 an point2
+    """
+    return sqrt(((lat1-lat2)**2) + ((lon1-lon2)**2))
+
+
 ##########################
-def group_best_match_riders(cluster, rider_to_driver_distance):
+def group_best_match_riders(cluster, participant_distance_matrix, riders, drivers):
     """
         Matches riders with drivers based on the heuristic
         The 'cluster' is updated directly with the new matches
@@ -140,15 +187,15 @@ def group_best_match_riders(cluster, rider_to_driver_distance):
         :return: None
         """
     global participants
-    for rider in rider_to_driver_distance:
+    for rider in riders:
         match = False
         while not match:
             best_distance = 0
             best_match = None
-            for driver in rider_to_driver_distance[rider]:
+            for driver in drivers:
                 # TODO use a percentage calculation? best_route / nº nodes
-                if rider_to_driver_distance[rider][driver] > best_distance:
-                    best_distance = rider_to_driver_distance[rider][driver]
+                if participant_distance_matrix[rider][driver] > best_distance:
+                    best_distance = participant_distance_matrix[rider][driver]
                     best_match = driver
             if best_match in cluster:
                 cluster_length = len(cluster.get(best_match))
@@ -160,14 +207,14 @@ def group_best_match_riders(cluster, rider_to_driver_distance):
                 cluster[best_match].append(rider)
                 match = True
             else:
-                del rider_to_driver_distance[rider][best_match]
-                if not rider_to_driver_distance[rider]:  # is empty
+                del participant_distance_matrix[rider][best_match]
+                if not participant_distance_matrix[rider]:  # is empty
                     match = True
 
 
 ######################
-def group_cells_distance(cluster_distance, drivers):
-    # calculate distances between the selected drivers
+def group_cells_distance(cluster_distance, participant_distance_matrix, drivers):
+    ''''# calculate distances between the selected drivers
     driver_to_driver_distance = {}
     for driver in drivers:
         driver_to_driver_distance[driver] = {}
@@ -178,23 +225,25 @@ def group_cells_distance(cluster_distance, drivers):
                 continue
             participant_location_LatLng = participants.get(other_driver).start.get('LatLng')
             participant_location = (participant_location_LatLng.latitude, participant_location_LatLng.longitude)
-            driver_to_driver_distance[driver][other_driver] = \
-                gmaps.distance_matrix(source, participant_location).get(u'rows')[0].get(u'elements')[0].get(u'distance').get(u'value')  # TODO this can result ZERO_RESULTS
+            driver_to_driver_distance[driver][other_driver] = euclidean_formula(source, participant_location)
     # group cars with the best available option
-    return group_best_match_drivers(cluster_distance, driver_to_driver_distance)
+    return group_best_match_drivers(cluster_distance, driver_to_driver_distance)'''
+    return group_best_match_drivers(cluster_distance, participant_distance_matrix)
 
 
 ######################
-def group_best_match_drivers(cluster_distance, driver_to_driver_distance):
-    for driver in driver_to_driver_distance:
+def group_best_match_drivers(cluster_distance, participants_distance_matrix, drivers):
+    for driver in drivers:
         match = False
         while not match:
             best_distance = 0
             best_match = None
-            for new_driver in driver_to_driver_distance[driver]:
+            copy_drivers = drivers.copy()
+            del copy_drivers[drivers]
+            for new_driver in copy_drivers:
                 # TODO use a percentage calculation? best_route / nº nodes
-                if driver_to_driver_distance[driver][new_driver] > best_distance:
-                    best_distance = driver_to_driver_distance[driver][new_driver]
+                if participants_distance_matrix[driver][new_driver] > best_distance:
+                    best_distance = participants_distance_matrix[driver][new_driver]
                     best_match = new_driver
             if best_match is None:
                 return cluster_distance
@@ -213,18 +262,18 @@ def group_best_match_drivers(cluster_distance, driver_to_driver_distance):
                     del cluster_distance[driver]
                     match = True
                 else:
-                    del driver_to_driver_distance[driver][best_match]
-                    if not driver_to_driver_distance[driver]:  # is empty
+                    del participants_distance_matrix[driver][best_match]
+                    if not participants_distance_matrix[driver]:  # is empty
                         match = True
             else:
-                del driver_to_driver_distance[driver][best_match]
-                if not driver_to_driver_distance[driver]:  # is empty
+                del participants_distance_matrix[driver][best_match]
+                if not participants_distance_matrix[driver]:  # is empty
                     match = True
     return cluster_distance
 
 
 ######################
-def verify_cumulative_distance(cluster, new_driver, old_driver):
+def verify_cumulative_distance(cluster, new_driver, old_driver, participants_distance_matrix):
     """
        Verifies if, based on the cluster, two drivers should travel together of separately
 
@@ -244,14 +293,50 @@ def verify_cumulative_distance(cluster, new_driver, old_driver):
        :rtype bool
        """
     print("        Separate distance:")
-    old_distance_new_driver = calculate_cluster_distance({new_driver: cluster.get(new_driver)})
+    '''old_distance_new_driver = calculate_cluster_distance({new_driver: cluster.get(new_driver)})
     old_distance_old_driver = calculate_cluster_distance({old_driver: cluster.get(old_driver)})
+    old_distance = old_distance_old_driver + old_distance_new_driver'''
+    old_distance_new_driver = 0
+    cluster_size = len(cluster.get(new_driver))
+    new_driver_cluster = cluster.get(new_driver)
+    for index in range(cluster_size + 1):
+        if index == 0:
+            old_distance_new_driver += participants_distance_matrix[new_driver][new_driver_cluster[0]]
+        elif index == cluster_size:
+            old_distance_new_driver += participants_distance_matrix[new_driver_cluster[-1]]['destination']
+        else:
+            old_distance_new_driver += participants_distance_matrix[new_driver_cluster[index - 1]][new_driver_cluster[index]]
+
+    old_distance_old_driver = 0
+    cluster_size = len(cluster.get(old_driver))
+    old_driver_cluster = cluster.get(old_driver)
+    for index in range(cluster_size+1):
+        if index == 0:
+            old_distance_old_driver += participants_distance_matrix[old_driver][old_driver_cluster[0]]
+        elif index == cluster_size:
+            old_distance_old_driver += participants_distance_matrix[old_driver_cluster[-1]]['destination']
+        else:
+            old_distance_old_driver += participants_distance_matrix[old_driver_cluster[index-1]][old_driver_cluster[index]]
+
     old_distance = old_distance_old_driver + old_distance_new_driver
     print("        Total: " + str(old_distance))
     # TODO does the dictionary for the new_distance always old?
     print("        Joined distance:")
-    new_distance = calculate_cluster_distance(
-        {new_driver: cluster.get(new_driver) + [old_driver] + cluster.get(old_driver)})
+
+    '''new_distance = calculate_cluster_distance(
+        {new_driver: cluster.get(new_driver) + [old_driver] + cluster.get(old_driver)})'''
+
+    new_distance = 0
+    cluster_size = len(cluster.get(old_driver)) + 1 + len(cluster.get(new_driver))
+    new_cluster = cluster.get(new_driver) + [old_driver] + cluster.get(old_driver)
+    for index in range(cluster_size + 1):
+        if index == 0:
+            new_distance += participants_distance_matrix[new_driver][new_cluster[0]]
+        elif index == cluster_size:
+            new_distance += participants_distance_matrix[old_driver_cluster]['destination']
+        else:
+            new_distance += participants_distance_matrix[new_cluster[index - 1]][new_cluster[index]]
+
     print("        Total: " + str(new_distance))
     if old_distance < new_distance:
         print('    A: Separate')
@@ -259,191 +344,6 @@ def verify_cumulative_distance(cluster, new_driver, old_driver):
     else:
         print('    A: Joined')
         return True
-
-
-######################
-def group_cells_cars(cluster_cars):
-    global participants
-    # order cars by number of empty seats
-    driver_seats = ValueSortedDict()
-    driver_passengers = {}
-    print("Starting cluster: {}".format(cluster_cars))
-    for driver in cluster_cars.keys():
-        # get number of empty seats
-        cluster_list = cluster_cars.get(driver)
-        cluster_list_length = len(cluster_list)
-        driver_seats[driver] = participants.get(driver).get_seats() - cluster_list_length
-        # get the number of passenger + the driver
-        driver_passengers[driver] = cluster_list_length + 1
-    print("car OCCUPANCY: {}".format(driver_passengers))
-    print("Car VACANCY: {}".format(dict(driver_seats)))
-
-    grouping = True
-    while grouping:
-
-        # check if there's any cars still available to group
-        if not driver_seats:  # evaluates to true when empty
-            grouping = False  # end loop
-            continue  # exit current iteration
-
-        # Run the bin packing algorithm with bins of capacity equal to that of the car with more available seats.
-        #    The car with the most empty seats must not be an item of the the bin packing
-        copy_driver_passengers = driver_passengers.copy()
-        new_driver = list(driver_seats.keys())[-1]
-        del copy_driver_passengers[new_driver]
-        driver_passengers_tuple = [(k, v) for k, v in copy_driver_passengers.items()]
-        #    Order the cars based on the heuristic
-        driver_passengers_tuple = order_by_heuristic(new_driver, driver_passengers_tuple)
-        print(driver_passengers_tuple)
-        #    Calculate the bin packing solution
-        available_seats = list(driver_seats.values())[-1]
-        if (not driver_passengers_tuple) == False:
-            bins = binpacking.to_constant_volume(driver_passengers_tuple, available_seats, 1, -1, available_seats + 1)
-        else:
-            del driver_seats[new_driver]
-            continue
-        print(bins)
-        # if the first position is empty it means ALL the values given are bigger than then bin size
-        # e.g. bin_size = 2 & bin_packing = [{}, {"A": 6}]
-        if not bins[0]:
-            del driver_seats[new_driver]  # so we remove this driver from cars with available seats
-            continue
-
-        possible_best_bin = {}
-        possible_best_bin_index = 0
-        for b in bins:
-            new_passengers = 0
-            for passengers in b:
-                # if the calculations had a car with more people than available seats ...
-                # e.g. bin_size = 2 & bin_packing = [{"A": 1}, {"B": 6}]
-                # bin_size = 2 & bin_packing = [{"A": 1, "B": 2}] ---> doesn't happen
-                if passengers[1] > available_seats:
-                    continue  # ... we skip it
-                new_passengers += passengers[1]
-            possible_best_bin[possible_best_bin_index] = new_passengers
-            possible_best_bin_index += 1
-        print(possible_best_bin)
-        bins_with_more_passengers = [u for u, v in possible_best_bin.items() if
-                                     int(v) >= max(possible_best_bin.values())]
-        print(bins_with_more_passengers)
-        best_bins = [bins[x] for x in bins_with_more_passengers]
-        print(best_bins)
-
-        # If multiple solutions exist...
-        if len(best_bins) > 1:
-            # ... compare them by distance...
-            bin_distances = []
-            for bin in best_bins:
-                cluster_bins = {new_driver: []}
-                for participant in bin:
-                    cluster_bins[new_driver].append(participant[0])  # picking up the driver
-                    cluster_bins[new_driver] += cluster_cars[participant[0]]  # and it's passenger
-                bin_distances.append(calculate_cluster_distance(cluster_bins))
-            # ... and pick the one with the smallest distance (if tied between several - choose any)
-            better_bin = tuple(best_bins)[bin_distances.index(min(bin_distances))]
-        else:
-            better_bin = next(iter(best_bins))
-        print(better_bin)
-        print_cluster = []
-        for i in range(0, better_bin.__len__()):
-            driver_of_bin = better_bin[i][0]
-            print_cluster += [driver_of_bin] + cluster_cars[driver_of_bin]
-        print("Best bin for {}: {}".format(new_driver, print_cluster))
-
-        # Remove the grouped cars (the bin + the items) from the sorted list and from the unplaced items.
-        for driver in better_bin:
-            del driver_seats[driver[0]]
-            del driver_passengers[driver[0]]
-        # Remove the receiving driver from the sorted list and from the unplaced items.
-        del driver_seats[new_driver]
-        del driver_passengers[new_driver]
-        # Update cluster. The biggest bin as passengers of the driver with more empty seats
-        for old_driver in better_bin:  # join cars
-            for rider in cluster_cars.get(old_driver[0]):
-                cluster_cars[new_driver].append(rider)
-            cluster_cars[new_driver].append(old_driver[0])
-            # remove old car from available clusters
-            del cluster_cars[old_driver[0]]
-        # Repeat the bin packing algorithm with the next emptiest car and with the remaining passenger groups,
-        # until no more packing is possible.
-
-    print("Calculated cluster: {}".format(cluster_cars))
-    return cluster_cars
-
-
-######################
-def order_by_heuristic(driver, driver_passengers_tuple):
-    """
-    Orders the set after calculating values based on the heuristic
-
-    Calculates the heuristic value between the driver and each element of the set
-    Adds each calculated value to the last position of each element of the set
-    Orders the set based on its stored parameter first and then the heuristic value
-
-    :param driver: the unique identifier of the driver
-    :type driver: str
-    :param driver_passengers_tuple: a list of tuples containing several participants and their seats
-    :return: the new set, ordered, with the new heuristic values
-    :rtype list of tuples
-    """
-    global participants
-    index = 0
-    # get distance between driver and possible matches
-    for match in driver_passengers_tuple:
-        if driver == match[0]:
-            continue
-        source = participants.get(driver).start.get(u'street')
-        destination = participants.get(match[0]).start.get(u'street')
-        distance_result = gmaps.distance_matrix(source, destination)\
-            .get(u'rows')[0].get(u'elements')[0].get(u'distance').get(u'value')  # TODO this can result ZERO_RESULTS
-        driver_passengers_tuple[index] = (*driver_passengers_tuple[index], distance_result)
-        index += 1
-    # Order the tuple
-    #     The key = lambda x: (x[1], x[2]) should be read as:
-    #     "firstly order by the seats in x[1] and then by the distance value in x[2]".
-    driver_passengers_tuple = sorted(driver_passengers_tuple, key=lambda x: (x[1], x[2]))
-    return driver_passengers_tuple
-
-
-######################
-def group_cells(cluster, drivers_distance):
-    reset = True
-    # TODO try to match full cars (2 empty + 2, instead of 2 empty +1)
-    while reset:
-        for driver in drivers_distance.keys():
-            if driver in cluster:
-                change = False
-                for next_driver in drivers_distance.keys():
-                    if next_driver in cluster:
-                        cluster_list = cluster.get(next_driver)
-                        cluster_list_length = len(cluster_list)
-                        # spiderman meme pointing at himself
-                        if participants.get(next_driver) == participants.get(driver):
-                            reset = False
-                            continue
-                        # driver already has a full car
-                        elif participants.get(next_driver).get_seats() <= cluster_list_length:
-                            reset = False
-                            continue
-                        # driver has available seats
-                        elif (len(cluster.get(driver)))+1 <=\
-                                (participants.get(next_driver).get_seats() - cluster_list_length):
-                            # TODO match full car
-                            # TODO only match if round trip isn't bigger than separate trip
-                            # join cars
-                            for rider in cluster.get(driver):
-                                cluster[next_driver].append(rider)
-                            cluster[next_driver].append(driver)
-                            # remove old car from available clusters
-                            del cluster[driver]
-                            # improvement was possible, so lets reset to search for more
-                            change = True
-                            reset = True
-                        else:  # any other limit conditions?
-                            # nothing was done so no more improvements were possible
-                            reset = False
-                if change:
-                    break
 
 
 #########################
@@ -463,7 +363,10 @@ def calculate_cluster_distance(cluster):
         """
     global participants, destination
     total_distance = 0
+    car_passengers = []
+    car_distances = []
     for driver in cluster.keys():
+        car_passengers.append(len(cluster.get(driver)))
         # print("        Travelled by: " + driver)
         waypoints = []
         for rider in cluster.get(driver):
@@ -482,7 +385,13 @@ def calculate_cluster_distance(cluster):
         for i in range(len(waypoints) + 1):
             distance += direction_results[0].get(u'legs')[i].get(u'distance').get(u'value')
         # print("            Distance:" + str(distance))
+        car_distances.append(distance)
         total_distance += distance
+    passengers_std_deviation = np.std(car_passengers)
+    print('Standard deviation of passengers \'{}\' is: {}'.format(car_passengers, passengers_std_deviation))
+    print('Number of cars: {}'.format(len(cluster)))
+    distances_std_deviation = np.std(car_distances)
+    print('Standard deviation of distances \'{}\' is: {}'.format(car_distances, distances_std_deviation))
     return total_distance
 
 
@@ -577,6 +486,7 @@ class Event(object):
     """
     This class is used as a local representation of an event in the database
     """
+
     def __init__(self, **fields):
         self.__dict__.update(fields)
 

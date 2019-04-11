@@ -356,8 +356,6 @@ def group_cluster_bin_packing(cluster_cars, riders):
         del copy_driver_passengers[new_driver]
         driver_passengers_tuple = [(k, v) for k, v in copy_driver_passengers.items()]
         driver_passengers_tuple += [(rider, 1) for rider in riders]
-        #    Order the cars based on the heuristic
-        driver_passengers_tuple = order_by_heuristic(new_driver, driver_passengers_tuple)
         print('Possible passengers: '.format(driver_passengers_tuple))
         #    Calculate the bin packing solution
         available_seats = list(driver_seats.values())[-1]

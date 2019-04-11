@@ -171,8 +171,8 @@ def euclidean_formula(lat1, lon1, lat2, lon2):
     Calculates the Euclidean (direct) distance between two points
     :param lat1: Latitude of the first point
     :param lon1: Longitude of the first point
-    :param lat1: Latitude of the second point
-    :param lon1: Longitude of the second point
+    :param lat2: Latitude of the second point
+    :param lon2: Longitude of the second point
     :return: The distance between point1 an point2
     """
 
