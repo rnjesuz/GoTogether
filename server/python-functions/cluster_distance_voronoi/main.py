@@ -2,8 +2,7 @@ import firebase_admin
 import google.cloud
 import googlemaps
 import json
-import copy
-import binpacking
+import statistics as stats
 from sortedcollections import ValueSortedDict
 from firebase_admin import credentials, firestore
 from google.cloud import exceptions
@@ -54,10 +53,8 @@ def cluster_distance_voronoi(request):
     global destination
 
     drivers = []
-    drivers_distance = ValueSortedDict()
 
     riders = []
-    riders_distance = ValueSortedDict()
 
     rider_to_driver_distance = {}
 
@@ -109,7 +106,7 @@ def cluster_distance_voronoi(request):
             rider_to_driver_distance[rider][driver] = euclidean_formula(source, destination)'''
 
     number_participants = len(participants)
-    waypoints = participants.keys() + ["destination"]
+    waypoints = list(participants.keys()) + ["destination"]
     number_waypoints = number_participants + 1
     # Matrix to store distances between every participant (number_participants x (number_participants + destination))
     participant_distance_matrix = {}
@@ -144,7 +141,7 @@ def cluster_distance_voronoi(request):
 
     print('------------------------------')
     print('Minimizing distance with VORONOI CELLS heuristic.')
-    group_cells_distance(cluster, drivers)
+    group_cells_distance(cluster, participant_distance_matrix, drivers)
     distance_distance = calculate_cluster_distance(cluster)
 
     if event_optimization:
@@ -155,10 +152,6 @@ def cluster_distance_voronoi(request):
     print('Final Cluster: {}'.format(cluster))
     print('Final Distance: {}'.format(distance_distance))
     update_database(cluster)
-    # return cluster
-    # return 'OK'
-    # data = {'response': 'OK'}
-    # return json.dumps(data)
 
 
 #########################
@@ -228,7 +221,7 @@ def group_cells_distance(cluster_distance, participant_distance_matrix, drivers)
             driver_to_driver_distance[driver][other_driver] = euclidean_formula(source, participant_location)
     # group cars with the best available option
     return group_best_match_drivers(cluster_distance, driver_to_driver_distance)'''
-    return group_best_match_drivers(cluster_distance, participant_distance_matrix)
+    return group_best_match_drivers(cluster_distance, participant_distance_matrix, drivers)
 
 
 ######################
@@ -238,8 +231,7 @@ def group_best_match_drivers(cluster_distance, participants_distance_matrix, dri
         while not match:
             best_distance = 0
             best_match = None
-            copy_drivers = drivers.copy()
-            del copy_drivers[drivers]
+            copy_drivers = [x for x in drivers if x != driver]
             for new_driver in copy_drivers:
                 # TODO use a percentage calculation? best_route / nº nodes
                 if participants_distance_matrix[driver][new_driver] > best_distance:
@@ -253,7 +245,7 @@ def group_best_match_drivers(cluster_distance, participants_distance_matrix, dri
             else:
                 cluster_length = seats
             if seats > cluster_length:
-                if verify_cumulative_distance(cluster_distance, best_match, driver):
+                if verify_cumulative_distance(cluster_distance, best_match, driver, participants_distance_matrix):
                     # join cars
                     for rider in cluster_distance.get(driver):
                         cluster_distance[best_match].append(rider)
@@ -306,7 +298,6 @@ def verify_cumulative_distance(cluster, new_driver, old_driver, participants_dis
             old_distance_new_driver += participants_distance_matrix[new_driver_cluster[-1]]['destination']
         else:
             old_distance_new_driver += participants_distance_matrix[new_driver_cluster[index - 1]][new_driver_cluster[index]]
-
     old_distance_old_driver = 0
     cluster_size = len(cluster.get(old_driver))
     old_driver_cluster = cluster.get(old_driver)
@@ -320,12 +311,11 @@ def verify_cumulative_distance(cluster, new_driver, old_driver, participants_dis
 
     old_distance = old_distance_old_driver + old_distance_new_driver
     print("        Total: " + str(old_distance))
+
     # TODO does the dictionary for the new_distance always old?
     print("        Joined distance:")
-
     '''new_distance = calculate_cluster_distance(
         {new_driver: cluster.get(new_driver) + [old_driver] + cluster.get(old_driver)})'''
-
     new_distance = 0
     cluster_size = len(cluster.get(old_driver)) + 1 + len(cluster.get(new_driver))
     new_cluster = cluster.get(new_driver) + [old_driver] + cluster.get(old_driver)
@@ -336,8 +326,8 @@ def verify_cumulative_distance(cluster, new_driver, old_driver, participants_dis
             new_distance += participants_distance_matrix[old_driver_cluster]['destination']
         else:
             new_distance += participants_distance_matrix[new_cluster[index - 1]][new_cluster[index]]
-
     print("        Total: " + str(new_distance))
+
     if old_distance < new_distance:
         print('    A: Separate')
         return False
@@ -387,11 +377,12 @@ def calculate_cluster_distance(cluster):
         # print("            Distance:" + str(distance))
         car_distances.append(distance)
         total_distance += distance
-    passengers_std_deviation = np.std(car_passengers)
-    print('Standard deviation of passengers \'{}\' is: {}'.format(car_passengers, passengers_std_deviation))
-    print('Number of cars: {}'.format(len(cluster)))
-    distances_std_deviation = np.std(car_distances)
-    print('Standard deviation of distances \'{}\' is: {}'.format(car_distances, distances_std_deviation))
+    passengers_std_deviation = stats.pstdev(car_passengers)
+    print('EVALUATION Number of cars: {}'.format(len(cluster)))
+    print('EVALUATION Standard deviation of passengers \'{}\' is: {}'.format(car_passengers, passengers_std_deviation))
+    distances_std_deviation = stats.pstdev(car_distances)
+    print('EVALUATION Total Distance: {}'.format(total_distance))
+    print('EVALUATION Standard deviation of distances \'{}\' is: {}'.format(car_distances, distances_std_deviation))
     return total_distance
 
 

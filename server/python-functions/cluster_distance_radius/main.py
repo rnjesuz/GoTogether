@@ -2,12 +2,10 @@ import firebase_admin
 import google.cloud
 import googlemaps
 import json
-import binpacking
-import copy
+import statistics as stats
 from sortedcollections import ValueSortedDict
 from firebase_admin import credentials, firestore
 from google.cloud import exceptions
-from haversine import haversine
 from math import radians, cos, sin, asin, sqrt
 
 cred = credentials.Certificate("./ServiceAccountKey.json")
@@ -53,12 +51,11 @@ def cluster_distance_radius(request):
     global destination
 
     drivers = []
-    drivers_distance = ValueSortedDict()
 
     riders = []
-    riders_distance = ValueSortedDict()
 
     participants = {}
+    participants_id = []
 
     cluster = {}
 
@@ -93,6 +90,37 @@ def cluster_distance_radius(request):
         else:
             riders.append(p.id)
         participants[p.id] = p
+        participants_id.append(p.id)
+
+    number_participants = len(participants)
+    waypoints = list(participants.keys()) + ["destination"]
+    number_waypoints = number_participants + 1
+    # Matrix to store distances between every participant (number_participants x (number_participants + destination))
+    participants_distance_matrix = {}
+    for participant in participants:
+        # Populated with 0's
+        participants_distance_matrix[participant] = dict(zip(waypoints, [0] * number_waypoints))
+    # Set matrix values to proper distances
+    matrix_diagonal = 1
+    for i in range(number_participants):
+        participant1 = participants.get(participants_id[i])
+        participant1_start = participant1.start.get(u'LatLng')
+        for j in range(matrix_diagonal, number_participants):
+            participant2 = participants.get(participants_id[j])
+            participant2_start = participant2.start.get(u'LatLng')
+            # Calculate distance from Participant 1 to Participant 2
+            distance = euclidean_formula(participant1_start.latitude,
+                                         participant1_start.longitude,
+                                         participant2_start.latitude,
+                                         participant2_start.longitude)
+            participants_distance_matrix[participants_id[i]][participants_id[j]] = distance
+            # The euclidean distance i->j is the same as j->i
+            participants_distance_matrix[participants_id[j]][participants_id[i]] = distance
+        participants_distance_matrix[participants_id[i]]["destination"] = euclidean_formula(participant1_start.latitude,
+                                                                                           participant1_start.longitude,
+                                                                                           destination[0],
+                                                                                           destination[1])
+        matrix_diagonal += 1
 
     radius_step = 5  # Kilometers
     possible_riders = riders.copy()
@@ -110,7 +138,7 @@ def cluster_distance_radius(request):
 
     print('------------------------------')
     print('Calculating cluster minimizing DISTANCE.')
-    cluster_distance = group_cells_distance(copy.deepcopy(cluster), drivers_distance, drivers)
+    cluster_distance = group_cells_distance(cluster, drivers, participants_distance_matrix)
     distance_distance = calculate_cluster_distance(cluster_distance)
 
     if event_optimization:
@@ -120,10 +148,6 @@ def cluster_distance_radius(request):
     print('Final Cluster: {}'.format(cluster_distance))
     print('Final Destination: {}'.format(distance_distance))
     update_database(cluster_distance)
-    # return cluster
-    # return 'OK'
-    # data = {'response': 'OK'}
-    # return json.dumps(data)
 
 
 ######################
@@ -180,7 +204,7 @@ def euclidean_formula(lat1, lon1, lat2, lon2):
 
 
 ######################
-def group_cells_distance(cluster_distance, drivers_distance, drivers):
+def group_cells_distance(cluster_distance, drivers, participants_distance_matrix):
     radius_step = 10  # Kilometers
     remaining_drivers = drivers.copy()
     for driver in drivers:
@@ -194,7 +218,7 @@ def group_cells_distance(cluster_distance, drivers_distance, drivers):
             print('POSSIBLE DRIVER: {}'.format(possible_driver))
             seats = participants.get(possible_driver).get_seats()
             if seats >= len(cluster_distance.get(possible_driver)) + len(cluster_distance.get(driver)) + 1:
-                if verify_cumulative_distance(cluster_distance, possible_driver, driver):
+                if verify_cumulative_distance(cluster_distance, possible_driver, driver, participants_distance_matrix):
                     print(u'Group! Driver \'{}\' grouped with new driver \'{}\'.'
                           .format(driver, possible_driver))
                     for rider in cluster_distance.get(driver) or []:
@@ -211,35 +235,69 @@ def group_cells_distance(cluster_distance, drivers_distance, drivers):
 
 
 ######################
-def verify_cumulative_distance(cluster, new_driver, old_driver):
+def verify_cumulative_distance(cluster, new_driver, old_driver, participants_distance_matrix):
     """
-    Verifies if, based on the cluster, two drivers should travel together of separately
+       Verifies if, based on the cluster, two drivers should travel together of separately
 
-    Individually calculate the travelled distance of both drivers with their passengers to the destination
-    Add them together to obtain the total distance travelled, if separate
-    Calculate the distance the new driver travels by picking up its passengers and the old_driver + riders
-    This gives the distance travelled together
-    Compare the two
+       Individually calculate the travelled distance of both drivers with their passengers to the destination
+       Add them together to obtain the total distance travelled, if separate
+       Calculate the distance the new driver travels by picking up its passengers and the old_driver + riders
+       This gives the distance travelled together
+       Compare the two
 
-    :param cluster: the set with drivers and respective riders
-    :type cluster: dict
-    :param new_driver: the unique identifier of one driver. Must be present in the cluster.
-    :type new_driver: str
-    :param old_driver: the unique identifier of the other driver. Must be present on the cluster.
-    :type old_driver: str
-    :return: True if the distance travelled is shorter or equal together, False if its shorter separate.
-    :rtype bool
-    """
+       :param cluster: the set with drivers and respective riders
+       :type cluster: dict
+       :param new_driver: the unique identifier of one driver. Must be present in the cluster.
+       :type new_driver: str
+       :param old_driver: the unique identifier of the other driver. Must be present on the cluster.
+       :type old_driver: str
+       :return: True if the distance travelled is shorter or equal together, False if its shorter separate.
+       :rtype bool
+       """
     print("        Separate distance:")
-    old_distance_new_driver = calculate_cluster_distance({new_driver: cluster.get(new_driver)})
+    '''old_distance_new_driver = calculate_cluster_distance({new_driver: cluster.get(new_driver)})
     old_distance_old_driver = calculate_cluster_distance({old_driver: cluster.get(old_driver)})
+    old_distance = old_distance_old_driver + old_distance_new_driver'''
+    old_distance_new_driver = 0
+    cluster_size = len(cluster.get(new_driver))
+    new_driver_cluster = cluster.get(new_driver)
+    for index in range(cluster_size + 1):
+        if index == 0:
+            old_distance_new_driver += participants_distance_matrix[new_driver][new_driver_cluster[0]]
+        elif index == cluster_size:
+            old_distance_new_driver += participants_distance_matrix[new_driver_cluster[-1]]['destination']
+        else:
+            old_distance_new_driver += participants_distance_matrix[new_driver_cluster[index - 1]][new_driver_cluster[index]]
+    old_distance_old_driver = 0
+    cluster_size = len(cluster.get(old_driver))
+    old_driver_cluster = cluster.get(old_driver)
+    for index in range(cluster_size+1):
+        if index == 0:
+            old_distance_old_driver += participants_distance_matrix[old_driver][old_driver_cluster[0]]
+        elif index == cluster_size:
+            old_distance_old_driver += participants_distance_matrix[old_driver_cluster[-1]]['destination']
+        else:
+            old_distance_old_driver += participants_distance_matrix[old_driver_cluster[index-1]][old_driver_cluster[index]]
+
     old_distance = old_distance_old_driver + old_distance_new_driver
     print("        Total: " + str(old_distance))
+
     # TODO does the dictionary for the new_distance always old?
     print("        Joined distance:")
-    new_distance = calculate_cluster_distance(
-        {new_driver: cluster.get(new_driver) + [old_driver] + cluster.get(old_driver)})
+    '''new_distance = calculate_cluster_distance(
+        {new_driver: cluster.get(new_driver) + [old_driver] + cluster.get(old_driver)})'''
+    new_distance = 0
+    cluster_size = len(cluster.get(old_driver)) + 1 + len(cluster.get(new_driver))
+    new_cluster = cluster.get(new_driver) + [old_driver] + cluster.get(old_driver)
+    for index in range(cluster_size + 1):
+        if index == 0:
+            new_distance += participants_distance_matrix[new_driver][new_cluster[0]]
+        elif index == cluster_size:
+            new_distance += participants_distance_matrix[old_driver_cluster]['destination']
+        else:
+            new_distance += participants_distance_matrix[new_cluster[index - 1]][new_cluster[index]]
     print("        Total: " + str(new_distance))
+
     if old_distance < new_distance:
         print('    A: Separate')
         return False
@@ -251,21 +309,24 @@ def verify_cumulative_distance(cluster, new_driver, old_driver):
 #########################
 def calculate_cluster_distance(cluster):
     """
-    Calculates the total travelled distance of the provided cluster
+        Calculates the total travelled distance of the provided cluster
 
-    For each driver of the cluster, we calculate the travelled distance
-        We start the route at the driver's location, pick-up all the passengers and end the route at the destination
-        Waypoint order is internally optimized by Google's API
-    All distances are added together for total distance travelled
+        For each driver of the cluster, we calculate the travelled distance
+            We start the route at the driver's location, pick-up all the passengers and end the route at the destination
+            Waypoint order is internally optimized by Google's API
+        All distances are added together for total distance travelled
 
-    :param cluster: the cluster matching riders to drivers
-    :type cluster: dict
-    :return: the total distance travelled by the each driver of the cluster
-    :rtype int
-    """
+        :param cluster: the cluster matching riders to drivers
+        :type cluster: dict
+        :return: the total distance travelled by the each driver of the cluster
+        :rtype int
+        """
     global participants, destination
     total_distance = 0
+    car_passengers = []
+    car_distances = []
     for driver in cluster.keys():
+        car_passengers.append(len(cluster.get(driver)))
         # print("        Travelled by: " + driver)
         waypoints = []
         for rider in cluster.get(driver):
@@ -284,7 +345,14 @@ def calculate_cluster_distance(cluster):
         for i in range(len(waypoints) + 1):
             distance += direction_results[0].get(u'legs')[i].get(u'distance').get(u'value')
         # print("            Distance:" + str(distance))
+        car_distances.append(distance)
         total_distance += distance
+    passengers_std_deviation = stats.pstdev(car_passengers)
+    print('EVALUATION Number of cars: {}'.format(len(cluster)))
+    print('EVALUATION Standard deviation of passengers \'{}\' is: {}'.format(car_passengers, passengers_std_deviation))
+    distances_std_deviation = stats.pstdev(car_distances)
+    print('EVALUATION Total Distance: {}'.format(total_distance))
+    print('EVALUATION Standard deviation of distances \'{}\' is: {}'.format(car_distances, distances_std_deviation))
     return total_distance
 
 
