@@ -12,40 +12,50 @@ db = firestore.client()
 
 def generateEvent():
     number_of_participants = [5, 7, 10, 12, 15]
-    event_name = ["DFar PNear with 5", "DFar PNear with 7", "DFar PNear with 10", "DFar PNear with 12", "DFar PNear with 15"]
+    event_name = ["DFar PFar with 5", "DFar PFar with 7", "DFar PFar with 10", "DFar PFar with 12", "DFar PFar with 15"]
     event_destination = "Largo Sé Velha 33, 3000-383 Coimbra"
     destination_latitude, destination_longitude = (40.208834, -8.427373)
-    coordinates = [(38.716407, -9.149407),
-                   (38.710283, -9.144035),
-                   (38.735357, -9.138818),
-                   (38.767721, -9.097644),
-                   (38.756704, -9.153974),
-                   (38.741813, -9.168845),
-                   (38.728389, -9.185444),
-                   (38.713009, -9.159942),
-                   (38.714656, -9.134281),
-                   (38.707707, -9.173730),
-                   (38.726143, -9.150101),
-                   (38.738231, -9.155177),
-                   (38.715795, -9.131066),
-                   (38.723975, -9.161457),
-                   (38.753870, -9.187482)]
+    coordinates = [(38.722335, -9.139773),  # Lisboa
+                   (38.738028, -9.155097),
+                   (38.767151, -9.099683),
 
-    addresses = ["Praça do Príncipe Real 18-14, 1250-096 Lisboa",
-                 "R. Horta Seca 11-1, 1200-213 Lisboa",
-                 "Av. Rovisco Pais, 1000-287 Lisboa",
-                 "Av. Dom João II, 1990-221 Lisboa",
-                 "Campo Grande 18, 1700-162 Lisboa",
-                 "Praça Marechal Humberto Delgado, Lisboa",
-                 "Estr. da Bela Vista, Lisboa",
-                 "R. João de Deus, 1200-694 Lisboa",
-                 "Costa do Castelo 57, 1100-335 Lisboa",
-                 "Av. Ceuta, Lisboa",
-                 "Praça Marquês de Pombal, 1070-051 Lisboa",
-                 "Av. de Berna 52-56, 1050-099 Lisboa",
-                 "Largo Graça 204, 1100-266 Lisboa",
-                 "Av. Eng. Duarte Pacheco, 1250-096 Lisboa",
-                 "Av. Colégio Militar, 1500-392 Lisboa"]
+                   (38.798900, -9.387650),  # Sintra
+                   (38.802866, -9.381769),
+                   (38.825655, -9.469261),
+
+                   (38.691738, -9.311921),  # Oeiras
+                   (38.692823, -9.314232),
+                   (38.693980, -9.292844),
+
+                   (38.696888, -9.420353),  # Cascais
+                   (38.728800, -9.474545),
+                   (38.707996, -9.397243),
+
+                   (38.752400, -9.233935),  # Amadora
+                   (38.760034, -9.235858),
+                   (38.739647, -9.215205)
+                   ]
+
+    addresses = ["Campo Mártires da Pátria, Lisboa",
+                 "Av. de Berna, 1050-043 Lisboa",
+                 "Av. Berlim, Lisboa",
+
+                 "R. Dr. Alfredo da Costa 5, 2710-631 Sintra",
+                 "N249 67-49, 2710-589 Sintra",
+                 "R. Pedro Álvares Cabral, Colares",
+
+                 "Largo 5 de Outubro 3, 2780-293 Oeiras",
+                 "Largo Marquês Pombal, Oeiras",
+                 "Av. Marquês Pombal, 2770-066 Paço de Arcos",
+
+                 "Praça 5 de Outubro, 2750-642 Cascais",
+                 "N247 13, 2750-642 Cascais",
+                 "Praça Almeida Garrett, Estoril",
+
+                 "Av. Conde Castro Guimarães 6, 2700-260 Amadora",
+                 "Av. Cardoso Lopes 12-18, 2700-159 Amadora",
+                 "Av. da Força Aérea Portuguesa, Amadora"
+                 ]
 
     drivers_addresses = []
     drivers_coordinates = []
